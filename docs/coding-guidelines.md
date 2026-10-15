@@ -43,6 +43,7 @@ tests/
   Apollo.Web.Tests/              API endpoints, auth policies (WebApplicationFactory)
   Apollo.Web.Client.Tests/       bUnit component tests
   Apollo.IntegrationTests/       Aspire smoke tests (few, slow)
+  Apollo.ArchitectureTests/      platform boundary rule (reflection over the production assemblies)
 ```
 
 - One test class per unit under test: `VoiceSessionRecorderTests`.
