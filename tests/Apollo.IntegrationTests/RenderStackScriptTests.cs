@@ -182,6 +182,23 @@ public sealed class RenderStackScriptTests : IDisposable
         result.Output.ShouldContain("docker-compose.yaml");
     }
 
+    [Fact]
+    public async Task Render_WithoutOutputPath_ShouldUseAspireDefaultOutputNextToAppHost()
+    {
+        // Without -o, aspire do writes to <AppHost project>/aspire-output, not to the repository root.
+        var repository = Path.Combine(_outputPath, "repo");
+        var aspireOutput = Directory.CreateDirectory(Path.Combine(repository, "src", "Apollo.AppHost", "aspire-output")).FullName;
+        var script = Path.Combine(Directory.CreateDirectory(Path.Combine(repository, "deploy")).FullName, "Render-Stack.ps1");
+        File.Copy(ScriptPath, script);
+        File.WriteAllText(Path.Combine(aspireOutput, "docker-compose.yaml"), """image: "${BOT_IMAGE}" """);
+        File.WriteAllLines(Path.Combine(aspireOutput, ".env.Production"), ["BOT_IMAGE=bot:1"]);
+
+        var result = await RunScriptAsync(script);
+
+        result.ExitCode.ShouldBe(0, result.Output);
+        File.Exists(Path.Combine(aspireOutput, "apollo.stack.yaml")).ShouldBeTrue();
+    }
+
     public void Dispose() => Directory.Delete(_outputPath, recursive: true);
 
     private void WriteCompose(string content) =>
@@ -190,7 +207,10 @@ public sealed class RenderStackScriptTests : IDisposable
     private void WriteEnv(string fileName, params string[] lines) =>
         File.WriteAllLines(Path.Combine(_outputPath, fileName), lines);
 
-    private async Task<(int ExitCode, string Output)> RunAsync(params string[] extraArguments)
+    private Task<(int ExitCode, string Output)> RunAsync(params string[] extraArguments) =>
+        RunScriptAsync(ScriptPath, ["-OutputPath", _outputPath, .. extraArguments]);
+
+    private static async Task<(int ExitCode, string Output)> RunScriptAsync(string script, params string[] arguments)
     {
         var startInfo = new ProcessStartInfo("pwsh")
         {
@@ -198,7 +218,7 @@ public sealed class RenderStackScriptTests : IDisposable
             RedirectStandardError = true,
             UseShellExecute = false,
         };
-        foreach (var argument in new[] { "-NoProfile", "-NonInteractive", "-File", ScriptPath, "-OutputPath", _outputPath }.Concat(extraArguments))
+        foreach (var argument in new[] { "-NoProfile", "-NonInteractive", "-File", script }.Concat(arguments))
         {
             startInfo.ArgumentList.Add(argument);
         }

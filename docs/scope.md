@@ -268,12 +268,12 @@ Blazor WASM, MudBlazor, Blazor-ApexCharts. The UI is in German. All UI strings g
 ## 8. Deployment
 
 Same approach as topg:
-- **Aspire `AddContainerRegistry`** with `registry.kallisto.li`. Running `aspire do prepare-stack` from my machine builds the images, pushes them to the registry and generates `aspire-output/docker-compose.yaml` plus the env file with the values (not `aspire deploy`, which would also run `docker compose up` locally).
+- **Aspire `AddContainerRegistry`** with `registry.kallisto.li`. Running `aspire do prepare-stack` from my machine builds the images, pushes them to the registry and generates `src/Apollo.AppHost/aspire-output/docker-compose.yaml` plus the env file with the values (not `aspire deploy`, which would also run `docker compose up` locally).
 - **Compose file:**
   - `AddDockerComposeEnvironment` with the dashboard turned off
   - an internal overlay network, plus the external reverse-proxy overlay network attached only to `apollo-web`
   - DB and pgAdmin data in bind mounts, `deploy:` restart policy for the migration service, no `expose:`/`depends_on`
-- **No manual post-processing:** `deploy/Render-Stack.ps1` inlines the env values (Swarm doesn't read `.env`) into `aspire-output/apollo.stack.yaml`. The exact steps are in [deployment.md](deployment.md).
+- **No manual post-processing:** `deploy/Render-Stack.ps1` inlines the env values (Swarm doesn't read `.env`) into `src/Apollo.AppHost/aspire-output/apollo.stack.yaml`. The exact steps are in [deployment.md](deployment.md).
 - **Config:** everything goes through `IConfiguration`:
   - dev: `appsettings.Development.json` plus `dotnet user-secrets` (Discord token, OAuth client secret)
   - prod: environment variables in the compose file
