@@ -41,53 +41,77 @@
     <value>Schliessen</value>
     <comment>Blazor error bar, accessible label</comment>
   </data>
-  <data name="Nav_Home" xml:space="preserve">
+  <data name="Home_PageName" xml:space="preserve">
     <value>Start</value>
-    <comment>Navigation</comment>
+    <comment>Browser tab title of the home page</comment>
   </data>
-  <data name="Nav_SectionAdmin" xml:space="preserve">
-    <value>Admin</value>
-    <comment>Navigation section heading</comment>
+  <data name="Nav_SectionServer" xml:space="preserve">
+    <value>Server</value>
+    <comment>Navigation section heading: admin area</comment>
   </data>
   <data name="Nav_BotStatus" xml:space="preserve">
     <value>Bot-Status</value>
-    <comment>Navigation, admin</comment>
+    <comment>Navigation and page heading, /admin</comment>
   </data>
-  <data name="Nav_Server" xml:space="preserve">
-    <value>Server</value>
-    <comment>Navigation, admin</comment>
+  <data name="Nav_ServerOverview" xml:space="preserve">
+    <value>Übersicht</value>
+    <comment>Navigation, /admin/dashboard</comment>
+  </data>
+  <data name="Page_ServerOverview" xml:space="preserve">
+    <value>Server-Übersicht</value>
+    <comment>Page heading, /admin/dashboard</comment>
   </data>
   <data name="Nav_Members" xml:space="preserve">
     <value>Mitglieder</value>
-    <comment>Navigation, admin</comment>
+    <comment>Navigation and page heading, /admin/members</comment>
   </data>
-  <data name="Nav_AdminRecaps" xml:space="preserve">
+  <data name="Nav_ServerRecaps" xml:space="preserve">
     <value>Rückblicke</value>
-    <comment>Navigation, admin: server recaps</comment>
+    <comment>Navigation, /admin/recaps</comment>
+  </data>
+  <data name="Page_ServerRecaps" xml:space="preserve">
+    <value>Server-Rückblicke</value>
+    <comment>Page heading, /admin/recaps</comment>
   </data>
   <data name="Nav_Data" xml:space="preserve">
     <value>Daten</value>
-    <comment>Navigation, admin</comment>
+    <comment>Navigation and page heading, /admin/data</comment>
   </data>
   <data name="Nav_Settings" xml:space="preserve">
     <value>Einstellungen</value>
-    <comment>Navigation, admin</comment>
+    <comment>Navigation and page heading, /admin/settings</comment>
   </data>
   <data name="Nav_SectionMember" xml:space="preserve">
-    <value>Mitglied</value>
-    <comment>Navigation section heading</comment>
+    <value>Meine Statistik</value>
+    <comment>Navigation section heading: member area</comment>
   </data>
-  <data name="Nav_Overview" xml:space="preserve">
+  <data name="Nav_MemberOverview" xml:space="preserve">
     <value>Übersicht</value>
-    <comment>Navigation, member</comment>
+    <comment>Navigation, /me</comment>
+  </data>
+  <data name="Page_MemberOverview" xml:space="preserve">
+    <value>Meine Statistik</value>
+    <comment>Page heading, /me</comment>
   </data>
   <data name="Nav_MemberRecaps" xml:space="preserve">
     <value>Rückblicke</value>
-    <comment>Navigation, member: own recaps</comment>
+    <comment>Navigation, /me/recaps</comment>
   </data>
-  <data name="Nav_Privacy" xml:space="preserve">
+  <data name="Page_MemberRecaps" xml:space="preserve">
+    <value>Meine Rückblicke</value>
+    <comment>Page heading, /me/recaps</comment>
+  </data>
+  <data name="Nav_MemberPrivacy" xml:space="preserve">
+    <value>Privatsphäre</value>
+    <comment>Navigation and page heading, /me/privacy</comment>
+  </data>
+  <data name="Nav_SectionInfo" xml:space="preserve">
+    <value>Info</value>
+    <comment>Navigation section heading: public pages</comment>
+  </data>
+  <data name="Nav_PrivacyPolicy" xml:space="preserve">
     <value>Datenschutz</value>
-    <comment>Navigation, member</comment>
+    <comment>Navigation and page heading, /datenschutz (public privacy policy)</comment>
   </data>
   <data name="Home_Title" xml:space="preserve">
     <value>Willkommen bei Apollo</value>

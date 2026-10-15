@@ -21,11 +21,12 @@ public sealed class MainLayoutTests : ApolloTestContext
         layout.Find(".apollo-menu-button").GetAttribute("aria-label").ShouldBe("Menü ein- oder ausblenden");
         layout.FindAll(".mud-nav-link").Select(l => l.TextContent.Trim()).ShouldBe(
         [
-            "Start",
-            "Bot-Status", "Server", "Mitglieder", "Rückblicke", "Daten", "Einstellungen",
-            "Übersicht", "Rückblicke", "Datenschutz",
+            "Bot-Status", "Übersicht", "Mitglieder", "Rückblicke", "Daten", "Einstellungen",
+            "Übersicht", "Rückblicke", "Privatsphäre",
+            "Datenschutz",
         ]);
-        layout.FindAll(".apollo-nav-section").Select(s => s.TextContent.Trim()).ShouldBe(["Admin", "Mitglied"]);
+        layout.FindAll(".apollo-nav-section").Select(s => s.TextContent.Trim()).ShouldBe(["Server", "Meine Statistik", "Info"]);
+        layout.Find(".apollo-brand").GetAttribute("href").ShouldBe("/");
         layout.Find(".apollo-body").TextContent.Trim().ShouldBe("Inhalt");
     }
 
