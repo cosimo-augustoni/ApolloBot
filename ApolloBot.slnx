@@ -14,6 +14,7 @@
     <Project Path="src/Apollo.Web/Apollo.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Apollo.ArchitectureTests/Apollo.ArchitectureTests.csproj" />
     <Project Path="tests/Apollo.Bot.Tests/Apollo.Bot.Tests.csproj" />
     <Project Path="tests/Apollo.Domain.Tests/Apollo.Domain.Tests.csproj" />
     <Project Path="tests/Apollo.IntegrationTests/Apollo.IntegrationTests.csproj" />
