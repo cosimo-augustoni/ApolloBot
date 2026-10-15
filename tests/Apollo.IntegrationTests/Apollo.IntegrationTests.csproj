@@ -1,13 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <!-- Same image as the AppHost (#4); linked so the tag is never copied. Moves to Apollo.Testing with #7. -->
+    <Compile Include="..\..\src\Apollo.AppHost\TimescaleImage.cs" Link="Data\TimescaleImage.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Aspire.Hosting.Testing" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
     <PackageReference Include="Npgsql" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="YamlDotNet" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Apollo.AppHost\Apollo.AppHost.csproj" />
+    <ProjectReference Include="..\..\src\Apollo.Data\Apollo.Data.csproj" />
   </ItemGroup>
 
 </Project>
