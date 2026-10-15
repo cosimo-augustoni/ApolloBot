@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zeitleiste · D · Zeitleiste · Apollo wireframe</title>
+  <link rel="stylesheet" href="../../wireframes.css">
+  <link rel="stylesheet" href="../variants.css">
+</head>
+<body data-default-state="tracked">
+  <header class="mv-header">
+    <a class="mv-logo" href="index.html">Apollo</a>
+    <span class="mv-spacer"></span>
+    <details class="mv-menu">
+      <summary>Oktober 2026 ▾</summary>
+      <div class="mv-menu-list">
+        <span class="mv-menu-label">Zeitraum</span>
+        <a href="index.html" aria-current="true">Oktober 2026 (läuft)</a>
+        <a href="recap.html" aria-current="false">September 2026</a>
+        <a href="recap.html">August 2026</a>
+        <a href="recap.html">Jahr 2025</a>
+        <hr>
+        <a href="#">Benutzerdefiniert …</a>
+      </div>
+    </details>
+    <details class="mv-menu mv-avatar">
+      <summary title="Konto"></summary>
+      <div class="mv-menu-list">
+        <span class="mv-menu-label">Anna</span>
+        <a href="../../me-privacy.html">Privatsphäre</a>
+        <a href="../../privacy.html">Datenschutz</a>
+        <hr>
+        <a href="../../admin-status.html">Admin <span class="wf-tag">nur für Admins</span></a>
+        <hr>
+        <a href="../../login.html">Abmelden</a>
+      </div>
+    </details>
+  </header>
+  <main class="mv-page">
+    <h1 class="mv-hello">Deine Zeitleiste</h1>
+    <p class="wf-stat-sub">Erfasst seit 03.02.2025 · Scroll nach unten, um zurückzureisen.</p>
+    <nav class="tl-jump" aria-label="Springen zu">
+      <a href="#m-oktober">Oktober</a><a href="#m-september">September</a><a href="#m-august">August</a><a href="#m-juli">Juli</a><a href="#y-2025">2025</a>
+    </nav>
+    <section class="mv-friendly" data-states="paused">
+      <div>
+        <h2>Du wirst gerade nicht erfasst</h2>
+        <p>Seit dem 12.08.2026 sammelt Apollo nichts mehr über dich. Deine Zahlen bis dahin bleiben hier. Mit <code>/apollo tracking on</code> bist du jederzeit wieder dabei.</p>
+        <p><a href="../../me-privacy.html">Mehr zu deiner Privatsphäre</a></p>
+      </div>
+    </section>
+    <div class="tl">
+      <div class="tl-item tl-now" id="m-oktober">
+        <article class="tl-month">
+          <div class="tl-month-head"><h2>Oktober 2026 · läuft</h2><span class="wf-stat-sub">Rückblick ab 1. November</span></div>
+          <div class="wf-grid" style="margin-bottom: 12px">
+            <div class="wf-card wf-sm-6 wf-md-3"><div class="wf-stat-label">Nachrichten</div><div class="wf-stat-value">612</div><div class="wf-stat-sub">+12.5 % zum September</div></div>
+            <div class="wf-card wf-sm-6 wf-md-3"><div class="wf-stat-label">Voice-Stunden</div><div class="wf-stat-value">19.5 h</div></div>
+            <div class="wf-card wf-sm-6 wf-md-3"><div class="wf-stat-label">Reaktionen</div><div class="wf-stat-value">148</div></div>
+            <div class="wf-card wf-sm-6 wf-md-3"><div class="wf-stat-label">Aktive Tage</div><div class="wf-stat-value">12 von 15</div></div>
+            <div class="wf-chart wf-md-8">Diagramm: Aktivität über Zeit (Nachrichten und Voice-Minuten pro Tag)</div>
+            <div class="wf-md-4"><h3>Top-Kanäle</h3>
+        <ol class="wf-rank">
+          <li style="--w: 90%"><span>#allgemein</span><span class="wf-num">248</span></li>
+          <li style="--w: 52%"><span>#gaming</span><span class="wf-num">141</span></li>
+          <li style="--w: 35%"><span>#memes</span><span class="wf-num">96</span></li>
+          <li style="--w: 18%"><span>#musik</span><span class="wf-num">51</span></li>
+          <li style="--w: 11%"><span>#off-topic</span><span class="wf-num">30</span></li>
+        </ol>
+            </div>
+            <div class="wf-md-4"><h3>Top-Emojis</h3>
+        <ol class="wf-rank">
+          <li style="--w: 90%"><span>◯ :lachen:</span><span class="wf-num">41</span></li>
+          <li style="--w: 60%"><span>◯ :daumen:</span><span class="wf-num">27</span></li>
+          <li style="--w: 33%"><span>◯ :herz:</span><span class="wf-num">15</span></li>
+          <li style="--w: 13%"><span>◯ :apollo_custom:</span><span class="wf-num">6</span></li>
+        </ol>
+            </div>
+            <div class="wf-md-8"><h3>Deine Zeiten</h3><div class="wf-heatmap"><span><b>Heatmap: Mo–So × 0–23 Uhr</b></span></div></div>
+            <div class="wf-card wf-optional"><h3>Spiele · Bonus</h3>
+        <ol class="wf-rank">
+          <li style="--w: 80%"><span>Spiel A</span><span class="wf-num">8.1 h</span></li>
+          <li style="--w: 24%"><span>Spiel B</span><span class="wf-num">2.4 h</span></li>
+        </ol>
+            </div>
+          </div>
+        </article>
+      </div>
+      <div class="tl-item" id="m-september">
+        <article class="tl-month">
+          <div class="tl-month-head"><h2>September 2026</h2><a class="wf-btn wf-primary" href="recap.html">Rückblick ansehen</a></div>
+          <div class="tl-highlights">
+            <div><div class="wf-stat-label">Nachrichten</div><div class="wf-stat-value">1'190</div></div>
+            <div><div class="wf-stat-label">Voice</div><div class="wf-stat-value">40.2 h</div></div>
+            <div><div class="wf-stat-label">Top-Kanal</div><div class="wf-stat-value">#allgemein</div></div>
+          </div>
+        </article>
+      </div>
+      <div class="tl-item" id="m-august">
+        <article class="tl-month">
+          <div class="tl-month-head"><h2>August 2026</h2><a class="wf-btn wf-primary" href="recap.html">Rückblick ansehen</a></div>
+          <div class="tl-highlights">
+            <div><div class="wf-stat-label">Nachrichten</div><div class="wf-stat-value">1'402</div></div>
+            <div><div class="wf-stat-label">Voice</div><div class="wf-stat-value">51.0 h</div></div>
+            <div><div class="wf-stat-label">Top-Kanal</div><div class="wf-stat-value">#gaming</div></div>
+          </div>
+        </article>
+      </div>
+      <div class="tl-item" id="m-juli">
+        <article class="tl-month">
+          <div class="tl-month-head"><h2>Juli 2026</h2><a class="wf-btn wf-primary" href="recap.html">Rückblick ansehen</a></div>
+          <div class="tl-highlights">
+            <div><div class="wf-stat-label">Nachrichten</div><div class="wf-stat-value">980</div></div>
+            <div><div class="wf-stat-label">Voice</div><div class="wf-stat-value">22.4 h</div></div>
+            <div><div class="wf-stat-label">Top-Kanal</div><div class="wf-stat-value">#allgemein</div></div>
+          </div>
+        </article>
+      </div>
+      <div class="tl-year" id="y-2025"><strong>2025</strong><a class="wf-btn" href="recap.html" style="color: var(--wf-text)">Jahresrückblick 2025 ansehen</a></div>
+      <div class="tl-item" id="m-dezember">
+        <article class="tl-month">
+          <div class="tl-month-head"><h2>Dezember 2025</h2><a class="wf-btn wf-primary" href="recap.html">Rückblick ansehen</a></div>
+          <div class="tl-highlights">
+            <div><div class="wf-stat-label">Nachrichten</div><div class="wf-stat-value">1'530</div></div>
+            <div><div class="wf-stat-label">Voice</div><div class="wf-stat-value">60.1 h</div></div>
+            <div><div class="wf-stat-label">Top-Kanal</div><div class="wf-stat-value">#allgemein</div></div>
+          </div>
+        </article>
+      </div>
+      <div class="tl-item" id="m-november">
+        <article class="tl-month">
+          <div class="tl-month-head"><h2>November 2025</h2><a class="wf-btn wf-primary" href="recap.html">Rückblick ansehen</a></div>
+          <div class="tl-highlights">
+            <div><div class="wf-stat-label">Nachrichten</div><div class="wf-stat-value">1'102</div></div>
+            <div><div class="wf-stat-label">Voice</div><div class="wf-stat-value">38.0 h</div></div>
+            <div><div class="wf-stat-label">Top-Kanal</div><div class="wf-stat-value">#memes</div></div>
+          </div>
+        </article>
+      </div>
+      <div class="tl-item"><div class="wf-toolbar"><span class="wf-btn">Ältere Monate laden</span></div></div>
+      <div class="tl-item"><p class="wf-stat-sub">03.02.2025 · Hier hat deine Erfassung begonnen.</p></div>
+    </div>
+    <aside class="wf-notes" lang="en">
+      <h2>Annotations</h2>
+      <div class="wf-states"><strong>Page state:</strong>
+        <a href="#tracked" data-state-link>Erfasst</a>
+        <a href="#paused" data-state-link>Nicht mehr erfasst</a>
+      </div>
+      <ul>
+        <li>Concept D · Timeline: vertical timeline by month, newest first. Scrolling down goes back in time.</li>
+        <li>The running month is expanded with the full stats (tiles, activity, channels, emojis, heatmap, games bonus). Older months are compact: 3 highlights and "Rückblick ansehen" when the snapshot exists.</li>
+        <li>Year separators link to the yearly recap. The sticky jump bar scrolls horizontally inside itself; selecting a period in the header switch scrolls to that month.</li>
+        <li>Paging: 6 months at first, then "Ältere Monate laden". The end marker shows the tracked-since date. Months without tracking are shown compact with "nicht erfasst" and no button.</li>
+        <li>At 360px: highlights stack, the expanded month uses the stacked tiles of the style guide.</li>
+        <li>State "Nicht mehr erfasst": the hint is a friendly in-content card (not a warning banner). Old data stays visible below it.</li>
+        <li>Member shell (all concepts): no drawer. Header = Apollo logo (home), period switch ("Oktober 2026 ▾": running month, past months/years, Benutzerdefiniert) and avatar menu (Privatsphäre, Datenschutz, Abmelden; "Admin" only for admins, leads to the existing admin shell).</li>
+        <li>Menus are <code>&lt;details&gt;</code> here so they work without JS; real pages use MudMenu.</li>
+        <li>Privatsphäre currently links to the existing <code>me-privacy.html</code>; it gets restyled to the chosen concept later.</li>
+      </ul>
+    </aside>
+    <p class="wf-stat-sub" lang="en"><a href="../../index.html">← Wireframe index</a> · Concept D · Zeitleiste</p>
+  </main>
+  <script src="../../wireframes.js"></script>
+</body>
+</html>
