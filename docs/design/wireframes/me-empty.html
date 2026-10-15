@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meine Statistik · Apollo wireframe</title>
+  <link rel="stylesheet" href="wireframes.css">
+</head>
+<body data-default-state="untracked">
+  <input type="checkbox" id="wf-nav" class="wf-nav-toggle">
+  <header class="wf-appbar">
+    <label for="wf-nav" class="wf-hamburger" title="Navigation öffnen">☰</label>
+    <a class="wf-brand" href="me-overview.html">Apollo</a>
+    <span class="wf-appbar-spacer"></span>
+    <div class="wf-user"><span class="wf-avatar"></span><span class="wf-user-name">Anna</span><a class="wf-btn" href="login.html">Abmelden</a></div>
+  </header>
+  <div class="wf-layout">
+    <nav class="wf-drawer" aria-label="Navigation">
+      <div class="wf-drawer-group">Meine Statistik</div>
+      <a href="me-overview.html">Übersicht</a>
+      <a href="me-recaps.html">Rückblicke</a>
+      <a href="me-privacy.html">Privatsphäre</a>
+      <div class="wf-drawer-group">Info</div>
+      <a href="privacy.html">Datenschutz</a>
+      <a href="index.html" lang="en">← Wireframe index</a>
+    </nav>
+    <label for="wf-nav" class="wf-drawer-backdrop" title="Navigation schliessen"></label>
+    <main class="wf-main">
+      <div class="wf-page-header">
+        <div>
+          <div class="wf-route">/me (state: no data)</div>
+          <h1>Meine Statistik</h1>
+        </div>
+      </div>
+      <div class="wf-empty" data-states="untracked">
+        <div class="wf-empty-icon"></div>
+        <h2>Für dich werden keine Daten erfasst</h2>
+        <p>Du hast die Tracking-Rolle nicht. Schreib <code>/apollo tracking on</code> auf dem Server, dann erfasst Apollo ab sofort deine Aktivität.</p>
+        <p><a href="privacy.html">Was wird erfasst?</a></p>
+      </div>
+      <div class="wf-empty" data-states="bootstrap">
+        <div class="wf-empty-icon"></div>
+        <h2>Tracking ist noch nicht eingerichtet</h2>
+        <p>Die Admins haben noch keine Tracking-Rolle festgelegt. Sobald das passiert, kannst du die Erfassung mit <code>/apollo tracking on</code> starten.</p>
+        <p><a href="privacy.html">Was wird erfasst?</a></p>
+      </div>
+      <div class="wf-empty" data-states="new">
+        <div class="wf-empty-icon"></div>
+        <h2>Noch keine Daten</h2>
+        <p>Du wirst seit heute erfasst. Deine ersten Zahlen erscheinen, sobald du auf dem Server aktiv bist.</p>
+      </div>
+      <aside class="wf-notes" lang="en">
+        <h2>Annotations</h2>
+        <div class="wf-states"><strong>Page state:</strong>
+          <a href="#untracked" data-state-link>Nicht erfasst</a>
+          <a href="#bootstrap" data-state-link>Bootstrap-Modus</a>
+          <a href="#new" data-state-link>Erfasst, noch leer</a>
+        </div>
+        <ul>
+          <li>Shown on <code>/me</code> instead of the stats layout when the member has no stored data at all. A member who was tracked before and lost the role sees their old data (see <a href="me-overview.html#paused">me-overview.html#paused</a>).</li>
+          <li>"Für dich werden keine Daten erfasst": member can log in (Zugriffsrolle) but has no tracking role (scope §5.1.1).</li>
+          <li>"Tracking ist noch nicht eingerichtet": bootstrap mode, no tracking role set for this platform yet.</li>
+          <li>"Noch keine Daten": member has the tracking role but nothing was recorded yet (e.g. just ran <code>/apollo tracking on</code>).</li>
+          <li>No web button to start tracking: tracking changes only through <code>/apollo</code> commands (scope §3, §5.4).</li>
+        </ul>
+      </aside>
+    </main>
+  </div>
+  <script src="wireframes.js"></script>
+</body>
+</html>

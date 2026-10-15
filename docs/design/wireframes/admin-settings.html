@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Einstellungen · Apollo wireframe</title>
+  <link rel="stylesheet" href="wireframes.css">
+</head>
+<body data-default-state="bootstrap">
+  <input type="checkbox" id="wf-nav" class="wf-nav-toggle">
+  <header class="wf-appbar">
+    <label for="wf-nav" class="wf-hamburger" title="Navigation öffnen">☰</label>
+    <a class="wf-brand" href="admin-status.html">Apollo</a>
+    <span class="wf-appbar-spacer"></span>
+    <div class="wf-user"><span class="wf-avatar"></span><span class="wf-user-name">Anna</span><a class="wf-btn" href="login.html">Abmelden</a></div>
+  </header>
+  <div class="wf-layout">
+    <nav class="wf-drawer" aria-label="Navigation">
+      <div class="wf-drawer-group">Server</div>
+      <a href="admin-status.html">Bot-Status</a>
+      <a href="admin-dashboard.html">Übersicht</a>
+      <a href="admin-members.html">Mitglieder</a>
+      <a href="admin-recaps.html">Rückblicke</a>
+      <a href="admin-data.html">Daten</a>
+      <a href="admin-settings.html" aria-current="page">Einstellungen</a>
+      <div class="wf-drawer-group">Meine Statistik</div>
+      <a href="me-overview.html">Übersicht</a>
+      <a href="me-recaps.html">Rückblicke</a>
+      <a href="me-privacy.html">Privatsphäre</a>
+      <div class="wf-drawer-group">Info</div>
+      <a href="privacy.html">Datenschutz</a>
+      <a href="index.html" lang="en">← Wireframe index</a>
+    </nav>
+    <label for="wf-nav" class="wf-drawer-backdrop" title="Navigation schliessen"></label>
+    <main class="wf-main">
+      <div class="wf-page-header">
+        <div>
+          <div class="wf-route">/admin/settings</div>
+          <h1>Einstellungen</h1>
+        </div>
+      </div>
+      <div class="wf-tabs" role="tablist">
+        <button class="wf-tab" role="tab" aria-selected="true" aria-controls="tab-discord">Discord</button>
+        <button class="wf-tab" role="tab" aria-selected="false" aria-controls="tab-fluxer">Fluxer</button>
+      </div>
+      <div id="tab-discord" role="tabpanel">
+        <div class="wf-alert" data-states="bootstrap">
+          <div><strong>Bootstrap-Modus</strong>
+            <p>Es ist keine Tracking-Rolle festgelegt. Apollo erfasst zurzeit nur Mitglieder mit der Administrator-Berechtigung. Sobald du eine Rolle festlegst, endet der Bootstrap-Modus endgültig.</p></div>
+        </div>
+        <div class="wf-alert" data-states="hierarchy">
+          <div><strong>Apollo kann die Tracking-Rolle nicht vergeben</strong>
+            <p>Die Rolle des Bots muss in der Rollenliste über «Statistik» stehen, und der Bot braucht die Berechtigung «Rollen verwalten». Solange das fehlt, funktionieren <code>/apollo tracking on|off</code> und <code>/apollo privacy delete</code> nicht.</p></div>
+        </div>
+        <div class="wf-alert" data-states="deleted">
+          <div><strong>Die Tracking-Rolle wurde auf Discord gelöscht</strong>
+            <p>Zurzeit wird niemand erfasst. Lege eine neue Tracking-Rolle fest.</p></div>
+        </div>
+        <div class="wf-grid">
+          <section class="wf-card wf-md-6">
+            <div class="wf-card-header"><h2>Tracking-Rolle</h2></div>
+            <div class="wf-field">
+              <label>Rolle</label>
+              <span class="wf-select" data-states="ok hierarchy"><span class="wf-swatch"></span>Statistik · 168 Mitglieder</span>
+              <span class="wf-select" data-states="bootstrap">Keine Rolle festgelegt</span>
+              <span class="wf-select" data-states="deleted"><span class="wf-swatch"></span>Statistik (gelöscht)</span>
+              <span class="wf-field-help">Mitglieder mit dieser Rolle werden erfasst. Sie schalten die Rolle mit <code>/apollo tracking on|off</code> selbst um.</span>
+            </div>
+            <div class="wf-card wf-optional" style="margin-top: 8px; padding: 8px" aria-label="Auswahl geöffnet">
+              <div class="wf-stat-sub" lang="en">Dropdown open:</div>
+              <ul class="wf-rank wf-plain" style="gap: 4px">
+                <li style="--w: 78%"><span><span class="wf-swatch"></span> Statistik</span><span class="wf-num">168 Mitglieder</span></li>
+                <li style="--w: 87%"><span><span class="wf-swatch"></span> Mitglied</span><span class="wf-num">187 Mitglieder</span></li>
+                <li style="--w: 10%"><span><span class="wf-swatch"></span> Moderation</span><span class="wf-num">5 Mitglieder</span></li>
+              </ul>
+            </div>
+            <p style="margin-top: 12px"><strong data-states="ok hierarchy">168 Mitglieder werden erfasst</strong><strong data-states="bootstrap">Zurzeit: 3 Administratoren werden erfasst</strong><strong data-states="deleted">0 Mitglieder werden erfasst</strong></p>
+            <p class="wf-stat-sub" data-states="ok">Bot-Berechtigungen geprüft: «Rollen verwalten» vorhanden, Bot-Rolle steht über «Statistik».</p>
+            <div class="wf-toolbar"><span class="wf-btn wf-primary">Speichern</span><span class="wf-btn">Abbrechen</span></div>
+          </section>
+          <section class="wf-card wf-md-6">
+            <div class="wf-card-header"><h2>Zugriffsrollen</h2></div>
+            <div class="wf-field">
+              <label>Rollen</label>
+              <div class="wf-input" style="flex-wrap: wrap">
+                <span class="wf-chip"><span class="wf-swatch"></span>Mitglied ✕</span>
+                <span class="wf-chip"><span class="wf-swatch"></span>Stammgast ✕</span>
+                <span>Rolle hinzufügen …</span>
+              </div>
+              <span class="wf-field-help">Mitglieder mit mindestens einer dieser Rollen können sich anmelden und ihre eigene Statistik sehen. Admin-Zugriff hat immer, wer die Administrator-Berechtigung hat.</span>
+            </div>
+            <p style="margin-top: 12px"><strong>190 Mitglieder können sich anmelden</strong></p>
+            <div class="wf-toolbar"><span class="wf-btn wf-primary">Speichern</span><span class="wf-btn">Abbrechen</span></div>
+          </section>
+          <section class="wf-card">
+            <div class="wf-card-header"><h2>Änderungsverlauf</h2></div>
+            <table class="wf-table wf-stack">
+              <thead><tr><th>Zeitpunkt</th><th>Geändert von</th><th>Änderung</th></tr></thead>
+              <tbody>
+                <tr><td data-label="Zeitpunkt">02.10.2026 20:14</td><td data-label="Geändert von">Anna</td><td data-label="Änderung">Zugriffsrolle hinzugefügt: Stammgast</td></tr>
+                <tr><td data-label="Zeitpunkt">01.09.2026 18:02</td><td data-label="Geändert von">Anna</td><td data-label="Änderung">Zugriffsrolle hinzugefügt: Mitglied</td></tr>
+                <tr><td data-label="Zeitpunkt">01.09.2026 17:55</td><td data-label="Geändert von">Anna</td><td data-label="Änderung">Tracking-Rolle festgelegt: Statistik (vorher: keine, Bootstrap-Modus)</td></tr>
+              </tbody>
+            </table>
+          </section>
+        </div>
+      </div>
+      <div id="tab-fluxer" role="tabpanel" hidden>
+        <div class="wf-empty">
+          <div class="wf-empty-icon"></div>
+          <h2>Fluxer ist noch nicht verbunden</h2>
+          <p>Sobald der Bot auf Fluxer läuft, legst du hier die Tracking-Rolle und die Zugriffsrollen für Fluxer fest. Der Aufbau ist derselbe wie bei Discord.</p>
+        </div>
+      </div>
+      <aside class="wf-notes" lang="en">
+        <h2>Annotations</h2>
+        <div class="wf-states"><strong>Page state:</strong>
+          <a href="#ok" data-state-link>Eingerichtet</a>
+          <a href="#bootstrap" data-state-link>Bootstrap-Modus</a>
+          <a href="#hierarchy" data-state-link>Hierarchie-Warnung</a>
+          <a href="#deleted" data-state-link>Rolle gelöscht</a>
+        </div>
+        <ul>
+          <li>One tab per platform; each setting is stored per (guild, platform) (scope §5.1.2). The Fluxer tab has the same layout as Discord once the adapter exists.</li>
+          <li>Selectable roles come from the role sync. Options show role colour (swatch) and member count. Deleted roles are not offered; a deleted current role is shown as "(gelöscht)".</li>
+          <li>Live preview under each select ("X Mitglieder werden erfasst" / "X Mitglieder können sich anmelden") updates while picking, before saving. Changing the tracking role asks for confirmation when members would stop being tracked ("12 Mitglieder werden nicht mehr erfasst").</li>
+          <li>States: Bootstrap banner while no tracking role is set; hierarchy/permission warning when the bot lacks Manage Roles or sits below the tracking role (checked on page load); deleted-role warning (no Administrator fallback).</li>
+          <li>Changes apply without restart: the bot reloads role settings every 30 s. After saving show "Gespeichert. Gilt innerhalb von 30 Sekunden."</li>
+          <li>Admin access is not a setting (always the Administrator permission), so it does not appear here.</li>
+          <li>Change history: last 20 changes, newest first, with who and when.</li>
+        </ul>
+      </aside>
+    </main>
+  </div>
+  <script src="wireframes.js"></script>
+</body>
+</html>

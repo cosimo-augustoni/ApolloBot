@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Daten · Apollo wireframe</title>
+  <link rel="stylesheet" href="wireframes.css">
+</head>
+<body data-default-state="list">
+  <input type="checkbox" id="wf-nav" class="wf-nav-toggle">
+  <header class="wf-appbar">
+    <label for="wf-nav" class="wf-hamburger" title="Navigation öffnen">☰</label>
+    <a class="wf-brand" href="admin-status.html">Apollo</a>
+    <span class="wf-appbar-spacer"></span>
+    <div class="wf-user"><span class="wf-avatar"></span><span class="wf-user-name">Anna</span><a class="wf-btn" href="login.html">Abmelden</a></div>
+  </header>
+  <div class="wf-layout">
+    <nav class="wf-drawer" aria-label="Navigation">
+      <div class="wf-drawer-group">Server</div>
+      <a href="admin-status.html">Bot-Status</a>
+      <a href="admin-dashboard.html">Übersicht</a>
+      <a href="admin-members.html">Mitglieder</a>
+      <a href="admin-recaps.html">Rückblicke</a>
+      <a href="admin-data.html" aria-current="page">Daten</a>
+      <a href="admin-settings.html">Einstellungen</a>
+      <div class="wf-drawer-group">Meine Statistik</div>
+      <a href="me-overview.html">Übersicht</a>
+      <a href="me-recaps.html">Rückblicke</a>
+      <a href="me-privacy.html">Privatsphäre</a>
+      <div class="wf-drawer-group">Info</div>
+      <a href="privacy.html">Datenschutz</a>
+      <a href="index.html" lang="en">← Wireframe index</a>
+    </nav>
+    <label for="wf-nav" class="wf-drawer-backdrop" title="Navigation schliessen"></label>
+    <main class="wf-main">
+      <div class="wf-page-header">
+        <div>
+          <div class="wf-route">/admin/data</div>
+          <h1>Daten</h1>
+        </div>
+      </div>
+      <div class="wf-grid">
+        <div class="wf-card wf-sm-6 wf-md-3">
+          <div class="wf-stat-label">Erfasste Mitglieder</div>
+          <div class="wf-stat-value">168</div>
+          <div class="wf-stat-sub">Haben die Tracking-Rolle</div>
+        </div>
+        <div class="wf-card wf-sm-6 wf-md-3">
+          <div class="wf-stat-label">Nicht erfasste Mitglieder</div>
+          <div class="wf-stat-value">46</div>
+          <div class="wf-stat-sub">Ohne Tracking-Rolle</div>
+        </div>
+        <div class="wf-card wf-sm-6 wf-md-3">
+          <div class="wf-stat-label">Ereignisse heute</div>
+          <div class="wf-stat-value">1'932</div>
+          <div class="wf-stat-sub">Seit 00:00</div>
+        </div>
+        <div class="wf-card wf-sm-6 wf-md-3">
+          <div class="wf-stat-label">Ereignisse gesamt</div>
+          <div class="wf-stat-value">1'204'518</div>
+          <div class="wf-stat-sub">Seit 03.02.2025</div>
+        </div>
+        <section class="wf-card">
+          <div class="wf-card-header"><h2>Ereignisse pro Tabelle und Tag</h2></div>
+          <div class="wf-chart">Diagramm: Ereignisse pro Tag, gestapelt nach Tabelle (letzte 30 Tage)</div>
+          <table class="wf-table wf-stack" style="margin-top: 12px">
+            <thead><tr><th>Tabelle</th><th class="wf-num">Heute</th><th class="wf-num">Gestern</th><th class="wf-num">7 Tage</th><th class="wf-num">Gesamt</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Tabelle">Nachrichten <code>message_events</code></td><td data-label="Heute" class="wf-num">1'204</td><td data-label="Gestern" class="wf-num">1'530</td><td data-label="7 Tage" class="wf-num">9'870</td><td data-label="Gesamt" class="wf-num">812'004</td></tr>
+              <tr><td data-label="Tabelle">Voice-Sessions <code>voice_sessions</code></td><td data-label="Heute" class="wf-num">38</td><td data-label="Gestern" class="wf-num">51</td><td data-label="7 Tage" class="wf-num">322</td><td data-label="Gesamt" class="wf-num">21'930</td></tr>
+              <tr><td data-label="Tabelle">Voice-Abschnitte <code>voice_state_segments</code></td><td data-label="Heute" class="wf-num">112</td><td data-label="Gestern" class="wf-num">140</td><td data-label="7 Tage" class="wf-num">901</td><td data-label="Gesamt" class="wf-num">64'210</td></tr>
+              <tr><td data-label="Tabelle">Reaktionen <code>reaction_events</code></td><td data-label="Heute" class="wf-num">540</td><td data-label="Gestern" class="wf-num">610</td><td data-label="7 Tage" class="wf-num">3'902</td><td data-label="Gesamt" class="wf-num">290'118</td></tr>
+              <tr><td data-label="Tabelle">Mitgliedschaft <code>membership_events</code></td><td data-label="Heute" class="wf-num">1</td><td data-label="Gestern" class="wf-num">0</td><td data-label="7 Tage" class="wf-num">6</td><td data-label="Gesamt" class="wf-num">412</td></tr>
+              <tr><td data-label="Tabelle">Aktivitäten <code>presence_activity_sessions</code></td><td data-label="Heute" class="wf-num">37</td><td data-label="Gestern" class="wf-num">44</td><td data-label="7 Tage" class="wf-num">290</td><td data-label="Gesamt" class="wf-num">15'844</td></tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+      <section class="wf-card">
+        <div class="wf-card-header"><h2>Ereignisse durchsuchen</h2></div>
+        <div class="wf-filters">
+          <div class="wf-field"><label>Typ</label><span class="wf-select">Alle Typen</span></div>
+          <div class="wf-field"><label>Mitglied</label><span class="wf-input">Mitglied suchen …</span></div>
+          <div class="wf-field"><label>Kanal</label><span class="wf-select">Alle Kanäle</span></div>
+          <div class="wf-field"><label>Von</label><span class="wf-input">14.10.2026</span></div>
+          <div class="wf-field"><label>Bis</label><span class="wf-input">15.10.2026</span></div>
+        </div>
+        <div class="wf-toolbar" style="margin-bottom: 16px"><span class="wf-btn wf-primary">Filtern</span><span class="wf-btn">Zurücksetzen</span></div>
+        <div data-states="list">
+          <table class="wf-table wf-stack">
+            <thead><tr><th>Zeitpunkt</th><th>Typ</th><th>Mitglied</th><th>Kanal</th><th>Details</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Zeitpunkt">15.10.2026 14:30:12</td><td data-label="Typ">Nachricht · erstellt</td><td data-label="Mitglied">Anna</td><td data-label="Kanal">#allgemein</td><td data-label="Details">42 Zeichen · 1 Anhang · Antwort an Nicht erfasst</td></tr>
+              <tr><td data-label="Zeitpunkt">15.10.2026 14:29:58</td><td data-label="Typ">Reaktion · hinzugefügt</td><td data-label="Mitglied">Ben</td><td data-label="Kanal">#memes</td><td data-label="Details">◯ :lachen: · auf Nachricht von Anna</td></tr>
+              <tr><td data-label="Zeitpunkt">15.10.2026 14:05:00</td><td data-label="Typ">Voice-Session</td><td data-label="Mitglied">Chris</td><td data-label="Kanal">Gaming</td><td data-label="Details">seit 14:05 · offen</td></tr>
+              <tr><td data-label="Zeitpunkt">15.10.2026 13:58:41</td><td data-label="Typ">Nachricht · gelöscht</td><td data-label="Mitglied">Dana</td><td data-label="Kanal">#gaming</td><td data-label="Details">–</td></tr>
+            </tbody>
+          </table>
+          <div class="wf-pager"><span>1–50 von 3'412</span><div class="wf-toolbar"><span class="wf-btn">Zurück</span><span class="wf-btn">Weiter</span></div></div>
+        </div>
+        <div class="wf-empty" data-states="none">
+          <div class="wf-empty-icon"></div>
+          <h2>Keine Ereignisse gefunden</h2>
+          <p>Für diese Filter gibt es keine Ereignisse. Passe den Zeitraum oder die Filter an.</p>
+        </div>
+      </section>
+      <aside class="wf-notes" lang="en">
+        <h2>Annotations</h2>
+        <div class="wf-states"><strong>Page state:</strong>
+          <a href="#list" data-state-link>Mit Treffern</a>
+          <a href="#none" data-state-link>Keine Treffer</a>
+        </div>
+        <ul>
+          <li>Debugging page for admins. Table names are shown in code font next to the German label on purpose.</li>
+          <li>Counts per table and day (Europe/Zurich days). The chart covers the last 30 days; the table shows today, yesterday, 7 days and total.</li>
+          <li>Tracked vs. untracked = members with / without the tracking role on this platform (from member_roles). In bootstrap mode, "erfasst" means members with the Administrator permission.</li>
+          <li>Raw event browser: filters Typ, Mitglied, Kanal, Von/Bis (default: last 24 h); newest first, 50 per page, keyset paging. Times shown in Europe/Zurich.</li>
+          <li>No message content anywhere (it is never stored). References to untracked users show "Nicht erfasst" (stored as NULL).</li>
+          <li>No auto refresh; the "Filtern" button reloads.</li>
+        </ul>
+      </aside>
+    </main>
+  </div>
+  <script src="wireframes.js"></script>
+</body>
+</html>

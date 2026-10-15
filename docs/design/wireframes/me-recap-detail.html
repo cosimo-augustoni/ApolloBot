@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Monatsrückblick September 2026 · Apollo wireframe</title>
+  <link rel="stylesheet" href="wireframes.css">
+</head>
+<body>
+  <input type="checkbox" id="wf-nav" class="wf-nav-toggle">
+  <header class="wf-appbar">
+    <label for="wf-nav" class="wf-hamburger" title="Navigation öffnen">☰</label>
+    <a class="wf-brand" href="me-overview.html">Apollo</a>
+    <span class="wf-appbar-spacer"></span>
+    <div class="wf-user"><span class="wf-avatar"></span><span class="wf-user-name">Anna</span><a class="wf-btn" href="login.html">Abmelden</a></div>
+  </header>
+  <div class="wf-layout">
+    <nav class="wf-drawer" aria-label="Navigation">
+      <div class="wf-drawer-group">Meine Statistik</div>
+      <a href="me-overview.html">Übersicht</a>
+      <a href="me-recaps.html">Rückblicke</a>
+      <a href="me-privacy.html">Privatsphäre</a>
+      <div class="wf-drawer-group">Info</div>
+      <a href="privacy.html">Datenschutz</a>
+      <a href="index.html" lang="en">← Wireframe index</a>
+    </nav>
+    <label for="wf-nav" class="wf-drawer-backdrop" title="Navigation schliessen"></label>
+    <main class="wf-main">
+      <div class="wf-page-header">
+        <div>
+          <div class="wf-route">/me/recaps/2026-09</div>
+          <a href="me-recaps.html" class="wf-stat-sub">← Alle Rückblicke</a>
+          <h1>Monatsrückblick September 2026</h1>
+          <div class="wf-stat-sub">Erstellt am 01.10.2026 · Erfasst an 30 von 30 Tagen</div>
+        </div>
+        <div class="wf-toolbar">
+          <a class="wf-btn" href="#">← August</a>
+          <a class="wf-btn" href="#">Oktober →</a>
+        </div>
+      </div>
+      <div class="wf-grid">
+        <div class="wf-recap-card wf-sm-6 wf-md-4">
+          <div class="wf-stat-label">Du hast geschrieben</div>
+          <div><div class="wf-recap-big">1'190</div></div>
+          <div class="wf-stat-sub">Nachrichten · im Schnitt 40 pro Tag</div>
+        </div>
+        <div class="wf-recap-card wf-sm-6 wf-md-4">
+          <div class="wf-stat-label">Im Voice warst du</div>
+          <div><div class="wf-recap-big">40.2 h</div><p>Lieblingskanal: Voice-Lounge</p></div>
+          <div class="wf-stat-sub">Längste Session: 5 h 12 min</div>
+        </div>
+        <div class="wf-recap-card wf-sm-6 wf-md-4">
+          <div class="wf-stat-label">Dein Top-Kanal</div>
+          <div><div class="wf-recap-big">#allgemein</div></div>
+          <div class="wf-stat-sub">512 Nachrichten · 43 % deiner Nachrichten</div>
+        </div>
+        <div class="wf-recap-card wf-sm-6 wf-md-4">
+          <div class="wf-stat-label">Dein Lieblings-Emoji</div>
+          <div><div class="wf-recap-big">◯</div></div>
+          <div class="wf-stat-sub">87-mal verwendet</div>
+        </div>
+        <div class="wf-recap-card wf-sm-6 wf-md-4">
+          <div class="wf-stat-label">Deine aktivste Zeit</div>
+          <div><div class="wf-recap-big">Mi, 21 Uhr</div><div class="wf-heatmap" style="height: 90px; margin-top: 8px"></div></div>
+          <div class="wf-stat-sub">Nach Wochentag und Stunde</div>
+        </div>
+        <div class="wf-recap-card wf-sm-6 wf-md-4">
+          <div class="wf-stat-label">Am meisten Zeit im Voice mit</div>
+          <div><div class="wf-recap-big">Ben</div></div>
+          <div class="wf-stat-sub">12.4 h gemeinsam · danach Chris, Dana</div>
+        </div>
+        <div class="wf-recap-card wf-sm-6 wf-md-4 wf-optional">
+          <div class="wf-stat-label">Am meisten gespielt</div>
+          <div><div class="wf-recap-big">Spiel A</div></div>
+          <div class="wf-stat-sub">18.2 h · nur wenn Daten vorhanden</div>
+        </div>
+      </div>
+      <aside class="wf-notes" lang="en">
+        <h2>Annotations</h2>
+        <ul>
+          <li>"Wrapped"-style: one big fact per card. Low-fi only; card design, order and animation are #45.</li>
+          <li>Grid on desktop (3 per row), one card per row at 360px. The page itself never scrolls sideways.</li>
+          <li>Prev/next buttons step through periods; disabled when there is no older/newer snapshot.</li>
+          <li>Voice buddies only list other tracked members (untracked users are never stored).</li>
+          <li>The games card is a bonus and is left out when there is no presence data.</li>
+          <li>Server recaps (admin) use the same layout with server totals and "Aktivste Mitglieder" instead of personal facts.</li>
+        </ul>
+      </aside>
+    </main>
+  </div>
+  <script src="wireframes.js"></script>
+</body>
+</html>

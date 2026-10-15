@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anmelden · Apollo wireframe</title>
+  <link rel="stylesheet" href="wireframes.css">
+</head>
+<body data-default-state="default">
+  <header class="wf-appbar">
+    <a class="wf-brand" href="index.html" title="Wireframe index">Apollo</a>
+    <span class="wf-appbar-spacer"></span>
+    <a class="wf-btn" href="privacy.html">Datenschutz</a>
+  </header>
+  <main class="wf-center">
+    <div class="wf-card">
+      <div class="wf-empty-icon"></div>
+      <div class="wf-route">/login</div>
+      <h1>Apollo</h1>
+      <p>Statistiken und Rückblicke für unseren Server.</p>
+      <div class="wf-alert" data-states="error" style="text-align: left">
+        <div>Die Anmeldung hat nicht geklappt. Versuche es noch einmal.</div>
+      </div>
+      <p><a class="wf-btn wf-primary" href="me-overview.html" style="width: 100%; justify-content: center">Mit Discord anmelden</a></p>
+      <p><span class="wf-btn wf-optional" style="width: 100%; justify-content: center; border-style: dashed">Mit Fluxer anmelden (später)</span></p>
+      <p class="wf-stat-sub">Apollo liest nur deinen Namen und deine ID. <a href="privacy.html">Was wird erfasst?</a></p>
+    </div>
+  </main>
+  <div class="wf-article">
+      <aside class="wf-notes" lang="en">
+        <h2>Annotations</h2>
+        <div class="wf-states"><strong>Page state:</strong>
+          <a href="#default" data-state-link>Standard</a>
+          <a href="#error" data-state-link>Fehler</a>
+        </div>
+        <ul>
+          <li>No drawer: the user is not signed in.</li>
+          <li>Discord OAuth2 with the <code>identify</code> scope only (scope §6.1). Fluxer login is a later addition (dashed).</li>
+          <li>After login: Administrator permission → <a href="admin-status.html">/admin</a>; Zugriffsrolle → <a href="me-overview.html">/me</a>; otherwise → <a href="no-access.html">Kein Zugriff</a>.</li>
+          <li>Error state when the OAuth callback fails or is cancelled.</li>
+        </ul>
+      </aside>
+  </div>
+  <script src="wireframes.js"></script>
+</body>
+</html>

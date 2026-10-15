@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Server-Übersicht · Apollo wireframe</title>
+  <link rel="stylesheet" href="wireframes.css">
+</head>
+<body>
+  <input type="checkbox" id="wf-nav" class="wf-nav-toggle">
+  <header class="wf-appbar">
+    <label for="wf-nav" class="wf-hamburger" title="Navigation öffnen">☰</label>
+    <a class="wf-brand" href="admin-status.html">Apollo</a>
+    <span class="wf-appbar-spacer"></span>
+    <div class="wf-user"><span class="wf-avatar"></span><span class="wf-user-name">Anna</span><a class="wf-btn" href="login.html">Abmelden</a></div>
+  </header>
+  <div class="wf-layout">
+    <nav class="wf-drawer" aria-label="Navigation">
+      <div class="wf-drawer-group">Server</div>
+      <a href="admin-status.html">Bot-Status</a>
+      <a href="admin-dashboard.html" aria-current="page">Übersicht</a>
+      <a href="admin-members.html">Mitglieder</a>
+      <a href="admin-recaps.html">Rückblicke</a>
+      <a href="admin-data.html">Daten</a>
+      <a href="admin-settings.html">Einstellungen</a>
+      <div class="wf-drawer-group">Meine Statistik</div>
+      <a href="me-overview.html">Übersicht</a>
+      <a href="me-recaps.html">Rückblicke</a>
+      <a href="me-privacy.html">Privatsphäre</a>
+      <div class="wf-drawer-group">Info</div>
+      <a href="privacy.html">Datenschutz</a>
+      <a href="index.html" lang="en">← Wireframe index</a>
+    </nav>
+    <label for="wf-nav" class="wf-drawer-backdrop" title="Navigation schliessen"></label>
+    <main class="wf-main">
+      <div class="wf-page-header">
+        <div>
+          <div class="wf-route">/admin/dashboard</div>
+          <h1>Server-Übersicht</h1>
+        </div>
+      <div class="wf-toolbar" aria-label="Zeitraum">
+        <span class="wf-chip" aria-pressed="false">7 Tage</span>
+        <span class="wf-chip" aria-pressed="true">30 Tage</span>
+        <span class="wf-chip" aria-pressed="false">90 Tage</span>
+        <span class="wf-chip" aria-pressed="false">Dieses Jahr</span>
+        <span class="wf-chip" aria-pressed="false">Alles</span>
+        <span class="wf-chip" aria-pressed="false">Benutzerdefiniert</span>
+        <span class="wf-input">16.09.2026 – 15.10.2026</span>
+      </div>
+      </div>
+      <div class="wf-grid">
+        <div class="wf-card wf-sm-6 wf-md-3">
+          <div class="wf-stat-label">Nachrichten</div>
+          <div class="wf-stat-value">28'410</div>
+          <div class="wf-stat-sub">+8.2 % zum Vorzeitraum</div>
+        </div>
+        <div class="wf-card wf-sm-6 wf-md-3">
+          <div class="wf-stat-label">Voice-Stunden</div>
+          <div class="wf-stat-value">842.2 h</div>
+          <div class="wf-stat-sub">-3 % zum Vorzeitraum</div>
+        </div>
+        <div class="wf-card wf-sm-6 wf-md-3">
+          <div class="wf-stat-label">Aktive Mitglieder</div>
+          <div class="wf-stat-value">96</div>
+          <div class="wf-stat-sub">von 168 erfassten Mitgliedern</div>
+        </div>
+        <div class="wf-card wf-sm-6 wf-md-3">
+          <div class="wf-stat-label">Mitglieder</div>
+          <div class="wf-stat-value">214</div>
+          <div class="wf-stat-sub">+6 im Zeitraum</div>
+        </div>
+        <section class="wf-card wf-md-8">
+          <div class="wf-card-header"><h2>Aktivität</h2><div class="wf-toolbar"><span class="wf-chip" aria-pressed="true">Nachrichten</span><span class="wf-chip">Voice-Stunden</span></div></div>
+          <div class="wf-chart">Diagramm: Aktivität über Zeit (pro Tag)</div>
+        </section>
+        <section class="wf-card wf-md-4">
+          <div class="wf-card-header"><h2>Wachstum</h2></div>
+          <div class="wf-chart">Diagramm: Beitritte und Austritte pro Woche</div>
+        </section>
+        <section class="wf-card wf-md-6">
+          <div class="wf-card-header"><h2>Kanal-Ranking</h2></div>
+          <table class="wf-table wf-stack">
+            <thead><tr><th>#</th><th>Kanal</th><th class="wf-num">Nachrichten</th><th class="wf-num">Voice-Stunden</th></tr></thead>
+            <tbody>
+              <tr><td data-label="#">1</td><td data-label="Kanal">#allgemein</td><td data-label="Nachrichten" class="wf-num">9'812</td><td data-label="Voice-Stunden" class="wf-num">–</td></tr>
+              <tr><td data-label="#">2</td><td data-label="Kanal">Voice-Lounge</td><td data-label="Nachrichten" class="wf-num">410</td><td data-label="Voice-Stunden" class="wf-num">512.4 h</td></tr>
+              <tr><td data-label="#">3</td><td data-label="Kanal">#gaming</td><td data-label="Nachrichten" class="wf-num">6'004</td><td data-label="Voice-Stunden" class="wf-num">–</td></tr>
+              <tr><td data-label="#">4</td><td data-label="Kanal">#memes</td><td data-label="Nachrichten" class="wf-num">3'377</td><td data-label="Voice-Stunden" class="wf-num">–</td></tr>
+            </tbody>
+          </table>
+        </section>
+        <section class="wf-card wf-md-6">
+          <div class="wf-card-header"><h2>Aktivität nach Wochentag und Stunde</h2></div>
+          <div class="wf-heatmap"><span><b>Heatmap: Mo–So × 0–23 Uhr</b></span></div>
+        </section>
+      </div>
+      <aside class="wf-notes" lang="en">
+        <h2>Annotations</h2>
+        <ul>
+          <li>Range presets: 7 Tage, 30 Tage (default), 90 Tage, Dieses Jahr, Alles, Benutzerdefiniert. No auto refresh.</li>
+          <li>All activity numbers only include tracked members (untracked activity is never written). Bot messages excluded.</li>
+          <li>"Mitglieder" total comes from the member reference tables; growth (join/leave) comes from membership_events, which only exist for tracked members. The chart caption must say so.</li>
+          <li>Kanal-Ranking: sortable by Nachrichten or Voice-Stunden, top 10 with "Alle anzeigen". Threads roll up to their parent channel.</li>
+          <li>Each card shows the EmptyState "Noch keine Daten" when the range is empty.</li>
+        </ul>
+      </aside>
+    </main>
+  </div>
+  <script src="wireframes.js"></script>
+</body>
+</html>
