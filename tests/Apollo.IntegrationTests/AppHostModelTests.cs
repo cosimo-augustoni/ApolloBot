@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Apollo.Testing.Data;
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Postgres;
@@ -63,6 +64,16 @@ public sealed partial class AppHostModelTests
 
         image.Image.ShouldBe("timescale/timescaledb");
         image.Tag.ShouldNotBeNull().ShouldMatch(ConcreteTimescaleTag().ToString());
+    }
+
+    [Fact]
+    public async Task TimescaleImage_ShouldBeSharedWithAppHost()
+    {
+        await using var builder = await CreateBuilderAsync(Environments.Development);
+
+        var image = GetDb(builder).Annotations.OfType<ContainerImageAnnotation>().Single();
+
+        TimescaleFixture.Image.ShouldBe($"{image.Image}:{image.Tag}");
     }
 
     [Fact]

@@ -1,5 +1,7 @@
 using System.Net.Sockets;
 using Apollo.Data;
+using Apollo.Testing;
+using Apollo.Testing.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
@@ -7,8 +9,8 @@ using Npgsql;
 
 namespace Apollo.IntegrationTests.Data;
 
-[Collection(TimescaleCollection.Name)]
-public sealed class DatabaseMigratorTests(TimescaleContainerFixture fixture)
+[Collection<TimescaleCollection>]
+public sealed class DatabaseMigratorTests(TimescaleFixture fixture)
 {
     private readonly FakeTimeProvider _time = new();
 
@@ -17,7 +19,7 @@ public sealed class DatabaseMigratorTests(TimescaleContainerFixture fixture)
     [Fact]
     public async Task MigrateAsync_WhenDatabaseEmpty_ShouldApplyAllMigrations()
     {
-        await using var db = TimescaleContainerFixture.CreateContext(fixture.NewDatabaseConnectionString());
+        await using var db = CreateContext(fixture.NewDatabaseConnectionString());
 
         var applied = await Migrator.MigrateAsync(db, TestContext.Current.CancellationToken);
 
@@ -30,7 +32,7 @@ public sealed class DatabaseMigratorTests(TimescaleContainerFixture fixture)
     public async Task MigrateAsync_WhenDatabaseEmpty_ShouldInstallTimescaleExtension()
     {
         var connectionString = fixture.NewDatabaseConnectionString();
-        await using var db = TimescaleContainerFixture.CreateContext(connectionString);
+        await using var db = CreateContext(connectionString);
 
         await Migrator.MigrateAsync(db, TestContext.Current.CancellationToken);
 
@@ -41,13 +43,8 @@ public sealed class DatabaseMigratorTests(TimescaleContainerFixture fixture)
     [Fact]
     public async Task MigrateAsync_WhenAlreadyMigrated_ShouldSucceedWithoutChanges()
     {
-        var connectionString = fixture.NewDatabaseConnectionString();
-        await using (var first = TimescaleContainerFixture.CreateContext(connectionString))
-        {
-            await Migrator.MigrateAsync(first, TestContext.Current.CancellationToken);
-        }
+        await using var db = fixture.CreateDbContext();
 
-        await using var db = TimescaleContainerFixture.CreateContext(connectionString);
         var applied = await Migrator.MigrateAsync(db, TestContext.Current.CancellationToken);
 
         applied.ShouldBeEmpty();
@@ -94,6 +91,8 @@ public sealed class DatabaseMigratorTests(TimescaleContainerFixture fixture)
     }
 
     private Task<T> RunAdvancingTimeAsync<T>(Task<T> task) => _time.AdvanceUntilCompletedAsync(task, DatabaseMigrator.RetryDelay);
+
+    private static ApolloDbContext CreateContext(string connectionString) => new(ApolloDbContext.CreateOptions(connectionString));
 
     private static ApolloDbContext CreateContext(string connectionString, UnavailableDatabaseInterceptor interceptor) =>
         new(new DbContextOptionsBuilder<ApolloDbContext>(ApolloDbContext.CreateOptions(connectionString))
