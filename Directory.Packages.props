@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup Label="Aspire hosting">
+    <PackageVersion Include="Aspire.Hosting.Docker" Version="13.6.1" />
     <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.6.1" />
   </ItemGroup>
 
@@ -37,6 +38,7 @@
     <PackageVersion Include="bunit" Version="2.11.3" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="13.6.1" />
     <PackageVersion Include="Npgsql" Version="10.0.3" />
+    <PackageVersion Include="YamlDotNet" Version="18.1.0" />
   </ItemGroup>
 
 </Project>

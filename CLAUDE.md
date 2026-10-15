@@ -79,7 +79,7 @@ No production code without a failing test first. Exceptions: pure wiring (AppHos
 - Typed options: `IOptions<T>` bound to a section, registered with `.ValidateDataAnnotations().ValidateOnStart()`. No magic config strings in code.
 - Key naming: `Apollo:<Area>:<Key>` (e.g. `Apollo:Platform:Discord:GuildId`).
 - Dev: non-secret values in `appsettings.Development.json`; secrets via `dotnet user-secrets` on the consuming project (or AppHost parameters).
-- Prod: env vars `Apollo__<Area>__<Key>`, inlined into the Swarm stack file (see `docs/deployment.md` once #8 lands).
+- Prod: env vars `Apollo__<Area>__<Key>`, inlined into the Swarm stack file by `deploy/Render-Stack.ps1` (see [docs/deployment.md](docs/deployment.md)).
 - Never commit secrets. `aspire-output/` is git-ignored.
 
 ## EF Core migrations

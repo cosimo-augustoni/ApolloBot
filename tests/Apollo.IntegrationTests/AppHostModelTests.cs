@@ -32,6 +32,29 @@ public sealed partial class AppHostModelTests
     }
 
     [Fact]
+    public async Task AppHost_WhenDevelopment_ShouldNotAddPublishOnlyPgAdminContainer()
+    {
+        await using var builder = await CreateBuilderAsync(Environments.Development);
+
+        builder.Resources.Where(r => r.Name == "pgadmin").ShouldHaveSingleItem().ShouldBeOfType<PgAdminContainerResource>();
+    }
+
+    [Theory]
+    [InlineData("bot")]
+    [InlineData("apollo-web")]
+    [InlineData("migrationservice")]
+    public async Task AppHost_Project_ShouldPushToKallistoRegistry(string resourceName)
+    {
+        await using var builder = await CreateBuilderAsync(Environments.Development);
+        var project = builder.Resources.OfType<ProjectResource>().Single(r => r.Name == resourceName);
+
+#pragma warning disable ASPIRECOMPUTE003 // Registry APIs are experimental in Aspire 13.6.
+        project.Annotations.OfType<ContainerRegistryReferenceAnnotation>().ShouldHaveSingleItem()
+            .Registry.ShouldBeOfType<ContainerRegistryResource>().Name.ShouldBe("kallisto");
+#pragma warning restore ASPIRECOMPUTE003
+    }
+
+    [Fact]
     public async Task AppHost_Db_ShouldUsePinnedTimescaleImage()
     {
         await using var builder = await CreateBuilderAsync(Environments.Development);
@@ -66,7 +89,7 @@ public sealed partial class AppHostModelTests
 
     [Theory]
     [InlineData("bot")]
-    [InlineData("web")]
+    [InlineData("apollo-web")]
     public async Task AppHost_Project_ShouldReceiveApolloConnectionString(string resourceName)
     {
         await using var builder = await CreateBuilderAsync(Environments.Development);
