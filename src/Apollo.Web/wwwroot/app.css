@@ -110,4 +110,6 @@ h1:focus {
 
 .apollo-nav-section {
     display: block;
+    /* Overline is uppercase by default; the style guide (§8) has no ALL CAPS. */
+    text-transform: none;
 }
