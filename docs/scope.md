@@ -72,6 +72,7 @@ Event recorder (Apollo.Bot)  ── resolves platform IDs → internal IDs ─�
 - **Outbound:** an `IChatPlatform` interface with only the operations we need, such as `GetMemberRoles`, `GetMemberPermissions`, `ListChannels`, and later `AddRole` and `SendEmbed`.
 - **Identity:** `PlatformRef = (Platform, ExternalId)`. The tables `users`, `channels`, `guilds` and `roles` each have an internal `Guid` plus one or more platform mappings. A future Fluxer account can be linked to an existing internal user, which keeps that user's history.
 - **Parity:** every issue that touches the platform includes a Fluxer.Net parity table. A first check of [Fluxer.Net](https://github.com/Nexfinity/Fluxer.Net) shows it has voice state, reaction, presence and OAuth types, so the core feature set looks portable. A dedicated spike issue will verify each event.
+- **Parity matrix:** [platform-parity.md](platform-parity.md) lists every capability with its NetCord and Fluxer.Net status.
 
 ### 4.3 Single guild
 
