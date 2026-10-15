@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!-- Only for Fixtures/: proves the boundary rule catches a NetCord reference outside Apollo.Platform.*. -->
+    <PackageReference Include="NetCord" />
+  </ItemGroup>
+
+  <!-- Every production project except the AppHost. A test fails when a src/ project is missing here. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Apollo.Bot\Apollo.Bot.csproj" />
+    <ProjectReference Include="..\..\src\Apollo.Data\Apollo.Data.csproj" />
+    <ProjectReference Include="..\..\src\Apollo.Domain\Apollo.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Apollo.MigrationService\Apollo.MigrationService.csproj" />
+    <ProjectReference Include="..\..\src\Apollo.Platform.Abstractions\Apollo.Platform.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\Apollo.Platform.Discord\Apollo.Platform.Discord.csproj" />
+    <ProjectReference Include="..\..\src\Apollo.Platform.Fluxer\Apollo.Platform.Fluxer.csproj" />
+    <ProjectReference Include="..\..\src\Apollo.ServiceDefaults\Apollo.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\src\Apollo.Stats\Apollo.Stats.csproj" />
+    <ProjectReference Include="..\..\src\Apollo.Web.Client\Apollo.Web.Client.csproj" />
+    <ProjectReference Include="..\..\src\Apollo.Web\Apollo.Web.csproj" />
+  </ItemGroup>
+
+</Project>
