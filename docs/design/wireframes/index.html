@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ApolloBot wireframes</title>
+  <link rel="stylesheet" href="wireframes.css">
+</head>
+<body>
+  <header class="wf-appbar">
+    <a class="wf-brand" href="index.html">Apollo · wireframes</a>
+  </header>
+  <div class="wf-index">
+    <main>
+      <h1>Low-fi wireframes</h1>
+      <p>
+        Design step 2 of <a href="../../scope.md">scope §7.3</a> (issue #27): grey-box wireframes for every page in scope §7.2,
+        plus login, "Kein Zugriff", the untracked empty state and the public privacy page.
+        UI placeholder text is German; annotations (yellow boxes) are English.
+        Plain HTML, CSS and a little vanilla JS: no build step, no server, no network requests.
+      </p>
+      <p>
+        <strong>Desktop:</strong> click a page name (opens full width; the drawer is persistent at ≥ 960px).
+        <strong>Mobile:</strong> click <em>360px</em> to load the page into the 360px frame
+        <span class="wf-stat-sub">(on the right on wide screens, below on narrow ones)</span>; the drawer becomes a hamburger menu.
+        <strong>States:</strong> pages with several states have state links in their annotations box; the links below jump straight to a state.
+      </p>
+
+      <section class="wf-card" style="margin-bottom: 24px">
+        <h2>Legend</h2>
+        <div class="wf-legend">
+          <div><span class="wf-chart wf-sample" style="min-height: 0"></span>Chart placeholder, captioned "Diagramm: …"</div>
+          <div><span class="wf-sample" style="background: repeating-linear-gradient(to bottom, var(--wf-bg) 0 10px, var(--wf-surface) 10px 20px); border: 1px solid var(--wf-line)"></span>Table (striped rows; becomes stacked cards below 600px)</div>
+          <div><span class="wf-card wf-optional wf-sample" style="padding: 0"></span>Dashed: optional / bonus section, or not yet available</div>
+          <div><span class="wf-sample" style="border: 2px solid var(--wf-text); border-radius: 8px"></span>Bold border: warning / error alert</div>
+          <div><span class="wf-card wf-sample" style="padding: 0"></span>Card (SectionCard / StatTile from the style guide)</div>
+          <div><span class="wf-notes wf-sample" style="margin: 0; padding: 0"></span>Annotation (behaviour a static page can't show)</div>
+        </div>
+      </section>
+
+      <section class="wf-card" style="margin-bottom: 24px">
+        <h2>Route map</h2>
+        <table class="wf-table wf-stack wf-index-list">
+          <thead>
+            <tr><th>Route</th><th>Page</th><th>Who</th><th>Wireframe</th><th>States</th></tr>
+          </thead>
+          <tbody>
+            <tr><td data-label="Route"><code>/login</code></td><td data-label="Page">Anmelden</td><td data-label="Who">Everyone</td>
+              <td data-label="Wireframe"><a href="login.html">login.html</a><a href="login.html" target="phone">360px</a></td>
+              <td data-label="States"><a href="login.html#error" target="phone">error</a></td></tr>
+            <tr><td data-label="Route"><code>/kein-zugriff</code></td><td data-label="Page">Kein Zugriff</td><td data-label="Who">Signed in, no policy</td>
+              <td data-label="Wireframe"><a href="no-access.html">no-access.html</a><a href="no-access.html" target="phone">360px</a></td>
+              <td data-label="States"><a href="no-access.html#member" target="phone">not a member</a><a href="no-access.html#none" target="phone">no access roles</a></td></tr>
+            <tr><td data-label="Route"><code>/datenschutz</code></td><td data-label="Page">Datenschutz (public)</td><td data-label="Who">Everyone</td>
+              <td data-label="Wireframe"><a href="privacy.html">privacy.html</a><a href="privacy.html" target="phone">360px</a></td>
+              <td data-label="States">–</td></tr>
+            <tr><td data-label="Route"><code>/me</code></td><td data-label="Page">Meine Statistik</td><td data-label="Who">Member, Admin</td>
+              <td data-label="Wireframe"><a href="me-overview.html">me-overview.html</a><a href="me-overview.html" target="phone">360px</a></td>
+              <td data-label="States"><a href="me-overview.html#paused" target="phone">no longer tracked</a></td></tr>
+            <tr><td data-label="Route"><code>/me</code> (no data)</td><td data-label="Page">Empty state "Für dich werden keine Daten erfasst"</td><td data-label="Who">Member</td>
+              <td data-label="Wireframe"><a href="me-empty.html">me-empty.html</a><a href="me-empty.html" target="phone">360px</a></td>
+              <td data-label="States"><a href="me-empty.html#bootstrap" target="phone">bootstrap</a><a href="me-empty.html#new" target="phone">tracked, empty</a></td></tr>
+            <tr><td data-label="Route"><code>/me/recaps</code></td><td data-label="Page">Meine Rückblicke</td><td data-label="Who">Member, Admin</td>
+              <td data-label="Wireframe"><a href="me-recaps.html">me-recaps.html</a><a href="me-recaps.html" target="phone">360px</a></td>
+              <td data-label="States"><a href="me-recaps.html#empty" target="phone">empty</a></td></tr>
+            <tr><td data-label="Route"><code>/me/recaps/{period}</code></td><td data-label="Page">Rückblick (detail)</td><td data-label="Who">Member, Admin</td>
+              <td data-label="Wireframe"><a href="me-recap-detail.html">me-recap-detail.html</a><a href="me-recap-detail.html" target="phone">360px</a></td>
+              <td data-label="States">–</td></tr>
+            <tr><td data-label="Route"><code>/me/privacy</code></td><td data-label="Page">Privatsphäre (read-only)</td><td data-label="Who">Member, Admin</td>
+              <td data-label="Wireframe"><a href="me-privacy.html">me-privacy.html</a><a href="me-privacy.html" target="phone">360px</a></td>
+              <td data-label="States"><a href="me-privacy.html#untracked" target="phone">not tracked</a><a href="me-privacy.html#bootstrap" target="phone">bootstrap</a></td></tr>
+            <tr><td data-label="Route"><code>/admin</code></td><td data-label="Page">Bot-Status</td><td data-label="Who">Admin</td>
+              <td data-label="Wireframe"><a href="admin-status.html">admin-status.html</a><a href="admin-status.html" target="phone">360px</a></td>
+              <td data-label="States"><a href="admin-status.html#ok" target="phone">connected</a><a href="admin-status.html#stale" target="phone">stale heartbeat</a><a href="admin-status.html#offline" target="phone">disconnected</a></td></tr>
+            <tr><td data-label="Route"><code>/admin/dashboard</code></td><td data-label="Page">Server-Übersicht</td><td data-label="Who">Admin</td>
+              <td data-label="Wireframe"><a href="admin-dashboard.html">admin-dashboard.html</a><a href="admin-dashboard.html" target="phone">360px</a></td>
+              <td data-label="States">–</td></tr>
+            <tr><td data-label="Route"><code>/admin/members</code></td><td data-label="Page">Mitglieder</td><td data-label="Who">Admin</td>
+              <td data-label="Wireframe"><a href="admin-members.html">admin-members.html</a><a href="admin-members.html" target="phone">360px</a></td>
+              <td data-label="States"><a href="admin-members.html#none" target="phone">no results</a></td></tr>
+            <tr><td data-label="Route"><code>/admin/members/{id}</code></td><td data-label="Page">Mitglied (same view as /me)</td><td data-label="Who">Admin</td>
+              <td data-label="Wireframe"><a href="admin-member.html">admin-member.html</a><a href="admin-member.html" target="phone">360px</a></td>
+              <td data-label="States">–</td></tr>
+            <tr><td data-label="Route"><code>/admin/recaps</code></td><td data-label="Page">Server-Rückblicke</td><td data-label="Who">Admin</td>
+              <td data-label="Wireframe"><a href="admin-recaps.html">admin-recaps.html</a><a href="admin-recaps.html" target="phone">360px</a></td>
+              <td data-label="States"><a href="admin-recaps.html#confirm" target="phone">regenerate confirm</a></td></tr>
+            <tr><td data-label="Route"><code>/admin/data</code></td><td data-label="Page">Daten</td><td data-label="Who">Admin</td>
+              <td data-label="Wireframe"><a href="admin-data.html">admin-data.html</a><a href="admin-data.html" target="phone">360px</a></td>
+              <td data-label="States"><a href="admin-data.html#none" target="phone">no results</a></td></tr>
+            <tr><td data-label="Route"><code>/admin/settings</code></td><td data-label="Page">Einstellungen</td><td data-label="Who">Admin</td>
+              <td data-label="Wireframe"><a href="admin-settings.html">admin-settings.html</a><a href="admin-settings.html" target="phone">360px</a></td>
+              <td data-label="States"><a href="admin-settings.html#ok" target="phone">configured</a><a href="admin-settings.html#bootstrap" target="phone">bootstrap</a><a href="admin-settings.html#hierarchy" target="phone">hierarchy warning</a><a href="admin-settings.html#deleted" target="phone">role deleted</a></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="wf-card">
+        <h2>Navigation</h2>
+        <ul>
+          <li>Admins (Administrator permission) see two drawer groups: <em>Server</em> (admin area) and <em>Meine Statistik</em>. Admin home is <code>/admin</code>.</li>
+          <li>Members (a Zugriffsrolle) see only <em>Meine Statistik</em>. Member home is <code>/me</code>.</li>
+          <li>Everyone else gets <code>/kein-zugriff</code> after login. <code>/datenschutz</code> needs no login.</li>
+          <li>Out of scope (scope §3): no web tracking toggle and no web delete; tracking changes only via <code>/apollo</code> commands.</li>
+        </ul>
+      </section>
+    </main>
+
+    <aside class="wf-phone-wrap">
+      <h2>360px view</h2>
+      <iframe class="wf-phone" name="phone" src="me-overview.html" title="360px preview"></iframe>
+    </aside>
+  </div>
+</body>
+</html>

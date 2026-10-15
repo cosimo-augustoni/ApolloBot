@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meine Statistik · Apollo wireframe</title>
+  <link rel="stylesheet" href="wireframes.css">
+</head>
+<body data-default-state="tracked">
+  <input type="checkbox" id="wf-nav" class="wf-nav-toggle">
+  <header class="wf-appbar">
+    <label for="wf-nav" class="wf-hamburger" title="Navigation öffnen">☰</label>
+    <a class="wf-brand" href="me-overview.html">Apollo</a>
+    <span class="wf-appbar-spacer"></span>
+    <div class="wf-user"><span class="wf-avatar"></span><span class="wf-user-name">Anna</span><a class="wf-btn" href="login.html">Abmelden</a></div>
+  </header>
+  <div class="wf-layout">
+    <nav class="wf-drawer" aria-label="Navigation">
+      <div class="wf-drawer-group">Meine Statistik</div>
+      <a href="me-overview.html" aria-current="page">Übersicht</a>
+      <a href="me-recaps.html">Rückblicke</a>
+      <a href="me-privacy.html">Privatsphäre</a>
+      <div class="wf-drawer-group">Info</div>
+      <a href="privacy.html">Datenschutz</a>
+      <a href="index.html" lang="en">← Wireframe index</a>
+    </nav>
+    <label for="wf-nav" class="wf-drawer-backdrop" title="Navigation schliessen"></label>
+    <main class="wf-main">
+      <div class="wf-page-header">
+        <div>
+          <div class="wf-route">/me</div>
+          <h1>Meine Statistik</h1>
+          <div class="wf-stat-sub">Erfasst seit 03.02.2025</div>
+        </div>
+      <div class="wf-toolbar" aria-label="Zeitraum">
+        <span class="wf-chip" aria-pressed="false">7 Tage</span>
+        <span class="wf-chip" aria-pressed="true">30 Tage</span>
+        <span class="wf-chip" aria-pressed="false">Dieser Monat</span>
+        <span class="wf-chip" aria-pressed="false">Dieses Jahr</span>
+        <span class="wf-chip" aria-pressed="false">Benutzerdefiniert</span>
+        <span class="wf-input">16.09.2026 – 15.10.2026</span>
+      </div>
+      </div>
+      <div class="wf-alert wf-info" data-states="paused">
+        <div><strong>Du wirst zurzeit nicht erfasst.</strong>
+          <p>Seit 12.08.2026 hast du die Tracking-Rolle nicht mehr. Deine Daten bis dahin bleiben sichtbar. Mit <code>/apollo tracking on</code> startest du die Erfassung wieder. <a href="me-privacy.html">Mehr zur Privatsphäre</a></p></div>
+      </div>
+      <div class="wf-grid">
+        <div class="wf-card wf-sm-6 wf-md-3">
+          <div class="wf-stat-label">Nachrichten</div>
+          <div class="wf-stat-value">1'284</div>
+          <div class="wf-stat-sub">+12.5 % zum Vorzeitraum</div>
+        </div>
+        <div class="wf-card wf-sm-6 wf-md-3">
+          <div class="wf-stat-label">Voice-Stunden</div>
+          <div class="wf-stat-value">42.5 h</div>
+          <div class="wf-stat-sub">-3 % zum Vorzeitraum</div>
+        </div>
+        <div class="wf-card wf-sm-6 wf-md-3">
+          <div class="wf-stat-label">Reaktionen</div>
+          <div class="wf-stat-value">312</div>
+          <div class="wf-stat-sub">±0 % zum Vorzeitraum</div>
+        </div>
+        <div class="wf-card wf-sm-6 wf-md-3">
+          <div class="wf-stat-label">Aktive Tage</div>
+          <div class="wf-stat-value">22 von 30</div>
+          <div class="wf-stat-sub">Erfasst an 30 von 30 Tagen</div>
+        </div>
+        <section class="wf-card wf-md-8">
+          <div class="wf-card-header"><h2>Aktivität</h2><span class="wf-chip" aria-pressed="true">Nachrichten</span></div>
+          <div class="wf-chart">Diagramm: Aktivität über Zeit<br>(Nachrichten und Voice-Minuten pro Tag)</div>
+        </section>
+        <section class="wf-card wf-md-4">
+          <div class="wf-card-header"><h2>Top-Kanäle</h2><a href="#" class="wf-tag">Alle anzeigen</a></div>
+          <ol class="wf-rank">
+            <li style="--w: 90%"><span>#allgemein</span><span class="wf-num">512</span></li>
+            <li style="--w: 55%"><span>#gaming</span><span class="wf-num">301</span></li>
+            <li style="--w: 35%"><span>#memes</span><span class="wf-num">188</span></li>
+            <li style="--w: 18%"><span>#musik</span><span class="wf-num">97</span></li>
+            <li style="--w: 12%"><span>#off-topic</span><span class="wf-num">64</span></li>
+          </ol>
+        </section>
+        <section class="wf-card wf-md-4">
+          <div class="wf-card-header"><h2>Top-Emojis</h2></div>
+          <ol class="wf-rank">
+            <li style="--w: 90%"><span>◯ :lachen:</span><span class="wf-num">87</span></li>
+            <li style="--w: 60%"><span>◯ :daumen:</span><span class="wf-num">54</span></li>
+            <li style="--w: 35%"><span>◯ :herz:</span><span class="wf-num">31</span></li>
+            <li style="--w: 14%"><span>◯ :apollo_custom:</span><span class="wf-num">12</span></li>
+          </ol>
+        </section>
+        <section class="wf-card wf-md-8">
+          <div class="wf-card-header"><h2>Aktivität nach Wochentag und Stunde</h2></div>
+          <div class="wf-heatmap"><span><b>Heatmap: Mo–So × 0–23 Uhr</b></span></div>
+        </section>
+        <section class="wf-card wf-optional">
+          <div class="wf-card-header"><h2>Spiele</h2><span class="wf-tag">Bonus · nur wenn Daten vorhanden</span></div>
+          <ol class="wf-rank">
+            <li style="--w: 80%"><span>Spiel A</span><span class="wf-num">18.2 h</span></li>
+            <li style="--w: 30%"><span>Spiel B</span><span class="wf-num">6.5 h</span></li>
+            <li style="--w: 6%"><span>Spiel C</span><span class="wf-num">1.1 h</span></li>
+          </ol>
+        </section>
+      </div>
+      <aside class="wf-notes" lang="en">
+        <h2>Annotations</h2>
+        <div class="wf-states"><strong>Page state:</strong>
+          <a href="#tracked" data-state-link>Erfasst</a>
+          <a href="#paused" data-state-link>Nicht mehr erfasst</a>
+        </div>
+        <ul>
+          <li>Visible to members with a Zugriffsrolle (and to admins, who also see the Server group in the drawer). Members only ever see their own data.</li>
+          <li>Member without any data: see <a href="me-empty.html">me-empty.html</a> instead of this layout.</li>
+          <li>State "Nicht mehr erfasst": member lost the tracking role; the old data stays visible with a hint banner (scope §5.1.1).</li>
+          <li>Date range presets: 7 Tage, 30 Tage (default), Dieser Monat, Dieses Jahr, Benutzerdefiniert (date picker). Changing the range reloads all cards; no auto refresh.</li>
+          <li>All numbers come from the date-range stats layer (scope §5.3). Deltas compare with the previous range of the same length; when the member was not tracked for the whole previous range the delta shows <code>–</code>.</li>
+          <li>"Erfasst an X von Y Tagen": untracked days (tracking_periods) are left out of averages.</li>
+          <li>Each card shows the style guide EmptyState ("Noch keine Daten") when its range has no data.</li>
+          <li>Spiele is a bonus section: hidden completely when there is no presence data (Discord only, incomplete by design).</li>
+          <li>Bot messages are excluded. Threads roll up to their parent channel.</li>
+          <li>At 360px tiles stack (one per row), charts keep full card width; the heatmap keeps 7 × 24 cells (≈ 12px each).</li>
+        </ul>
+      </aside>
+    </main>
+  </div>
+  <script src="wireframes.js"></script>
+</body>
+</html>

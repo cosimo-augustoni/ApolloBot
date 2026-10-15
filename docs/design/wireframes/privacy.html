@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Datenschutz · Apollo wireframe</title>
+  <link rel="stylesheet" href="wireframes.css">
+</head>
+<body>
+  <header class="wf-appbar">
+    <a class="wf-brand" href="index.html" title="Wireframe index">Apollo</a>
+    <span class="wf-appbar-spacer"></span>
+    <a class="wf-btn" href="login.html">Anmelden</a>
+  </header>
+  <main class="wf-article">
+    <div class="wf-route">/datenschutz</div>
+    <h1>Datenschutz</h1>
+    <p>Apollo ist ein Bot für unseren Server. Er erfasst, wann und wo du aktiv bist, damit wir Statistiken und Rückblicke zeigen können.</p>
+    <section class="wf-card" style="margin-bottom: 12px">
+      <h2>Was erfasst wird</h2>
+      <ul>
+        <li>Nachrichten: Zeitpunkt, Kanal, Länge, Anzahl Anhänge, Links und Emojis. <strong>Nie der Inhalt.</strong></li>
+        <li>Voice: wann du welchem Kanal beitrittst und ihn verlässt, stumm geschaltet, Stream.</li>
+        <li>Reaktionen: welches Emoji, wann und in welchem Kanal.</li>
+        <li>Beitritte und Austritte.</li>
+        <li>Spiele (nur Discord): welches Spiel und wie lange, wenn du deine Aktivität teilst.</li>
+      </ul>
+    </section>
+    <section class="wf-card" style="margin-bottom: 12px">
+      <h2>Die Tracking-Rolle</h2>
+      <p>Apollo erfasst nur Mitglieder mit der Tracking-Rolle. Von allen anderen wird nichts gespeichert, auch nicht, wenn jemand auf ihre Nachrichten antwortet.</p>
+      <div class="wf-lines"><div class="wf-line"></div><div class="wf-line w-60"></div></div>
+    </section>
+    <section class="wf-card" style="margin-bottom: 12px">
+      <h2>Was du tun kannst</h2>
+      <ul>
+        <li><code>/apollo tracking off</code>: Apollo erfasst dich nicht mehr. Bereits erfasste Daten bleiben.</li>
+        <li><code>/apollo tracking on</code>: Apollo erfasst dich wieder.</li>
+        <li><code>/apollo tracking status</code>: zeigt, ob und seit wann du erfasst wirst.</li>
+        <li><code>/apollo privacy delete</code>: löscht alle deine Daten endgültig.</li>
+      </ul>
+    </section>
+    <section class="wf-card">
+      <h2>Wer deine Daten sieht</h2>
+      <p>Du siehst deine eigene Statistik. Das Admin-Team sieht die Statistik aller erfassten Mitglieder.</p>
+      <div class="wf-lines"><div class="wf-line w-80"></div><div class="wf-line w-40"></div></div>
+    </section>
+  </main>
+  <div class="wf-article">
+      <aside class="wf-notes" lang="en">
+        <h2>Annotations</h2>
+        <ul>
+          <li>Public page, no login required. Linked from every <code>/apollo</code> command reply and from the drawer and login page.</li>
+          <li>Text here is draft placeholder copy; final wording is written with the real page. Grey lines mark text still to write.</li>
+          <li>Single readable column (max ~760px) at every width.</li>
+        </ul>
+      </aside>
+  </div>
+  <script src="wireframes.js"></script>
+</body>
+</html>

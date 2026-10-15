@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kein Zugriff · Apollo wireframe</title>
+  <link rel="stylesheet" href="wireframes.css">
+</head>
+<body data-default-state="role">
+  <header class="wf-appbar">
+    <a class="wf-brand" href="index.html" title="Wireframe index">Apollo</a>
+    <span class="wf-appbar-spacer"></span>
+    <div class="wf-user"><span class="wf-avatar"></span><a class="wf-btn" href="login.html">Abmelden</a></div>
+  </header>
+  <main class="wf-center">
+    <div class="wf-card">
+      <div class="wf-empty-icon"></div>
+      <div class="wf-route">/kein-zugriff</div>
+      <h1>Kein Zugriff</h1>
+      <p data-states="role">Dir fehlt eine Zugriffsrolle auf dem Server. Frag einen Admin nach einer dieser Rollen: Mitglied, Stammgast.</p>
+      <p data-states="member">Du bist nicht Mitglied des Servers, für den Apollo läuft.</p>
+      <p data-states="none">Zurzeit hat nur das Admin-Team Zugriff. Die Zugriffsrollen sind noch nicht festgelegt.</p>
+      <div class="wf-toolbar" style="justify-content: center"><a class="wf-btn" href="login.html">Abmelden</a><a class="wf-btn" href="privacy.html">Datenschutz</a></div>
+    </div>
+  </main>
+  <div class="wf-article">
+      <aside class="wf-notes" lang="en">
+        <h2>Annotations</h2>
+        <div class="wf-states"><strong>Page state:</strong>
+          <a href="#role" data-state-link>Rolle fehlt</a>
+          <a href="#member" data-state-link>Kein Mitglied</a>
+          <a href="#none" data-state-link>Keine Zugriffsrollen</a>
+        </div>
+        <ul>
+          <li>Signed in, but neither the Admin nor the Member policy matches (scope §6.2). No drawer, because no area is accessible.</li>
+          <li>Names the needed roles when known (style guide §8). Variants: missing role, not in the server, no access roles configured yet.</li>
+          <li>Access is re-checked every few minutes; a member who loses their access role lands here on the next check.</li>
+        </ul>
+      </aside>
+  </div>
+  <script src="wireframes.js"></script>
+</body>
+</html>

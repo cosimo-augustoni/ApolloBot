@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Server-Rückblicke · Apollo wireframe</title>
+  <link rel="stylesheet" href="wireframes.css">
+</head>
+<body data-default-state="list">
+  <input type="checkbox" id="wf-nav" class="wf-nav-toggle">
+  <header class="wf-appbar">
+    <label for="wf-nav" class="wf-hamburger" title="Navigation öffnen">☰</label>
+    <a class="wf-brand" href="admin-status.html">Apollo</a>
+    <span class="wf-appbar-spacer"></span>
+    <div class="wf-user"><span class="wf-avatar"></span><span class="wf-user-name">Anna</span><a class="wf-btn" href="login.html">Abmelden</a></div>
+  </header>
+  <div class="wf-layout">
+    <nav class="wf-drawer" aria-label="Navigation">
+      <div class="wf-drawer-group">Server</div>
+      <a href="admin-status.html">Bot-Status</a>
+      <a href="admin-dashboard.html">Übersicht</a>
+      <a href="admin-members.html">Mitglieder</a>
+      <a href="admin-recaps.html" aria-current="page">Rückblicke</a>
+      <a href="admin-data.html">Daten</a>
+      <a href="admin-settings.html">Einstellungen</a>
+      <div class="wf-drawer-group">Meine Statistik</div>
+      <a href="me-overview.html">Übersicht</a>
+      <a href="me-recaps.html">Rückblicke</a>
+      <a href="me-privacy.html">Privatsphäre</a>
+      <div class="wf-drawer-group">Info</div>
+      <a href="privacy.html">Datenschutz</a>
+      <a href="index.html" lang="en">← Wireframe index</a>
+    </nav>
+    <label for="wf-nav" class="wf-drawer-backdrop" title="Navigation schliessen"></label>
+    <main class="wf-main">
+      <div class="wf-page-header">
+        <div>
+          <div class="wf-route">/admin/recaps</div>
+          <h1>Server-Rückblicke</h1>
+        </div>
+        <div class="wf-toolbar"><span class="wf-chip" aria-pressed="true">Monate</span><span class="wf-chip">Jahre</span></div>
+      </div>
+      <div class="wf-card" data-states="confirm" style="max-width: 480px; margin: 0 auto 24px; border-width: 2px">
+        <h2>Rückblick neu erstellen?</h2>
+        <p>Der Rückblick für September 2026 wird aus den aktuellen Daten neu berechnet und ersetzt den bisherigen. Inzwischen gelöschte Daten fehlen danach.</p>
+        <div class="wf-toolbar" style="justify-content: flex-end"><a class="wf-btn" href="#list">Abbrechen</a><a class="wf-btn wf-primary" href="#list">Neu erstellen</a></div>
+      </div>
+      <section class="wf-card">
+        <table class="wf-table wf-stack">
+          <thead><tr><th>Zeitraum</th><th>Erstellt am</th><th>Status</th><th>Aktionen</th></tr></thead>
+          <tbody>
+            <tr><td data-label="Zeitraum">Oktober 2026</td><td data-label="Erstellt am">–</td><td data-label="Status">Läuft noch · erscheint am 01.11.2026</td><td data-label="Aktionen">–</td></tr>
+              <tr><td data-label="Zeitraum"><a href="me-recap-detail.html">September 2026</a></td><td data-label="Erstellt am">01.10.2026 00:05</td><td data-label="Status">Fertig</td><td data-label="Aktionen"><div class="wf-toolbar"><a class="wf-btn" href="me-recap-detail.html">Ansehen</a><a class="wf-btn" href="#confirm">Neu erstellen</a></div></td></tr>
+              <tr><td data-label="Zeitraum"><a href="me-recap-detail.html">August 2026</a></td><td data-label="Erstellt am">01.09.2026 00:05</td><td data-label="Status">Wird erstellt …</td><td data-label="Aktionen"><div class="wf-toolbar"><a class="wf-btn" href="me-recap-detail.html">Ansehen</a><a class="wf-btn" href="#confirm">Neu erstellen</a></div></td></tr>
+              <tr><td data-label="Zeitraum"><a href="me-recap-detail.html">Juli 2026</a></td><td data-label="Erstellt am">01.08.2026 00:04</td><td data-label="Status">Fehlgeschlagen</td><td data-label="Aktionen"><div class="wf-toolbar"><a class="wf-btn" href="me-recap-detail.html">Ansehen</a><a class="wf-btn" href="#confirm">Neu erstellen</a></div></td></tr>
+          </tbody>
+        </table>
+      </section>
+      <aside class="wf-notes" lang="en">
+        <h2>Annotations</h2>
+        <div class="wf-states"><strong>Page state:</strong>
+          <a href="#list" data-state-link>Liste</a>
+          <a href="#confirm" data-state-link>Bestätigen</a>
+        </div>
+        <ul>
+          <li>Monate / Jahre switch. Newest first; the running period is listed but has no actions.</li>
+          <li>"Neu erstellen" asks for confirmation (dialog shown in state "Bestätigen"), then reruns the snapshot job for that period. Status shows "Wird erstellt …" until done; the list polls every 5 s while a job runs.</li>
+          <li>"Fehlgeschlagen": inline error, "Neu erstellen" retries.</li>
+          <li>"Ansehen" opens the server recap in the same card layout as <a href="me-recap-detail.html">me-recap-detail.html</a>, with server totals.</li>
+          <li>Open question for the implementing issue: does regenerating a server recap also regenerate the members' snapshots of that period?</li>
+        </ul>
+      </aside>
+    </main>
+  </div>
+  <script src="wireframes.js"></script>
+</body>
+</html>

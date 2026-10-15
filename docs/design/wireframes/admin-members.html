@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mitglieder · Apollo wireframe</title>
+  <link rel="stylesheet" href="wireframes.css">
+</head>
+<body data-default-state="list">
+  <input type="checkbox" id="wf-nav" class="wf-nav-toggle">
+  <header class="wf-appbar">
+    <label for="wf-nav" class="wf-hamburger" title="Navigation öffnen">☰</label>
+    <a class="wf-brand" href="admin-status.html">Apollo</a>
+    <span class="wf-appbar-spacer"></span>
+    <div class="wf-user"><span class="wf-avatar"></span><span class="wf-user-name">Anna</span><a class="wf-btn" href="login.html">Abmelden</a></div>
+  </header>
+  <div class="wf-layout">
+    <nav class="wf-drawer" aria-label="Navigation">
+      <div class="wf-drawer-group">Server</div>
+      <a href="admin-status.html">Bot-Status</a>
+      <a href="admin-dashboard.html">Übersicht</a>
+      <a href="admin-members.html" aria-current="page">Mitglieder</a>
+      <a href="admin-recaps.html">Rückblicke</a>
+      <a href="admin-data.html">Daten</a>
+      <a href="admin-settings.html">Einstellungen</a>
+      <div class="wf-drawer-group">Meine Statistik</div>
+      <a href="me-overview.html">Übersicht</a>
+      <a href="me-recaps.html">Rückblicke</a>
+      <a href="me-privacy.html">Privatsphäre</a>
+      <div class="wf-drawer-group">Info</div>
+      <a href="privacy.html">Datenschutz</a>
+      <a href="index.html" lang="en">← Wireframe index</a>
+    </nav>
+    <label for="wf-nav" class="wf-drawer-backdrop" title="Navigation schliessen"></label>
+    <main class="wf-main">
+      <div class="wf-page-header">
+        <div>
+          <div class="wf-route">/admin/members</div>
+          <h1>Mitglieder</h1>
+          <div class="wf-stat-sub">214 Mitglieder · 168 erfasst</div>
+        </div>
+      </div>
+      <section class="wf-card">
+        <div class="wf-filters">
+          <div class="wf-field"><label>Suche</label><span class="wf-input">Mitglied suchen …</span></div>
+          <div class="wf-field"><span class="wf-field-label">Status</span><div class="wf-toolbar"><span class="wf-chip" aria-pressed="true">Alle</span><span class="wf-chip">Erfasst</span><span class="wf-chip">Nicht erfasst</span></div></div>
+          <div class="wf-field"><label>Plattform</label><span class="wf-select">Discord</span></div>
+        </div>
+        <div data-states="list">
+          <table class="wf-table wf-stack">
+            <thead><tr><th>Mitglied</th><th>Status</th><th>Erfasst seit</th><th class="wf-num">Nachrichten (30 Tage)</th><th class="wf-num">Voice-Stunden (30 Tage)</th><th>Zuletzt aktiv</th></tr></thead>
+            <tbody>
+              <tr><td data-label="Mitglied"><a href="admin-member.html">Anna</a></td><td data-label="Status">Erfasst</td><td data-label="Erfasst seit">03.02.2025</td><td data-label="Nachrichten" class="wf-num">1'284</td><td data-label="Voice-Stunden" class="wf-num">42.5 h</td><td data-label="Zuletzt aktiv">15.10.2026</td></tr>
+              <tr><td data-label="Mitglied"><a href="admin-member.html">Ben</a></td><td data-label="Status">Erfasst</td><td data-label="Erfasst seit">03.02.2025</td><td data-label="Nachrichten" class="wf-num">904</td><td data-label="Voice-Stunden" class="wf-num">61.0 h</td><td data-label="Zuletzt aktiv">15.10.2026</td></tr>
+              <tr><td data-label="Mitglied"><a href="admin-member.html">Chris</a></td><td data-label="Status">Nicht erfasst</td><td data-label="Erfasst seit">–</td><td data-label="Nachrichten" class="wf-num">–</td><td data-label="Voice-Stunden" class="wf-num">–</td><td data-label="Zuletzt aktiv">–</td></tr>
+              <tr><td data-label="Mitglied"><a href="admin-member.html">Dana</a></td><td data-label="Status">Erfasst</td><td data-label="Erfasst seit">21.06.2026</td><td data-label="Nachrichten" class="wf-num">77</td><td data-label="Voice-Stunden" class="wf-num">3.2 h</td><td data-label="Zuletzt aktiv">02.10.2026</td></tr>
+            </tbody>
+          </table>
+          <div class="wf-pager"><span>1–25 von 214</span><div class="wf-toolbar"><span class="wf-btn">Zurück</span><span class="wf-btn">Weiter</span></div></div>
+        </div>
+        <div class="wf-empty" data-states="none">
+          <div class="wf-empty-icon"></div>
+          <h2>Keine Mitglieder gefunden</h2>
+          <p>Passe die Suche oder den Filter an.</p>
+        </div>
+      </section>
+      <aside class="wf-notes" lang="en">
+        <h2>Annotations</h2>
+        <div class="wf-states"><strong>Page state:</strong>
+          <a href="#list" data-state-link>Liste</a>
+          <a href="#none" data-state-link>Keine Treffer</a>
+        </div>
+        <ul>
+          <li>Search by display name (debounced, server-side). Status filter: Alle / Erfasst / Nicht erfasst (scope §5.4: the member list shows each member's tracking status).</li>
+          <li>Untracked members appear (they are in the reference tables) but all stats show <code>–</code>; their row still opens the member page, which then shows the empty state.</li>
+          <li>Sortable columns; server-side paging, 25 per page. Members who left the server are hidden by default.</li>
+          <li>At 360px each row becomes a small card (label/value pairs).</li>
+          <li>A row opens the member stats page (<a href="admin-member.html">admin-member.html</a>).</li>
+        </ul>
+      </aside>
+    </main>
+  </div>
+  <script src="wireframes.js"></script>
+</body>
+</html>

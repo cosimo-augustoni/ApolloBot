@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meine Rückblicke · Apollo wireframe</title>
+  <link rel="stylesheet" href="wireframes.css">
+</head>
+<body data-default-state="list">
+  <input type="checkbox" id="wf-nav" class="wf-nav-toggle">
+  <header class="wf-appbar">
+    <label for="wf-nav" class="wf-hamburger" title="Navigation öffnen">☰</label>
+    <a class="wf-brand" href="me-overview.html">Apollo</a>
+    <span class="wf-appbar-spacer"></span>
+    <div class="wf-user"><span class="wf-avatar"></span><span class="wf-user-name">Anna</span><a class="wf-btn" href="login.html">Abmelden</a></div>
+  </header>
+  <div class="wf-layout">
+    <nav class="wf-drawer" aria-label="Navigation">
+      <div class="wf-drawer-group">Meine Statistik</div>
+      <a href="me-overview.html">Übersicht</a>
+      <a href="me-recaps.html" aria-current="page">Rückblicke</a>
+      <a href="me-privacy.html">Privatsphäre</a>
+      <div class="wf-drawer-group">Info</div>
+      <a href="privacy.html">Datenschutz</a>
+      <a href="index.html" lang="en">← Wireframe index</a>
+    </nav>
+    <label for="wf-nav" class="wf-drawer-backdrop" title="Navigation schliessen"></label>
+    <main class="wf-main">
+      <div class="wf-page-header">
+        <div>
+          <div class="wf-route">/me/recaps</div>
+          <h1>Meine Rückblicke</h1>
+        </div>
+      </div>
+      <div data-states="list">
+        <h2>Jahresrückblicke</h2>
+        <div class="wf-grid">
+        <a class="wf-card wf-sm-6 wf-md-4" href="me-recap-detail.html" style="text-decoration: none">
+          <div class="wf-card-header"><h2>2025</h2><span class="wf-tag">Teilweise erfasst</span></div>
+          <div class="wf-chart wf-small">Vorschau-Karte</div>
+          <p class="wf-stat-sub" style="margin: 8px 0 0">14'210 Nachrichten · 488.0 h Voice</p>
+        </a>
+        </div>
+        <h2>Monatsrückblicke</h2>
+        <div class="wf-grid">
+        <div class="wf-card wf-optional wf-sm-6 wf-md-4">
+          <div class="wf-card-header"><h2>Oktober 2026</h2></div>
+          <p class="wf-stat-sub">Erscheint am 1. November.</p>
+        </div>
+        <a class="wf-card wf-sm-6 wf-md-4" href="me-recap-detail.html" style="text-decoration: none">
+          <div class="wf-card-header"><h2>September 2026</h2></div>
+          <div class="wf-chart wf-small">Vorschau-Karte</div>
+          <p class="wf-stat-sub" style="margin: 8px 0 0">1'190 Nachrichten · 40.2 h Voice</p>
+        </a>
+        <a class="wf-card wf-sm-6 wf-md-4" href="me-recap-detail.html" style="text-decoration: none">
+          <div class="wf-card-header"><h2>August 2026</h2></div>
+          <div class="wf-chart wf-small">Vorschau-Karte</div>
+          <p class="wf-stat-sub" style="margin: 8px 0 0">1'402 Nachrichten · 51.0 h Voice</p>
+        </a>
+        <a class="wf-card wf-sm-6 wf-md-4" href="me-recap-detail.html" style="text-decoration: none">
+          <div class="wf-card-header"><h2>Juli 2026</h2></div>
+          <div class="wf-chart wf-small">Vorschau-Karte</div>
+          <p class="wf-stat-sub" style="margin: 8px 0 0">980 Nachrichten · 22.4 h Voice</p>
+        </a>
+        </div>
+      </div>
+      <div class="wf-empty" data-states="empty">
+        <div class="wf-empty-icon"></div>
+        <h2>Noch keine Rückblicke</h2>
+        <p>Der erste Monatsrückblick erscheint am 1. November.</p>
+      </div>
+      <aside class="wf-notes" lang="en">
+        <h2>Annotations</h2>
+        <div class="wf-states"><strong>Page state:</strong>
+          <a href="#list" data-state-link>Mit Rückblicken</a>
+          <a href="#empty" data-state-link>Leer</a>
+        </div>
+        <ul>
+          <li>Recaps are fixed snapshots (scope §5.3), created by a job at the start of each month/year; they load instantly.</li>
+          <li>Newest first. Years above months. The running month is a dashed placeholder with the release date.</li>
+          <li>"Teilweise erfasst": the member was not tracked for the whole period (tracking_periods).</li>
+          <li>Each card opens the recap detail (<a href="me-recap-detail.html">me-recap-detail.html</a>). Card visuals are low-fi; the hi-fi design is #45.</li>
+          <li>Long lists: show the last 12 months, then a "Mehr anzeigen" button.</li>
+        </ul>
+      </aside>
+    </main>
+  </div>
+  <script src="wireframes.js"></script>
+</body>
+</html>
