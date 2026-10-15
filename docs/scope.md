@@ -71,7 +71,7 @@ Event recorder (Apollo.Bot)  ── resolves platform IDs → internal IDs ─�
 - **Inbound:** the adapter turns gateway events into neutral records like `PlatformMessageCreated(PlatformRef Guild, PlatformRef Channel, PlatformRef Author, DateTimeOffset At, MessageMetadata Meta)`.
 - **Outbound:** an `IChatPlatform` interface with only the operations we need, such as `GetMemberRoles`, `GetMemberPermissions`, `ListChannels`, and later `AddRole` and `SendEmbed`.
 - **Identity:** `PlatformRef = (Platform, ExternalId)`. The tables `users`, `channels`, `guilds` and `roles` each have an internal `Guid` plus one or more platform mappings. A future Fluxer account can be linked to an existing internal user, which keeps that user's history.
-- **Parity:** every issue that touches the platform includes a Fluxer.Net parity table. A first check of [Fluxer.Net](https://github.com/Nexfinity/Fluxer.Net) shows it has voice state, reaction, presence and OAuth types, so the core feature set looks portable. A dedicated spike issue will verify each event.
+- **Parity:** every issue that touches the platform includes a Fluxer.Net parity table. The parity spike (#9) confirmed that messages, reactions, voice, membership, threads, role changes and OAuth are portable to [Fluxer.Net](https://github.com/Nexfinity/Fluxer.Net). Presence activities and interactions (slash commands, ephemeral replies, buttons) don't exist on Fluxer; [platform-parity.md](platform-parity.md) lists the fallbacks.
 - **Parity matrix:** [platform-parity.md](platform-parity.md) lists every capability with its NetCord and Fluxer.Net status.
 
 ### 4.3 Single guild
@@ -99,9 +99,9 @@ Reference / snapshot tables: `guilds`, `users` (display name, avatar, joined_at)
 - **Bot messages** are recorded with `is_bot = true` and excluded by default in queries.
 - **Presence data is incomplete by design:**
   - Users can hide their activity in Discord.
-  - Fluxer may not expose activities at all. Fluxer.Net has presence types, but activity support is unverified.
+  - Fluxer has no activities at all (verified in #9), so game data is Discord-only.
   - So recaps treat game data as a **bonus section**: it is shown only when there is data, and never assumed to be complete. Only sessions of at least 1 minute are stored.
-- **Threads** are stored with their own `channel_id` and a `thread_parent_id`. Stats roll them up to the parent channel by default. Fluxer probably has no threads, in which case `thread_parent_id` simply stays empty.
+- **Threads** are stored with their own `channel_id` and a `thread_parent_id`. Stats roll them up to the parent channel by default. Fluxer has threads with a parent reference too (verified in #9), so `thread_parent_id` is filled on both platforms.
 - **Time zone:** all day and hour bucketing uses `Europe/Zurich`. Raw timestamps are stored in UTC.
 - **Deleted messages** keep their create event and get a delete event added. Recaps count what was sent.
 
@@ -195,7 +195,7 @@ There are two separate actions: **stop tracking**, which is role-based and rever
 
 **Implementation:**
 - No opt-out flag. The tracking-role check in the recorder is the only gate.
-- **All `/apollo` replies are ephemeral.** NetCord's interaction responses support the ephemeral flag. Fluxer support needs checking in the parity spike.
+- **All `/apollo` replies are ephemeral.** NetCord's interaction responses support the ephemeral flag. Fluxer has no interactions; there, private replies become a DM and the invoking message is deleted ([platform-parity.md](platform-parity.md)).
 - The commands only add or remove a role. The resulting `GUILD_MEMBER_UPDATE` flows through the normal role sync, so command, manual and admin role changes all behave identically.
 - `IChatPlatform` gets `AddRoleAsync` and `RemoveRoleAsync`. That makes them, along with slash commands, ephemeral replies and buttons, parity items for Fluxer.Net.
 
@@ -359,7 +359,7 @@ Alongside the template, the repo gets a **`CLAUDE.md`** with build and test comm
 
 | # | Topic | Decision |
 |---|---|---|
-| D1 | Presence / games | Tracked from M1 on. Treated as optional bonus data in recaps (Fluxer may not support it, and users can hide their activity) |
+| D1 | Presence / games | Tracked from M1 on. Treated as optional bonus data in recaps (Fluxer has no activities, and users can hide their activity) |
 | D2 | Threads | Stored with their parent reference and rolled up to the parent channel by default |
 | D3 | Time zone | `Europe/Zurich` for all bucketing; storage in UTC |
 | D4 | Opt-out | ~~Soft-delete flag~~ → **replaced by D15**. Removing the tracking role stops recording, and existing data stays. Hard delete only on explicit request |
@@ -379,5 +379,3 @@ Alongside the template, the repo gets a **`CLAUDE.md`** with build and test comm
 
 None blocking. Spikes to schedule in M0/M1:
 - CmdScale: daily `time_bucket` with a time zone in continuous aggregates, and compatibility with the latest EF Core version
-- NetCord vs. Fluxer.Net event parity: voice state, reactions, presence activities, member updates, threads
-- Fluxer OAuth flow, for the `IPlatformIdentityProvider` shape
