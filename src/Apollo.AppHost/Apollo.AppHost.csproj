@@ -4,9 +4,12 @@
     <OutputType>Exe</OutputType>
     <AspireUseCliBundle>true</AspireUseCliBundle>
     <UserSecretsId>c7c5e94b-eef1-4e66-84c6-09af5147e84e</UserSecretsId>
+    <!-- Container registry and pipeline step APIs are still marked experimental in Aspire 13.6 (#8). -->
+    <NoWarn>$(NoWarn);ASPIRECOMPUTE003;ASPIREPIPELINES001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Docker" />
     <PackageReference Include="Aspire.Hosting.PostgreSQL" />
   </ItemGroup>
 

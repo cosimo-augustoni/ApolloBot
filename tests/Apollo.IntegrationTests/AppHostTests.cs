@@ -11,10 +11,10 @@ public sealed class AppHostTests(AppHostFixture fixture) : IClassFixture<AppHost
     {
         using var cts = CreateTimeout();
 
-        await fixture.App.ResourceNotifications.WaitForResourceHealthyAsync("web", cts.Token);
+        await fixture.App.ResourceNotifications.WaitForResourceHealthyAsync("apollo-web", cts.Token);
         await fixture.App.ResourceNotifications.WaitForResourceAsync("bot", KnownResourceStates.Running, cts.Token);
 
-        using var http = fixture.App.CreateHttpClient("web");
+        using var http = fixture.App.CreateHttpClient("apollo-web");
         using var response = await http.GetAsync(new Uri("/health", UriKind.Relative), cts.Token);
 
         response.IsSuccessStatusCode.ShouldBeTrue($"GET /health returned {(int)response.StatusCode}");

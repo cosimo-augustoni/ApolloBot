@@ -1,23 +1,83 @@
 using Apollo.AppHost;
+using Aspire.Hosting.Docker.Resources.ComposeNodes;
+using Aspire.Hosting.Docker.Resources.ServiceNodes;
+using Aspire.Hosting.Docker.Resources.ServiceNodes.Swarm;
 using Microsoft.Extensions.Hosting;
 using Projects;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
+var registry = AddRegistry(builder);
+
 var db = AddPostgres(builder);
 var apollo = db.AddDatabase("apollo");
 
+// Exits once migrations are applied (#6), so Swarm must not restart it.
+builder.AddProject<Apollo_MigrationService>("migrationservice")
+    .WithReference(apollo)
+    .WaitFor(db)
+    .WithContainerRegistry(registry)
+    .PublishAsDockerComposeService((_, service) =>
+    {
+        UseSwarm(service, ComposeNetworks.Internal);
+        service.Deploy = new Deploy { RestartPolicy = new RestartPolicy { Condition = "none" } };
+    });
+
 builder.AddProject<Apollo_Bot>("bot")
     .WithReference(apollo)
-    .WaitFor(db);
+    .WaitFor(db)
+    .WithContainerRegistry(registry)
+    .PublishAsDockerComposeService((_, service) => UseSwarm(service, ComposeNetworks.Internal));
 
-builder.AddProject<Apollo_Web>("web")
+var reverseProxyNetwork = builder.Configuration["Apollo:Deploy:ReverseProxyNetwork"]
+    ?? throw new InvalidOperationException("Apollo:Deploy:ReverseProxyNetwork is not configured.");
+
+// The service name is its DNS alias on the shared reverse-proxy network, so it must be unique there.
+var web = builder.AddProject<Apollo_Web>("apollo-web")
     .WithReference(apollo)
     .WaitFor(db)
     .WithExternalHttpEndpoints()
-    .WithHttpHealthCheck("/health");
+    .WithHttpHealthCheck("/health")
+    .WithContainerRegistry(registry)
+    .PublishAsDockerComposeService((_, service) =>
+    {
+        UseSwarm(service, ComposeNetworks.Internal, reverseProxyNetwork);
+        service.Ports = [];
+    });
+
+if (builder.ExecutionContext.IsPublishMode)
+{
+    // The reverse proxy targets apollo-web:80.
+    web.WithEndpoint("http", endpoint => endpoint.TargetPort = 80);
+
+    AddPgAdmin(builder);
+}
+
+builder.AddDockerComposeEnvironment("docker-compose")
+    .WithDashboard(false)
+    .ConfigureComposeFile(file => file.Networks = new Dictionary<string, Network>
+    {
+        [ComposeNetworks.Internal] = new() { Name = ComposeNetworks.Internal, Driver = "overlay", External = false },
+        [reverseProxyNetwork] = new() { Name = reverseProxyNetwork, Driver = "overlay", External = true },
+    });
+
+// `aspire do prepare-stack`: builds and pushes the images and writes .env.<environment> with their tags, in one run so
+// the tags match. Not `aspire deploy`: that would also run `docker compose up` on this machine (docs/deployment.md).
+// The compose steps only exist in publish mode.
+if (builder.ExecutionContext.IsPublishMode)
+{
+    builder.Pipeline.AddStep("prepare-stack", _ => Task.CompletedTask, dependsOn: new[] { "push", "prepare-docker-compose" });
+}
 
 builder.Build().Run();
+
+static IResourceBuilder<ContainerRegistryResource> AddRegistry(IDistributedApplicationBuilder builder)
+{
+    var endpoint = builder.AddParameterFromConfiguration("registryEndpoint", "REGISTRY_ENDPOINT");
+    var repository = builder.AddParameterFromConfiguration("registryRepository", "REGISTRY_REPOSITORY");
+
+    return builder.AddContainerRegistry("kallisto", endpoint, repository);
+}
 
 static IResourceBuilder<PostgresServerResource> AddPostgres(IDistributedApplicationBuilder builder)
 {
@@ -25,8 +85,19 @@ static IResourceBuilder<PostgresServerResource> AddPostgres(IDistributedApplicat
         .WithImage(TimescaleImage.Image, TimescaleImage.Tag)
         .WithLifetime(ContainerLifetime.Persistent);
 
-    // Production storage (bind mount, compose service) is added by #8.
-    if (builder.Environment.IsDevelopment())
+    if (builder.ExecutionContext.IsPublishMode)
+    {
+        var dataPath = builder.AddParameter("PostgresDataPath");
+
+        // Not WithBindMount(): it resolves the source relative to the AppHost directory, but here it is a host path
+        // on the Swarm node. Mounted at the Postgres 18+ data root, like the dev volume below.
+        db.PublishAsDockerComposeService((resource, service) =>
+        {
+            UseSwarm(service, ComposeNetworks.Internal);
+            service.Volumes = [BindMount(dataPath.AsEnvironmentPlaceholder(resource), TimescaleImage.DataRoot)];
+        });
+    }
+    else if (builder.Environment.IsDevelopment())
     {
         // Not WithDataVolume(): it mounts at /var/lib/postgresql/data, which Postgres 18+ images refuse.
         db.WithVolume(VolumeNameGenerator.Generate(db, "data"), TimescaleImage.DataRoot)
@@ -35,3 +106,37 @@ static IResourceBuilder<PostgresServerResource> AddPostgres(IDistributedApplicat
 
     return db;
 }
+
+// WithPgAdmin() only applies in run mode, but pgAdmin is wanted in production too.
+static void AddPgAdmin(IDistributedApplicationBuilder builder)
+{
+    var email = builder.AddParameter("PgAdminEmail");
+    var password = builder.AddParameter("PgAdminPassword", secret: true);
+    var dataPath = builder.AddParameter("PgAdminDataPath");
+    var port = builder.AddParameter("PgAdminPort");
+
+    builder.AddContainer("pgadmin", PgAdminImage.Image, PgAdminImage.Tag)
+        .WithEnvironment("PGADMIN_DEFAULT_EMAIL", email)
+        .WithEnvironment("PGADMIN_DEFAULT_PASSWORD", password)
+        .WithEnvironment("PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION", "True")
+        .WithEnvironment("PGADMIN_CONFIG_CONSOLE_LOG_LEVEL", "30")
+        .WithHttpEndpoint(targetPort: 80)
+        .PublishAsDockerComposeService((resource, service) =>
+        {
+            UseSwarm(service, ComposeNetworks.Internal);
+            service.Ports = [$"{port.AsEnvironmentPlaceholder(resource)}:80"];
+            service.Volumes = [BindMount(dataPath.AsEnvironmentPlaceholder(resource), "/var/lib/pgadmin")];
+        });
+}
+
+// Settings every service needs to deploy as a Swarm stack without hand editing (docs/deployment.md):
+// separate network entries, no expose: (ignored by Swarm) and no depends_on (ignored by Swarm, and the stack schema
+// rejects the long form Aspire emits; bot and web wait for migrations themselves, #6).
+static void UseSwarm(Service service, params string[] networks)
+{
+    service.Networks = [.. networks];
+    service.Expose = [];
+    service.DependsOn = [];
+}
+
+static Volume BindMount(string source, string target) => new() { Name = source, Type = "bind", Source = source, Target = target };

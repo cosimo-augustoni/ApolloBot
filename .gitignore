@@ -397,3 +397,6 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 /src/ApolloBot/ClientApp/.angular/cache/*
+
+# Aspire publish output: the env file and the rendered stack file hold secrets (#8)
+aspire-output/
