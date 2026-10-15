@@ -1,0 +1,207 @@
+@page "/styleguide"
+
+@* Living style guide (issue #26). Sample text follows docs/design/style-guide.md and moves to resource files with #28. *@
+
+<PageTitle>Styleguide – Apollo</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="apollo-styleguide py-6">
+    <MudText Typo="Typo.h1" Class="mb-1">Styleguide</MudText>
+    <MudText Typo="Typo.body1" Class="mud-text-secondary mb-8">
+        Farben, Schrift, Abstände und Bausteine der Apollo-Oberfläche. Alle Werte stehen in docs/design/style-guide.md.
+    </MudText>
+
+    <section class="mb-10">
+        <MudText Typo="Typo.h3" Class="mb-4">Farben</MudText>
+        <MudGrid Spacing="3">
+            @foreach (var token in ApolloColors.All)
+            {
+                <MudItem xs="6" sm="4" md="3" lg="2">
+                    <div class="apollo-swatch">
+                        <div class="apollo-swatch-colour" style="background-color: @token.Hex"></div>
+                        <div class="pa-2">
+                            <MudText Typo="Typo.subtitle2">@token.Name</MudText>
+                            <MudText Typo="Typo.caption" Class="apollo-numeric d-block">@token.Hex</MudText>
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary d-block">@token.Usage</MudText>
+                        </div>
+                    </div>
+                </MudItem>
+            }
+        </MudGrid>
+
+        <MudText Typo="Typo.h5" Class="mt-6 mb-3">Diagrammfarben</MudText>
+        <div class="d-flex flex-wrap gap-3">
+            @foreach (var (colour, position) in ChartPalette.Series.Select((c, i) => (c, i + 1)))
+            {
+                <div class="apollo-chart-swatch d-flex align-center gap-2">
+                    <span class="apollo-chart-dot" style="background-color: @colour"></span>
+                    <MudText Typo="Typo.caption" Class="apollo-numeric">@position. @colour</MudText>
+                </div>
+            }
+        </div>
+        <MudText Typo="Typo.h5" Class="mt-6 mb-3">Heatmap-Skala</MudText>
+        <div class="d-flex apollo-heatmap-scale">
+            @foreach (var step in ChartPalette.HeatmapScale)
+            {
+                <div class="flex-grow-1" style="background-color: @step" title="@step"></div>
+            }
+        </div>
+    </section>
+
+    <section class="mb-10">
+        <MudText Typo="Typo.h3" Class="mb-4">Schrift</MudText>
+        <SectionCard Title="Schriftgrade">
+            <MudText Typo="Typo.h1">H1 Server-Rückblick</MudText>
+            <MudText Typo="Typo.h2">H2 Übersicht</MudText>
+            <MudText Typo="Typo.h3">H3 Aktivität</MudText>
+            <MudText Typo="Typo.h4">H4 Top-Kanäle</MudText>
+            <MudText Typo="Typo.h5">H5 Einstellungen</MudText>
+            <MudText Typo="Typo.h6">H6 Tracking-Rolle</MudText>
+            <MudText Typo="Typo.subtitle1">Subtitle 1: Zeitraum 01.10.2026 – 15.10.2026</MudText>
+            <MudText Typo="Typo.subtitle2">Subtitle 2: Mitglieder</MudText>
+            <MudText Typo="Typo.body1">Body 1: Apollo erfasst nur Mitglieder mit der Tracking-Rolle. Nachrichteninhalte werden nie gespeichert.</MudText>
+            <MudText Typo="Typo.body2">Body 2: Zuletzt aktualisiert am 15.10.2026 um 14:30.</MudText>
+            <MudText Typo="Typo.caption" Class="d-block">Caption: Werte gerundet</MudText>
+            <MudText Typo="Typo.overline" Class="d-block">Overline: Admin</MudText>
+            <MudDivider Class="my-3" />
+            <MudText Typo="Typo.h4" Class="apollo-numeric">1'234'567 · 98.6 h · 15.10.2026</MudText>
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">Zahlen mit gleich breiten Ziffern (tabular-nums), Format de-CH.</MudText>
+        </SectionCard>
+    </section>
+
+    <section class="mb-10">
+        <MudText Typo="Typo.h3" Class="mb-4">Abstände und Ecken</MudText>
+        <SectionCard Title="Abstandsskala (Einheit 4 px)">
+            @foreach (var step in _spacingSteps)
+            {
+                <div class="d-flex align-center gap-3 mb-2">
+                    <MudText Typo="Typo.caption" Class="apollo-numeric apollo-spacing-label">@step.Class · @step.Pixels px</MudText>
+                    <div class="apollo-spacing-bar" style="width: @(step.Pixels)px"></div>
+                </div>
+            }
+            <MudText Typo="Typo.body2" Class="mud-text-secondary mt-3">
+                Ecken: @ApolloTheme.BorderRadius für Karten, Buttons und Eingabefelder.
+            </MudText>
+        </SectionCard>
+    </section>
+
+    <section class="mb-10">
+        <MudText Typo="Typo.h3" Class="mb-4">Bedienelemente</MudText>
+        <MudGrid Spacing="3">
+            <MudItem xs="12" md="6">
+                <SectionCard Title="Buttons">
+                    <div class="d-flex flex-wrap gap-2">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary">Speichern</MudButton>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary">Abbrechen</MudButton>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary">Zurücksetzen</MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Secondary">Exportieren</MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Error">Löschen</MudButton>
+                        <MudButton Variant="Variant.Filled" Disabled="true">Deaktiviert</MudButton>
+                        <MudIconButton Icon="@Icons.Material.Outlined.Refresh" aria-label="Aktualisieren" />
+                    </div>
+                </SectionCard>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <SectionCard Title="Eingaben">
+                    <MudTextField @bind-Value="_search" Label="Mitglied suchen" Variant="Variant.Outlined"
+                                  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Search" Class="mb-3" />
+                    <MudSelect @bind-Value="_role" Label="Tracking-Rolle" Variant="Variant.Outlined" Class="mb-3">
+                        <MudSelectItem Value="@("Mitglied")">Mitglied</MudSelectItem>
+                        <MudSelectItem Value="@("Stammgast")">Stammgast</MudSelectItem>
+                    </MudSelect>
+                    <MudSwitch @bind-Value="_enabled" Color="Color.Primary" Label="Rückblick automatisch erstellen" />
+                </SectionCard>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <SectionCard Title="Chips">
+                    <div class="d-flex flex-wrap gap-1">
+                        <MudChip T="string" Color="Color.Success" Icon="@Icons.Material.Outlined.CheckCircle">Erfasst</MudChip>
+                        <MudChip T="string" Variant="Variant.Outlined" Icon="@Icons.Material.Outlined.Block">Nicht erfasst</MudChip>
+                        <MudChip T="string" Color="Color.Primary">Admin</MudChip>
+                        <MudChip T="string" Color="Color.Warning">Bootstrap-Modus</MudChip>
+                        <MudChip T="string" Color="Color.Info">Discord</MudChip>
+                    </div>
+                </SectionCard>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <SectionCard Title="Tabs">
+                    <MudTabs Elevation="0" Rounded="true" TabPanelsClass="pt-3" Color="Color.Transparent" SliderColor="Color.Primary">
+                        <MudTabPanel Text="Discord">
+                            <MudText Typo="Typo.body2">Einstellungen für Discord.</MudText>
+                        </MudTabPanel>
+                        <MudTabPanel Text="Fluxer">
+                            <MudText Typo="Typo.body2">Einstellungen für Fluxer.</MudText>
+                        </MudTabPanel>
+                    </MudTabs>
+                </SectionCard>
+            </MudItem>
+            <MudItem xs="12">
+                <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Class="mb-2">
+                    Noch keine Tracking-Rolle gewählt. Apollo erfasst erst, wenn du eine Rolle festlegst.
+                </MudAlert>
+                <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">
+                    Einstellungen konnten nicht gespeichert werden. Versuche es später noch einmal.
+                </MudAlert>
+            </MudItem>
+        </MudGrid>
+    </section>
+
+    <section class="mb-10">
+        <MudText Typo="Typo.h3" Class="mb-4">Bausteine</MudText>
+        <MudGrid Spacing="3" Class="mb-3">
+            <MudItem xs="12" sm="6" md="3">
+                <StatTile Label="Nachrichten" Value="1234567" Delta="12.5" SubText="ggü. Vormonat" Icon="@Icons.Material.Outlined.ChatBubbleOutline" />
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <StatTile Label="Voice-Stunden" Value="842.25" Decimals="1" Unit="h" Delta="-3" SubText="ggü. Vormonat" Icon="@Icons.Material.Outlined.Headphones" />
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <StatTile Label="Mitglieder" Value="128" SubText="davon 96 erfasst" Icon="@Icons.Material.Outlined.People" />
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <StatTile Label="Reaktionen" Value="null" SubText="Noch keine Daten" Icon="@Icons.Material.Outlined.EmojiEmotions" />
+            </MudItem>
+        </MudGrid>
+        <MudGrid Spacing="3">
+            <MudItem xs="12" md="6">
+                <SectionCard Title="Top-Kanäle">
+                    <Action>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small">Alle anzeigen</MudButton>
+                    </Action>
+                    <ChildContent>
+                        @foreach (var channel in _channels)
+                        {
+                            <div class="d-flex justify-space-between py-1">
+                                <MudText Typo="Typo.body2">#@channel.Name</MudText>
+                                <MudText Typo="Typo.body2" Class="apollo-numeric mud-text-secondary">@channel.Messages.ToString("N0", UiCulture.Culture)</MudText>
+                            </div>
+                        }
+                    </ChildContent>
+                </SectionCard>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <SectionCard Title="Rückblicke">
+                    <EmptyState Icon="@Icons.Material.Outlined.AutoAwesome"
+                                Title="Noch keine Rückblicke"
+                                Explanation="Der erste Monatsrückblick erscheint am 1. November." />
+                </SectionCard>
+            </MudItem>
+        </MudGrid>
+    </section>
+
+    <section>
+        <MudText Typo="Typo.h3" Class="mb-4">Diagramme</MudText>
+        <StyleGuideCharts />
+    </section>
+</MudContainer>
+
+@code {
+    private readonly (string Class, int Pixels)[] _spacingSteps =
+        [("1", 4), ("2", 8), ("3", 12), ("4", 16), ("6", 24), ("8", 32), ("10", 40)];
+
+    private readonly (string Name, int Messages)[] _channels =
+        [("allgemein", 48211), ("memes", 23907), ("gaming", 12045), ("musik", 3120)];
+
+    private string _search = string.Empty;
+    private string _role = "Mitglied";
+    private bool _enabled = true;
+}

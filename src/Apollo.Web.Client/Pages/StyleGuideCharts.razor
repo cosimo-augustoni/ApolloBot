@@ -1,0 +1,87 @@
+@using ApexCharts
+
+@* Kept apart from StyleGuide.razor: ApexCharts and MudBlazor both define Color and Size. *@
+
+<MudGrid Spacing="3">
+    <MudItem xs="12" md="6">
+        <SectionCard Title="Nachrichten pro Kanal">
+            <ApexChart TItem="ChannelCount" Options="_barOptions" Height="@ChartHeight">
+                <ApexPointSeries TItem="ChannelCount" Items="_channels" Name="Nachrichten" SeriesType="SeriesType.Bar"
+                                 XValue="c => c.Channel" YValue="c => c.Messages" />
+            </ApexChart>
+        </SectionCard>
+    </MudItem>
+    <MudItem xs="12" md="6">
+        <SectionCard Title="Aktivität im Oktober">
+            <ApexChart TItem="DailyCount" Options="_lineOptions" Height="@ChartHeight">
+                <ApexPointSeries TItem="DailyCount" Items="_messages" Name="Nachrichten" SeriesType="SeriesType.Line"
+                                 XValue="d => d.Day" YValue="d => d.Count" />
+                <ApexPointSeries TItem="DailyCount" Items="_voice" Name="Voice-Minuten" SeriesType="SeriesType.Line"
+                                 XValue="d => d.Day" YValue="d => d.Count" />
+            </ApexChart>
+        </SectionCard>
+    </MudItem>
+    <MudItem xs="12">
+        <SectionCard Title="Aktivität nach Wochentag und Stunde">
+            <ApexChart TItem="HourCount" Options="_heatmapOptions" Height="@HeatmapHeight">
+                @foreach (var day in _heatmap)
+                {
+                    <ApexPointSeries TItem="HourCount" Items="day.Hours" Name="@day.Name" SeriesType="SeriesType.Heatmap"
+                                     XValue="h => h.Hour" YValue="h => h.Count" />
+                }
+            </ApexChart>
+        </SectionCard>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private const int ChartHeight = 280;
+    private const int HeatmapHeight = 320;
+    private const int HeatmapMax = 100;
+
+    private sealed record ChannelCount(string Channel, decimal Messages);
+
+    private sealed record DailyCount(string Day, decimal Count);
+
+    private sealed record HourCount(string Hour, decimal Count);
+
+    private sealed record HeatmapDay(string Name, IReadOnlyList<HourCount> Hours);
+
+    private static readonly string[] _weekdays = ["So", "Sa", "Fr", "Do", "Mi", "Di", "Mo"];
+
+    private readonly ApexChartOptions<ChannelCount> _barOptions = ApexChartDefaults.Create<ChannelCount>();
+    private readonly ApexChartOptions<DailyCount> _lineOptions = ApexChartDefaults.Create<DailyCount>();
+    private readonly ApexChartOptions<HourCount> _heatmapOptions = ApexChartDefaults.CreateHeatmap<HourCount>(HeatmapMax);
+
+    private readonly ChannelCount[] _channels =
+        [new("allgemein", 48211), new("memes", 23907), new("gaming", 12045), new("musik", 3120), new("off-topic", 2400)];
+
+    private readonly DailyCount[] _messages = SampleDays(seed: 3, scale: 900);
+    private readonly DailyCount[] _voice = SampleDays(seed: 7, scale: 600);
+
+    private readonly HeatmapDay[] _heatmap =
+        [.. _weekdays.Select((name, d) => new HeatmapDay(name, [.. Enumerable.Range(0, 24).Select(h => new HourCount($"{h:00}", SampleHeat(d, h)))]))];
+
+    protected override void OnInitialized()
+    {
+        // Horizontal bars swap the axes: values run along x, channel names along y.
+        _barOptions.PlotOptions = new PlotOptions { Bar = new PlotOptionsBar { BorderRadius = 4, Horizontal = true } };
+        _barOptions.Xaxis.Labels.Formatter = ApexChartDefaults.SwissNumberFormatter;
+        _barOptions.Yaxis[0].Labels.Formatter = null;
+        _lineOptions.Stroke = new Stroke { Curve = Curve.Smooth, Width = 3 };
+        _heatmapOptions.Xaxis.Labels.HideOverlappingLabels = true;
+    }
+
+    // Deterministic sample data, so screenshots stay comparable.
+    private static DailyCount[] SampleDays(int seed, int scale) =>
+        [.. Enumerable.Range(1, 15).Select(day => new DailyCount($"{day:00}.10.", (decimal)Math.Round(scale * (0.6 + (0.4 * Math.Sin((day + seed) / 2.0))))))];
+
+    private static decimal SampleHeat(int day, int hour)
+    {
+        var evening = 0.7 * Math.Exp(-Math.Pow(hour - 20.5, 2) / 10.0);
+        var midday = 0.3 * Math.Exp(-Math.Pow(hour - 12.5, 2) / 6.0);
+        var night = hour < 7 ? 0.0 : 0.08;
+        var weekend = day <= 1 ? 1.35 : 1.0;
+        return (decimal)Math.Round(Math.Min(HeatmapMax, HeatmapMax * (evening + midday + night) * weekend));
+    }
+}

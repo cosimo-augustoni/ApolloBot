@@ -1,0 +1,72 @@
+<MudPaper Class="apollo-stat-tile pa-4" Elevation="0">
+    <div class="d-flex align-center justify-space-between gap-2">
+        <MudText Typo="Typo.subtitle2" Class="apollo-stat-label mud-text-secondary">@Label</MudText>
+        @if (Icon is not null)
+        {
+            <MudIcon Icon="@Icon" Size="Size.Small" Class="mud-text-secondary" />
+        }
+    </div>
+    <MudText Typo="Typo.h4" Class="apollo-stat-value apollo-numeric">@FormattedValue</MudText>
+    @if (Delta is not null || SubText is not null)
+    {
+        <div class="d-flex align-center flex-wrap gap-2 mt-1">
+            @if (Delta is { } delta)
+            {
+                <MudText Typo="Typo.body2" Class="@($"apollo-stat-delta apollo-numeric {DeltaClass(delta)}")">@FormatDelta(delta)</MudText>
+            }
+            @if (SubText is not null)
+            {
+                <MudText Typo="Typo.body2" Class="apollo-stat-subtext mud-text-secondary">@SubText</MudText>
+            }
+        </div>
+    }
+</MudPaper>
+
+@code {
+    /// <summary>What the number counts, e.g. "Nachrichten".</summary>
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    /// <summary>The number; <c>null</c> shows the placeholder.</summary>
+    [Parameter]
+    public double? Value { get; set; }
+
+    /// <summary>Number of decimal places shown.</summary>
+    [Parameter]
+    public int Decimals { get; set; }
+
+    /// <summary>Optional unit after the number, e.g. "h".</summary>
+    [Parameter]
+    public string? Unit { get; set; }
+
+    /// <summary>Optional change against the previous period, in percent.</summary>
+    [Parameter]
+    public double? Delta { get; set; }
+
+    /// <summary>Optional secondary line, e.g. "davon 30 erfasst".</summary>
+    [Parameter]
+    public string? SubText { get; set; }
+
+    /// <summary>Optional MudBlazor icon shown next to the label.</summary>
+    [Parameter]
+    public string? Icon { get; set; }
+
+    private string FormattedValue => Value is { } value
+        ? Unit is null
+            ? Format(value, Decimals)
+            : $"{Format(value, Decimals)} {Unit}"
+        : UiCulture.Placeholder;
+
+    private static string Format(double value, int decimals) =>
+        value.ToString($"N{decimals}", UiCulture.Culture);
+
+    private static string FormatDelta(double delta) =>
+        delta.ToString("+#,0.#;-#,0.#;±0", UiCulture.Culture) + " %";
+
+    private static string DeltaClass(double delta) => delta switch
+    {
+        > 0 => "mud-success-text",
+        < 0 => "mud-error-text",
+        _ => "mud-secondary-text",
+    };
+}

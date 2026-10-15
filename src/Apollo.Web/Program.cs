@@ -1,4 +1,6 @@
+using ApexCharts;
 using Apollo.Web.Components;
+using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +9,10 @@ builder.AddServiceDefaults();
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
+
+// The client UI is prerendered on the server, so its UI services are needed here too.
+builder.Services.AddMudServices();
+builder.Services.AddApexCharts();
 
 var app = builder.Build();
 

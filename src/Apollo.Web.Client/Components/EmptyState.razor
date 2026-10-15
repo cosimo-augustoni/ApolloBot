@@ -1,0 +1,30 @@
+<div class="apollo-empty-state d-flex flex-column align-center justify-center text-center pa-6 gap-2">
+    <MudIcon Icon="@Icon" Size="Size.Large" Class="mud-text-disabled" />
+    @if (!string.IsNullOrEmpty(Title))
+    {
+        <MudText Typo="Typo.h6" Class="apollo-empty-title">@Title</MudText>
+    }
+    @if (!string.IsNullOrEmpty(Explanation))
+    {
+        <MudText Typo="Typo.body2" Class="apollo-empty-explanation mud-text-secondary">@Explanation</MudText>
+    }
+    @ChildContent
+</div>
+
+@code {
+    /// <summary>Icon above the title.</summary>
+    [Parameter]
+    public string Icon { get; set; } = Icons.Material.Outlined.Inbox;
+
+    /// <summary>Short statement of what is missing, e.g. "Noch keine Daten".</summary>
+    [Parameter, EditorRequired]
+    public string? Title { get; set; }
+
+    /// <summary>One sentence on why it is empty and what happens next.</summary>
+    [Parameter, EditorRequired]
+    public string? Explanation { get; set; }
+
+    /// <summary>Optional action, e.g. a button.</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}
