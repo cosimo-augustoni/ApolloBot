@@ -1,4 +1,6 @@
 using Apollo.Data;
+using Apollo.Testing;
+using Apollo.Testing.Data;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -7,8 +9,8 @@ using Microsoft.Extensions.Time.Testing;
 
 namespace Apollo.IntegrationTests.Data;
 
-[Collection(TimescaleCollection.Name)]
-public sealed class MigrationExtensionsTests(TimescaleContainerFixture fixture)
+[Collection<TimescaleCollection>]
+public sealed class MigrationExtensionsTests(TimescaleFixture fixture)
 {
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(30);
 
@@ -17,9 +19,7 @@ public sealed class MigrationExtensionsTests(TimescaleContainerFixture fixture)
     [Fact]
     public async Task WaitForMigrationsAsync_WhenNoMigrationsPending_ShouldReturnWithoutWaiting()
     {
-        var connectionString = fixture.NewDatabaseConnectionString();
-        await MigrateAsync(connectionString);
-        using var host = BuildHost(connectionString);
+        using var host = BuildHost(fixture.ConnectionString);
 
         var wait = host.Services.WaitForMigrationsAsync(TestContext.Current.CancellationToken);
 
@@ -73,7 +73,7 @@ public sealed class MigrationExtensionsTests(TimescaleContainerFixture fixture)
 
     private static async Task MigrateAsync(string connectionString)
     {
-        await using var db = TimescaleContainerFixture.CreateContext(connectionString);
+        await using var db = new ApolloDbContext(ApolloDbContext.CreateOptions(connectionString));
         await new DatabaseMigrator(TimeProvider.System, NullLogger<DatabaseMigrator>.Instance)
             .MigrateAsync(db, TestContext.Current.CancellationToken);
     }

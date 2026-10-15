@@ -1,6 +1,8 @@
-using Microsoft.Extensions.Time.Testing;
 
-namespace Apollo.IntegrationTests.Data;
+using Microsoft.Extensions.Time.Testing;
+using Xunit;
+
+namespace Apollo.Testing;
 
 public static class FakeTimeProviderExtensions
 {

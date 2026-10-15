@@ -1,5 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Shared test helpers (fixtures, builders, fakes). Filled in #7. -->
+  <!-- Shared test helpers: the Timescale fixture, builder base, time helpers. -->
+
+  <ItemGroup>
+    <!-- Same image as the AppHost (#4); linked so the tag is never copied. -->
+    <Compile Include="..\..\src\Apollo.AppHost\TimescaleImage.cs" Link="Data\TimescaleImage.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <PackageReference Include="Npgsql" />
+    <PackageReference Include="Respawn" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="xunit.v3.extensibility.core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Apollo.Data\Apollo.Data.csproj" />
+  </ItemGroup>
 
 </Project>
