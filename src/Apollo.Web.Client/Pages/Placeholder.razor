@@ -1,0 +1,31 @@
+@page "/admin/bot-status"
+@page "/admin/server"
+@page "/admin/members"
+@page "/admin/recaps"
+@page "/admin/data"
+@page "/admin/settings"
+@page "/me"
+@page "/me/recaps"
+@page "/me/privacy"
+@inject IStringLocalizer<Strings> L
+@inject NavigationManager NavigationManager
+
+@* Stands in for the areas in NavigationAreas until their pages exist; a real page takes over by removing its route here. *@
+<PageTitle>@L["PageTitle", _areaName]</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-6">
+    <MudText Typo="Typo.h1" Class="mb-4">@_areaName</MudText>
+    <MudPaper Elevation="0" Class="apollo-section-card">
+        <EmptyState Icon="@Icons.Material.Outlined.Construction" Title="@L["Placeholder_Title"]" Explanation="@L["Placeholder_Text"]" />
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string _areaName = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        var area = NavigationAreas.Find(NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
+        _areaName = area is null ? L["App_Name"] : L[area.LabelKey];
+    }
+}

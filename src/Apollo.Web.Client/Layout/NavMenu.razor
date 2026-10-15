@@ -1,0 +1,16 @@
+@inject IStringLocalizer<Strings> L
+
+@* Links inside the drawer close it on mobile: MudNavLink notifies the surrounding MudDrawer. *@
+<MudNavMenu Class="py-2">
+    @foreach (var section in NavigationAreas.Sections)
+    {
+        @if (section.TitleKey is not null)
+        {
+            <MudText Typo="Typo.overline" Class="apollo-nav-section mud-text-secondary px-4 pt-4">@L[section.TitleKey]</MudText>
+        }
+        @foreach (var item in section.Items)
+        {
+            <MudNavLink Href="@item.Href" Match="NavLinkMatch.All" Icon="@item.Icon">@L[item.LabelKey]</MudNavLink>
+        }
+    }
+</MudNavMenu>
