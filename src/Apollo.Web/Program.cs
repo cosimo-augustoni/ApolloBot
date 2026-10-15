@@ -1,5 +1,6 @@
 using ApexCharts;
 using Apollo.Data;
+using Apollo.Web.Api;
 using Apollo.Web.Components;
 using MudBlazor.Services;
 
@@ -12,7 +13,7 @@ builder.AddApolloDbContext();
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 
-// The client UI is prerendered on the server, so its UI services are needed here too.
+// Prerendering is off (App.razor), but keep the client UI services resolvable on the server.
 builder.Services.AddMudServices();
 builder.Services.AddApexCharts();
 
@@ -45,6 +46,7 @@ app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(Apollo.Web.Client._Imports).Assembly);
 
+app.MapAppInfoEndpoints();
 app.MapDefaultEndpoints();
 
 app.Run();

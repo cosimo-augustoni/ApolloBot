@@ -1,0 +1,59 @@
+using Apollo.Web.Client.Api;
+using Apollo.Web.Client.Api.Mock;
+using Apollo.Web.Client.Contracts;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Apollo.Web.Client.Tests.Api;
+
+public sealed class ApiClientServiceCollectionExtensionsTests
+{
+    [Fact]
+    public void AddApolloApiClients_WhenUseMockDataTrue_ShouldRegisterMockClient()
+    {
+        using var provider = BuildProvider(useMockData: "true", new StubHttpMessageHandler(new object()));
+
+        provider.GetRequiredService<IAppInfoClient>().ShouldBeOfType<MockAppInfoClient>();
+    }
+
+    [Fact]
+    public void AddApolloApiClients_WhenUseMockDataFalse_ShouldRegisterHttpClient()
+    {
+        using var provider = BuildProvider(useMockData: "false", new StubHttpMessageHandler(new object()));
+
+        provider.GetRequiredService<IAppInfoClient>().ShouldBeOfType<HttpAppInfoClient>();
+    }
+
+    [Fact]
+    public void AddApolloApiClients_WhenSettingMissing_ShouldRegisterHttpClient()
+    {
+        using var provider = BuildProvider(useMockData: null, new StubHttpMessageHandler(new object()));
+
+        provider.GetRequiredService<IAppInfoClient>().ShouldBeOfType<HttpAppInfoClient>();
+    }
+
+    [Fact]
+    public async Task HttpAppInfoClient_ShouldReadAppInfoFromApi()
+    {
+        var expected = new AppInfoDto("1.2.3", "Production");
+        var handler = new StubHttpMessageHandler(expected);
+        using var provider = BuildProvider(useMockData: "false", handler);
+
+        var appInfo = await provider.GetRequiredService<IAppInfoClient>().GetAppInfoAsync(TestContext.Current.CancellationToken);
+
+        appInfo.ShouldBe(expected);
+        handler.Requests.ShouldHaveSingleItem().AbsolutePath.ShouldBe("/api/app-info");
+    }
+
+    private static ServiceProvider BuildProvider(string? useMockData, StubHttpMessageHandler handler)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { [$"{ApiClientOptions.SectionName}:UseMockData"] = useMockData })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddScoped(_ => handler.CreateClient());
+        services.AddApolloApiClients(configuration);
+        return services.BuildServiceProvider();
+    }
+}
