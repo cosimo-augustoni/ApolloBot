@@ -8,7 +8,20 @@ namespace Apollo.Web.Client.Tests;
 
 public sealed class RoutesTests : ApolloTestContext
 {
-    public static TheoryData<string> PlaceholderRoutes => [.. NavigationAreas.Items.Select(i => i.Href).Where(h => h.Length > 0)];
+    /// <summary>Every navigation route with its page heading from the wireframes (#27).</summary>
+    public static TheoryData<string, string> PlaceholderRoutes => new()
+    {
+        { "admin", "Bot-Status" },
+        { "admin/dashboard", "Server-Übersicht" },
+        { "admin/members", "Mitglieder" },
+        { "admin/recaps", "Server-Rückblicke" },
+        { "admin/data", "Daten" },
+        { "admin/settings", "Einstellungen" },
+        { "me", "Meine Statistik" },
+        { "me/recaps", "Meine Rückblicke" },
+        { "me/privacy", "Privatsphäre" },
+        { "datenschutz", "Datenschutz" },
+    };
 
     [Fact]
     public void Router_WhenRouteUnknown_ShouldShowNotFoundPage()
@@ -30,12 +43,12 @@ public sealed class RoutesTests : ApolloTestContext
 
     [Theory]
     [MemberData(nameof(PlaceholderRoutes))]
-    public void Router_WhenRouteIsNavigationArea_ShouldShowPlaceholderWithAreaName(string href)
+    public void Router_WhenRouteIsNavigationArea_ShouldShowPlaceholderWithPageHeading(string href, string heading)
     {
         var routes = RenderAt(href);
 
         routes.WaitForAssertion(() => routes.FindComponents<Placeholder>().ShouldHaveSingleItem());
-        routes.Find("h1").TextContent.Trim().ShouldNotBeNullOrWhiteSpace();
+        routes.Find("h1").TextContent.Trim().ShouldBe(heading);
         routes.Find(".apollo-empty-title").TextContent.Trim().ShouldBe("Noch nicht verfügbar");
     }
 

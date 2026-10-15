@@ -2,29 +2,32 @@ using MudBlazor;
 
 namespace Apollo.Web.Client.Layout;
 
-/// <summary>The areas of the app (scope §7.2), as shown in the navigation drawer.</summary>
+/// <summary>
+/// The areas of the app (scope §7.2), as shown in the navigation drawer. Routes, labels and grouping follow the
+/// wireframes in <c>docs/design/wireframes</c> (#27).
+/// </summary>
 public static class NavigationAreas
 {
     public static IReadOnlyList<NavigationSection> Sections { get; } =
     [
-        new(null,
+        new("Nav_SectionServer",
         [
-            new("", "Nav_Home", Icons.Material.Outlined.Home),
-        ]),
-        new("Nav_SectionAdmin",
-        [
-            new("admin/bot-status", "Nav_BotStatus", Icons.Material.Outlined.SmartToy),
-            new("admin/server", "Nav_Server", Icons.Material.Outlined.Dns),
-            new("admin/members", "Nav_Members", Icons.Material.Outlined.People),
-            new("admin/recaps", "Nav_AdminRecaps", Icons.Material.Outlined.AutoAwesome),
-            new("admin/data", "Nav_Data", Icons.Material.Outlined.Storage),
-            new("admin/settings", "Nav_Settings", Icons.Material.Outlined.Settings),
+            new("admin", "Nav_BotStatus", "Nav_BotStatus", Icons.Material.Outlined.SmartToy),
+            new("admin/dashboard", "Nav_ServerOverview", "Page_ServerOverview", Icons.Material.Outlined.Dashboard),
+            new("admin/members", "Nav_Members", "Nav_Members", Icons.Material.Outlined.People),
+            new("admin/recaps", "Nav_ServerRecaps", "Page_ServerRecaps", Icons.Material.Outlined.AutoAwesome),
+            new("admin/data", "Nav_Data", "Nav_Data", Icons.Material.Outlined.Storage),
+            new("admin/settings", "Nav_Settings", "Nav_Settings", Icons.Material.Outlined.Settings),
         ]),
         new("Nav_SectionMember",
         [
-            new("me", "Nav_Overview", Icons.Material.Outlined.Insights),
-            new("me/recaps", "Nav_MemberRecaps", Icons.Material.Outlined.AutoAwesome),
-            new("me/privacy", "Nav_Privacy", Icons.Material.Outlined.Shield),
+            new("me", "Nav_MemberOverview", "Page_MemberOverview", Icons.Material.Outlined.Insights),
+            new("me/recaps", "Nav_MemberRecaps", "Page_MemberRecaps", Icons.Material.Outlined.AutoAwesome),
+            new("me/privacy", "Nav_MemberPrivacy", "Nav_MemberPrivacy", Icons.Material.Outlined.Shield),
+        ]),
+        new("Nav_SectionInfo",
+        [
+            new("datenschutz", "Nav_PrivacyPolicy", "Nav_PrivacyPolicy", Icons.Material.Outlined.Policy),
         ]),
     ];
 

@@ -34,7 +34,7 @@ public sealed partial class StringsTests : ApolloTestContext
         var keys = ResourceKeys();
 
         var navigationKeys = NavigationAreas.Sections
-            .SelectMany(s => s.Items.Select(i => i.LabelKey).Append(s.TitleKey))
+            .SelectMany(s => s.Items.SelectMany(i => new[] { i.LabelKey, i.TitleKey }).Append(s.TitleKey))
             .OfType<string>();
 
         navigationKeys.Where(k => !keys.Contains(k)).ShouldBeEmpty();

@@ -1,5 +1,5 @@
-@page "/admin/bot-status"
-@page "/admin/server"
+@page "/admin"
+@page "/admin/dashboard"
 @page "/admin/members"
 @page "/admin/recaps"
 @page "/admin/data"
@@ -7,6 +7,7 @@
 @page "/me"
 @page "/me/recaps"
 @page "/me/privacy"
+@page "/datenschutz"
 @inject IStringLocalizer<Strings> L
 @inject NavigationManager NavigationManager
 
@@ -26,6 +27,6 @@
     protected override void OnParametersSet()
     {
         var area = NavigationAreas.Find(NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
-        _areaName = area is null ? L["App_Name"] : L[area.LabelKey];
+        _areaName = area is null ? L["App_Name"] : L[area.TitleKey];
     }
 }
