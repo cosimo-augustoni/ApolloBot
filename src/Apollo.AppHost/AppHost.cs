@@ -12,8 +12,8 @@ var registry = AddRegistry(builder);
 var db = AddPostgres(builder);
 var apollo = db.AddDatabase("apollo");
 
-// Exits once migrations are applied (#6), so Swarm must not restart it.
-builder.AddProject<Apollo_MigrationService>("migrationservice")
+// Applies EF migrations, then exits (#6), so Swarm must not restart it.
+var migrations = builder.AddProject<Apollo_MigrationService>("migrationservice")
     .WithReference(apollo)
     .WaitFor(db)
     .WithContainerRegistry(registry)
@@ -23,9 +23,11 @@ builder.AddProject<Apollo_MigrationService>("migrationservice")
         service.Deploy = new Deploy { RestartPolicy = new RestartPolicy { Condition = "none" } };
     });
 
+// WaitForCompletion orders the run mode only; the published stack has no depends_on (UseSwarm), so outside
+// Development bot and web wait for the migrations themselves (WaitForMigrationsAsync).
 builder.AddProject<Apollo_Bot>("bot")
     .WithReference(apollo)
-    .WaitFor(db)
+    .WaitForCompletion(migrations)
     .WithContainerRegistry(registry)
     .PublishAsDockerComposeService((_, service) => UseSwarm(service, ComposeNetworks.Internal));
 
@@ -35,7 +37,7 @@ var reverseProxyNetwork = builder.Configuration["Apollo:Deploy:ReverseProxyNetwo
 // The service name is its DNS alias on the shared reverse-proxy network, so it must be unique there.
 var web = builder.AddProject<Apollo_Web>("apollo-web")
     .WithReference(apollo)
-    .WaitFor(db)
+    .WaitForCompletion(migrations)
     .WithExternalHttpEndpoints()
     .WithHttpHealthCheck("/health")
     .WithContainerRegistry(registry)

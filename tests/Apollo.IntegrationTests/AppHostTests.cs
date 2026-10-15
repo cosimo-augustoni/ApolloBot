@@ -41,6 +41,43 @@ public sealed class AppHostTests(AppHostFixture fixture) : IClassFixture<AppHost
         (await timescale.ExecuteScalarAsync(cts.Token)).ShouldBeOfType<string>().ShouldNotBeNullOrWhiteSpace();
     }
 
+    [Fact]
+    public async Task AppHost_WhenStarted_ShouldRunMigrationServiceToCompletionBeforeBotAndWeb()
+    {
+        using var cts = CreateTimeout();
+
+        var migrations = await fixture.App.ResourceNotifications.WaitForResourceAsync(
+            "migrationservice", e => KnownResourceStates.TerminalStates.Contains(e.Snapshot.State?.Text), cts.Token);
+        var bot = await fixture.App.ResourceNotifications.WaitForResourceAsync(
+            "bot", e => e.Snapshot.State?.Text == KnownResourceStates.Running, cts.Token);
+        var web = await fixture.App.ResourceNotifications.WaitForResourceAsync(
+            "apollo-web", e => e.Snapshot.State?.Text == KnownResourceStates.Running, cts.Token);
+
+        migrations.Snapshot.State?.Text.ShouldBe(KnownResourceStates.Finished);
+        migrations.Snapshot.ExitCode.ShouldBe(0);
+        var finishedAt = migrations.Snapshot.StopTimeStamp.ShouldNotBeNull();
+        bot.Snapshot.StartTimeStamp.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(finishedAt);
+        web.Snapshot.StartTimeStamp.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(finishedAt);
+    }
+
+    [Fact]
+    public async Task AppHost_WhenStarted_ShouldMigrateApolloDatabase()
+    {
+        using var cts = CreateTimeout();
+
+        await fixture.App.ResourceNotifications.WaitForResourceAsync("migrationservice", KnownResourceStates.Finished, cts.Token);
+        var connectionString = await fixture.App.GetConnectionStringAsync("apollo", cts.Token);
+
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync(cts.Token);
+
+        await using var history = new NpgsqlCommand("""SELECT "MigrationId" FROM "__EFMigrationsHistory" """, connection);
+        (await history.ExecuteScalarAsync(cts.Token)).ShouldBeOfType<string>().ShouldEndWith("_InitialCreate");
+
+        await using var extension = new NpgsqlCommand("SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'", connection);
+        (await extension.ExecuteScalarAsync(cts.Token)).ShouldBeOfType<string>().ShouldNotBeNullOrWhiteSpace();
+    }
+
     private static CancellationTokenSource CreateTimeout()
     {
         var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
