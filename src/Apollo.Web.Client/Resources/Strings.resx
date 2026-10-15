@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- German UI text (neutral resources). Wording rules: docs/design/style-guide.md §8. -->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="App_Name" xml:space="preserve">
+    <value>Apollo</value>
+    <comment>App name in the app bar</comment>
+  </data>
+  <data name="PageTitle" xml:space="preserve">
+    <value>{0} – Apollo</value>
+    <comment>Browser tab title; {0} is the page name</comment>
+  </data>
+  <data name="Layout_ToggleMenu" xml:space="preserve">
+    <value>Menü ein- oder ausblenden</value>
+    <comment>Accessible label of the menu button</comment>
+  </data>
+  <data name="Layout_Version" xml:space="preserve">
+    <value>Version {0}</value>
+    <comment>Drawer footer; {0} is the web host version</comment>
+  </data>
+  <data name="Layout_UnhandledError" xml:space="preserve">
+    <value>Ein unerwarteter Fehler ist aufgetreten.</value>
+    <comment>Blazor error bar</comment>
+  </data>
+  <data name="Layout_Reload" xml:space="preserve">
+    <value>Neu laden</value>
+    <comment>Blazor error bar</comment>
+  </data>
+  <data name="Layout_Dismiss" xml:space="preserve">
+    <value>Schliessen</value>
+    <comment>Blazor error bar, accessible label</comment>
+  </data>
+  <data name="Nav_Home" xml:space="preserve">
+    <value>Start</value>
+    <comment>Navigation</comment>
+  </data>
+  <data name="Nav_SectionAdmin" xml:space="preserve">
+    <value>Admin</value>
+    <comment>Navigation section heading</comment>
+  </data>
+  <data name="Nav_BotStatus" xml:space="preserve">
+    <value>Bot-Status</value>
+    <comment>Navigation, admin</comment>
+  </data>
+  <data name="Nav_Server" xml:space="preserve">
+    <value>Server</value>
+    <comment>Navigation, admin</comment>
+  </data>
+  <data name="Nav_Members" xml:space="preserve">
+    <value>Mitglieder</value>
+    <comment>Navigation, admin</comment>
+  </data>
+  <data name="Nav_AdminRecaps" xml:space="preserve">
+    <value>Rückblicke</value>
+    <comment>Navigation, admin: server recaps</comment>
+  </data>
+  <data name="Nav_Data" xml:space="preserve">
+    <value>Daten</value>
+    <comment>Navigation, admin</comment>
+  </data>
+  <data name="Nav_Settings" xml:space="preserve">
+    <value>Einstellungen</value>
+    <comment>Navigation, admin</comment>
+  </data>
+  <data name="Nav_SectionMember" xml:space="preserve">
+    <value>Mitglied</value>
+    <comment>Navigation section heading</comment>
+  </data>
+  <data name="Nav_Overview" xml:space="preserve">
+    <value>Übersicht</value>
+    <comment>Navigation, member</comment>
+  </data>
+  <data name="Nav_MemberRecaps" xml:space="preserve">
+    <value>Rückblicke</value>
+    <comment>Navigation, member: own recaps</comment>
+  </data>
+  <data name="Nav_Privacy" xml:space="preserve">
+    <value>Datenschutz</value>
+    <comment>Navigation, member</comment>
+  </data>
+  <data name="Home_Title" xml:space="preserve">
+    <value>Willkommen bei Apollo</value>
+    <comment>Home page heading</comment>
+  </data>
+  <data name="Home_Text" xml:space="preserve">
+    <value>Apollo erfasst die Aktivität auf deinem Server und macht daraus Statistiken und Rückblicke. Wähle im Menü einen Bereich.</value>
+    <comment>Home page text</comment>
+  </data>
+  <data name="Placeholder_Title" xml:space="preserve">
+    <value>Noch nicht verfügbar</value>
+    <comment>Placeholder page for areas that are not built yet</comment>
+  </data>
+  <data name="Placeholder_Text" xml:space="preserve">
+    <value>Dieser Bereich wird gerade gebaut.</value>
+    <comment>Placeholder page for areas that are not built yet</comment>
+  </data>
+  <data name="NotFound_PageName" xml:space="preserve">
+    <value>Nicht gefunden</value>
+    <comment>Browser tab title of the not-found page</comment>
+  </data>
+  <data name="NotFound_Title" xml:space="preserve">
+    <value>Seite nicht gefunden</value>
+    <comment>Not-found page</comment>
+  </data>
+  <data name="NotFound_Text" xml:space="preserve">
+    <value>Diese Seite gibt es nicht. Prüfe die Adresse oder öffne die Startseite.</value>
+    <comment>Not-found page</comment>
+  </data>
+  <data name="NotFound_Home" xml:space="preserve">
+    <value>Startseite öffnen</value>
+    <comment>Not-found page button</comment>
+  </data>
+</root>

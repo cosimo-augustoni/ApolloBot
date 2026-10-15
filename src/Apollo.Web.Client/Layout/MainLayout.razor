@@ -1,19 +1,67 @@
 @inherits LayoutComponentBase
+@implements IDisposable
+@inject IStringLocalizer<Strings> L
+@inject IAppInfoClient AppInfoClient
 
-@* Minimal theme host until #28 adds the real layout and navigation. *@
 <MudThemeProvider Theme="_theme" IsDarkMode="true" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-@Body
+<MudLayout>
+    <MudAppBar Elevation="0" Dense="false">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
+                       Class="apollo-menu-button" aria-label="@L["Layout_ToggleMenu"]" OnClick="ToggleDrawer" />
+        <MudText Typo="Typo.h6" Class="ml-2">@L["App_Name"]</MudText>
+    </MudAppBar>
+
+    @* Responsive: persistent from md up, temporary overlay below md that closes when a nav link is clicked. *@
+    <MudDrawer @bind-Open="_drawerOpen" Variant="DrawerVariant.Responsive" Breakpoint="Breakpoint.Md"
+               ClipMode="DrawerClipMode.Always" Elevation="0" Class="apollo-drawer">
+        <div class="d-flex flex-column apollo-drawer-content">
+            <NavMenu />
+            <MudText Typo="Typo.caption" Class="apollo-app-version apollo-numeric mud-text-secondary pa-4 mt-auto">
+                @L["Layout_Version", _version]
+            </MudText>
+        </div>
+    </MudDrawer>
+
+    <MudMainContent>
+        <div class="apollo-body">
+            @Body
+        </div>
+    </MudMainContent>
+</MudLayout>
 
 <div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
+    @L["Layout_UnhandledError"]
+    <a href="." class="reload">@L["Layout_Reload"]</a>
+    <span class="dismiss" role="button" aria-label="@L["Layout_Dismiss"]"><MudIcon Icon="@Icons.Material.Filled.Close" Size="Size.Small" /></span>
 </div>
 
 @code {
     private readonly MudTheme _theme = ApolloTheme.Create();
+    private readonly CancellationTokenSource _disposed = new();
+    private bool _drawerOpen = true;
+    private string _version = UiCulture.Placeholder;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _version = (await AppInfoClient.GetAppInfoAsync(_disposed.Token)).Version;
+        }
+        catch (HttpRequestException)
+        {
+            // The version is informational: without the API the footer keeps the placeholder.
+        }
+    }
+
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    public void Dispose()
+    {
+        _disposed.Cancel();
+        _disposed.Dispose();
+    }
 }

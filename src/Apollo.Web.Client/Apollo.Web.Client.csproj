@@ -4,10 +4,15 @@
     <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
     <StaticWebAssetProjectMode>Default</StaticWebAssetProjectMode>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <!-- Strings.resx (no culture suffix) holds the German UI text, so German needs no satellite assembly. -->
+    <NeutralLanguage>de</NeutralLanguage>
+    <!-- The UI formats in de-CH whatever the browser language is, so the runtime needs more than the browser's ICU shard. -->
+    <BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
+    <PackageReference Include="Microsoft.Extensions.Localization" />
     <PackageReference Include="MudBlazor" />
     <PackageReference Include="Blazor-ApexCharts" />
   </ItemGroup>

@@ -1,7 +1,9 @@
 ﻿@page "/"
+@inject IStringLocalizer<Strings> L
 
-<PageTitle>Home</PageTitle>
+<PageTitle>@L["PageTitle", L["Nav_Home"]]</PageTitle>
 
-<h1>Hello, world!</h1>
-
-Welcome to your new app.
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-6">
+    <MudText Typo="Typo.h1" Class="mb-2">@L["Home_Title"]</MudText>
+    <MudText Typo="Typo.body1" Class="mud-text-secondary">@L["Home_Text"]</MudText>
+</MudContainer>

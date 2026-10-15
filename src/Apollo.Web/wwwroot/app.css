@@ -102,3 +102,12 @@ h1:focus {
 .mud-primary-text {
     --mud-palette-primary: #8A91FF;
 }
+
+/* Shell (issue #28): drawer content fills the drawer so the version sits at the bottom. */
+.apollo-drawer-content {
+    min-height: 100%;
+}
+
+.apollo-nav-section {
+    display: block;
+}
