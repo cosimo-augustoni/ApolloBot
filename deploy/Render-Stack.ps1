@@ -18,7 +18,7 @@
     See docs/deployment.md.
 
 .PARAMETER OutputPath
-    The Aspire output directory. Defaults to aspire-output in the repository root.
+    The Aspire output directory. Defaults to src/Apollo.AppHost/aspire-output, where aspire do writes without -o.
 
 .PARAMETER Environment
     The Aspire environment whose env file is used. Defaults to Production, like aspire do.
@@ -28,7 +28,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string] $OutputPath = (Join-Path $PSScriptRoot '..' 'aspire-output'),
+    [string] $OutputPath = (Join-Path $PSScriptRoot '..' 'src' 'Apollo.AppHost' 'aspire-output'),
 
     [string] $Environment = 'Production'
 )

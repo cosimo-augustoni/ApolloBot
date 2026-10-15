@@ -5,7 +5,7 @@ Apollo runs as a Docker Swarm stack behind the existing reverse proxy. There is 
 The flow has three commands, and the stack file needs no hand editing:
 
 1. `aspire do prepare-stack` builds the images, pushes them to the registry and writes the compose file plus an env file with the values.
-2. `deploy/Render-Stack.ps1` inlines those values into `aspire-output/apollo.stack.yaml`, because Swarm does not read `.env` files.
+2. `deploy/Render-Stack.ps1` inlines those values into `src/Apollo.AppHost/aspire-output/apollo.stack.yaml`, because Swarm does not read `.env` files.
 3. `docker stack deploy` deploys it.
 
 ## Prerequisites
@@ -50,7 +50,7 @@ From the repository root:
 aspire do prepare-stack --apphost src/Apollo.AppHost/Apollo.AppHost.csproj
 ```
 
-This builds `bot`, `apollo-web` and `migrationservice`, pushes them to `<REGISTRY_ENDPOINT>/<REGISTRY_REPOSITORY>/<service>:aspire-deploy-<timestamp>`, and writes into `aspire-output/`:
+This builds `bot`, `apollo-web` and `migrationservice`, pushes them to `<REGISTRY_ENDPOINT>/<REGISTRY_REPOSITORY>/<service>:aspire-deploy-<timestamp>`, and writes into `src/Apollo.AppHost/aspire-output/` (Aspire's default output folder next to the AppHost; `-o <dir>` changes it, then pass the same folder to the render script with `-OutputPath`):
 
 - `docker-compose.yaml` with `${NAME}` placeholders
 - `.env` as an empty template
@@ -64,15 +64,15 @@ Don't use `aspire deploy` here: in Aspire 13.6 it ends with `docker compose up` 
 pwsh deploy/Render-Stack.ps1
 ```
 
-This replaces every `${NAME}` / `${NAME:-default}` in `docker-compose.yaml` with the value from `.env.Production` (or `.env` if there is no environment-specific file) and writes `aspire-output/apollo.stack.yaml`. If any placeholder has no value, it names the variables, writes nothing and exits with 1. It never prints values. `-Environment <name>` picks `.env.<name>` and `-OutputPath <dir>` picks another output directory.
+This replaces every `${NAME}` / `${NAME:-default}` in `docker-compose.yaml` with the value from `.env.Production` (or `.env` if there is no environment-specific file) and writes `src/Apollo.AppHost/aspire-output/apollo.stack.yaml`. If any placeholder has no value, it names the variables, writes nothing and exits with 1. It never prints values. `-Environment <name>` picks `.env.<name>` and `-OutputPath <dir>` picks another output directory.
 
 ```bash
-docker stack deploy -c aspire-output/apollo.stack.yaml apollo
+docker stack deploy -c src/Apollo.AppHost/aspire-output/apollo.stack.yaml apollo
 ```
 
-Run it against the Swarm manager, for example through a Docker context. To check the file first: `docker stack config -c aspire-output/apollo.stack.yaml`.
+Run it against the Swarm manager, for example through a Docker context. To check the file first: `docker stack config -c src/Apollo.AppHost/aspire-output/apollo.stack.yaml`.
 
-`aspire-output/` is git-ignored. `.env.Production` and `apollo.stack.yaml` contain secrets, so never commit or share them.
+`aspire-output/` folders are git-ignored wherever they are. `.env.Production` and `apollo.stack.yaml` contain secrets, so never commit or share them.
 
 ## What the stack looks like
 
