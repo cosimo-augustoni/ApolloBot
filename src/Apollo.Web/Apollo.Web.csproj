@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Apollo.Web.Client\Apollo.Web.Client.csproj" />
+    <ProjectReference Include="..\Apollo.Data\Apollo.Data.csproj" />
+    <ProjectReference Include="..\Apollo.Stats\Apollo.Stats.csproj" />
+    <ProjectReference Include="..\Apollo.ServiceDefaults\Apollo.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+</Project>

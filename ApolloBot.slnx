@@ -1,0 +1,26 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Apollo.AppHost/Apollo.AppHost.csproj" />
+    <Project Path="src/Apollo.Bot/Apollo.Bot.csproj" />
+    <Project Path="src/Apollo.Data/Apollo.Data.csproj" />
+    <Project Path="src/Apollo.Domain/Apollo.Domain.csproj" />
+    <Project Path="src/Apollo.MigrationService/Apollo.MigrationService.csproj" />
+    <Project Path="src/Apollo.Platform.Abstractions/Apollo.Platform.Abstractions.csproj" />
+    <Project Path="src/Apollo.Platform.Discord/Apollo.Platform.Discord.csproj" />
+    <Project Path="src/Apollo.Platform.Fluxer/Apollo.Platform.Fluxer.csproj" />
+    <Project Path="src/Apollo.ServiceDefaults/Apollo.ServiceDefaults.csproj" />
+    <Project Path="src/Apollo.Stats/Apollo.Stats.csproj" />
+    <Project Path="src/Apollo.Web.Client/Apollo.Web.Client.csproj" />
+    <Project Path="src/Apollo.Web/Apollo.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Apollo.Bot.Tests/Apollo.Bot.Tests.csproj" />
+    <Project Path="tests/Apollo.Domain.Tests/Apollo.Domain.Tests.csproj" />
+    <Project Path="tests/Apollo.IntegrationTests/Apollo.IntegrationTests.csproj" />
+    <Project Path="tests/Apollo.Platform.Discord.Tests/Apollo.Platform.Discord.Tests.csproj" />
+    <Project Path="tests/Apollo.Stats.Tests/Apollo.Stats.Tests.csproj" />
+    <Project Path="tests/Apollo.Testing/Apollo.Testing.csproj" />
+    <Project Path="tests/Apollo.Web.Client.Tests/Apollo.Web.Client.Tests.csproj" />
+    <Project Path="tests/Apollo.Web.Tests/Apollo.Web.Tests.csproj" />
+  </Folder>
+</Solution>

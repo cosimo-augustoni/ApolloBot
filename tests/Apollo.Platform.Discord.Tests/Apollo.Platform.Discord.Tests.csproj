@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Apollo.Platform.Discord\Apollo.Platform.Discord.csproj" />
+  </ItemGroup>
+
+</Project>

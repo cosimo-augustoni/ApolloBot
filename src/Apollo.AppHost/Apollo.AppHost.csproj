@@ -1,0 +1,16 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.6.1">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AspireUseCliBundle>true</AspireUseCliBundle>
+    <UserSecretsId>c7c5e94b-eef1-4e66-84c6-09af5147e84e</UserSecretsId>
+  </PropertyGroup>
+
+  <!-- Project resources are referenced here and wired up in AppHost.cs (#4). -->
+  <ItemGroup>
+    <ProjectReference Include="..\Apollo.Bot\Apollo.Bot.csproj" />
+    <ProjectReference Include="..\Apollo.MigrationService\Apollo.MigrationService.csproj" />
+    <ProjectReference Include="..\Apollo.Web\Apollo.Web.csproj" />
+  </ItemGroup>
+
+</Project>

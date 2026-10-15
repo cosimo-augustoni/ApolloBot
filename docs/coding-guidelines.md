@@ -23,14 +23,14 @@ Rules:
 
 | Purpose | Tool |
 |---|---|
-| Test framework | **xUnit v3** |
+| Test framework | **xUnit v3** on **Microsoft.Testing.Platform** (opted in via `global.json`; run with `dotnet test`) |
 | Assertions | **Shouldly** (FluentAssertions is no longer free for commercial use; Shouldly keeps it simple) |
 | Test doubles | **NSubstitute**, sparingly (see §4) |
 | Time | `TimeProvider` everywhere; `FakeTimeProvider` (Microsoft.Extensions.TimeProvider.Testing) in tests |
 | Database | **Testcontainers.PostgreSql** with the same `timescale/timescaledb` image as production |
 | Blazor components | **bUnit** |
 | End-to-end / host | **Aspire.Hosting.Testing** (`DistributedApplicationTestingBuilder`) for a few smoke tests |
-| Coverage | `coverlet` collector. No hard gate; check coverage in reviews |
+| Coverage | `Microsoft.Testing.Extensions.CodeCoverage` (`dotnet test -- --coverage`). No hard gate; check coverage in reviews |
 
 ## 3. Test layout & naming
 

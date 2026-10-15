@@ -1,0 +1,28 @@
+<Project>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <!-- Apollo.Testing is a shared helper library, every other project here is a test project. -->
+    <IsTestProject Condition="'$(MSBuildProjectName)' != 'Apollo.Testing'">true</IsTestProject>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+    <Using Include="Shouldly" />
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Apollo.Testing/Apollo.Testing.csproj" />
+  </ItemGroup>
+
+</Project>
