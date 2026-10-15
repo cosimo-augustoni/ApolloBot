@@ -36,3 +36,69 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+/* --- Apollo design system (issue #26, docs/design/style-guide.md) --- */
+
+/* Stat values and other numbers: equal-width digits so columns and tiles line up. */
+.apollo-numeric {
+    font-variant-numeric: tabular-nums;
+}
+
+.apollo-stat-tile,
+.apollo-section-card {
+    height: 100%;
+    border: 1px solid var(--mud-palette-lines-default);
+}
+
+.apollo-stat-value {
+    margin-top: 4px;
+    overflow-wrap: anywhere;
+}
+
+.apollo-empty-state {
+    min-height: 160px;
+}
+
+/* Style guide page */
+.apollo-swatch {
+    height: 100%;
+    overflow: hidden;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: var(--mud-default-borderradius);
+    background-color: var(--mud-palette-surface);
+}
+
+.apollo-swatch-colour {
+    height: 56px;
+    border-bottom: 1px solid var(--mud-palette-lines-default);
+}
+
+.apollo-chart-dot {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+}
+
+.apollo-heatmap-scale {
+    height: 24px;
+    overflow: hidden;
+    border-radius: var(--mud-default-borderradius);
+}
+
+.apollo-spacing-label {
+    min-width: 88px;
+}
+
+.apollo-spacing-bar {
+    height: 12px;
+    border-radius: 2px;
+    background-color: var(--mud-palette-primary);
+}
+
+/* Primary (#5D66E8) has only 3:1 against Surface: fine for fills and borders, too low for text.
+   Wherever primary is used as text colour, swap in PrimaryLight (#8A91FF, 5:1). */
+.mud-button-text-primary,
+.mud-button-outlined-primary,
+.mud-primary-text {
+    --mud-palette-primary: #8A91FF;
+}

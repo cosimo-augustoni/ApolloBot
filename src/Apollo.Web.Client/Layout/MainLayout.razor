@@ -1,4 +1,10 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+
+@* Minimal theme host until #28 adds the real layout and navigation. *@
+<MudThemeProvider Theme="_theme" IsDarkMode="true" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
 
 @Body
 
@@ -7,3 +13,7 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    private readonly MudTheme _theme = ApolloTheme.Create();
+}

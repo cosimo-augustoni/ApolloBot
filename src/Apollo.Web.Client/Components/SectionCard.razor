@@ -1,0 +1,20 @@
+<MudPaper Class="apollo-section-card pa-4" Elevation="0">
+    <div class="d-flex align-center justify-space-between gap-2 mb-3">
+        <MudText Typo="Typo.h6">@Title</MudText>
+        @Action
+    </div>
+    @ChildContent
+</MudPaper>
+
+@code {
+    /// <summary>Card heading.</summary>
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>Optional control in the header, e.g. a small button or menu.</summary>
+    [Parameter]
+    public RenderFragment? Action { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}
