@@ -40,17 +40,39 @@ dotnet run --project src/Apollo.AppHost              # local stack + Aspire dash
 | `src/Apollo.Stats` | Date-range stats queries and recap builders |
 | `src/Apollo.Web` | ASP.NET Core host: API, auth, serves the WASM client |
 | `src/Apollo.Web.Client` | Blazor WASM UI (German) |
-| `tests/Apollo.Testing` | Shared test helpers: fixtures, builders, `FakeChatPlatform` |
+| `tests/Apollo.Testing` | Shared test helpers: `TimescaleFixture`, `TestDataBuilder<,>`, `TestTime`, `FakeChatPlatform` (#10) |
 | `tests/Apollo.Domain.Tests` | Pure unit tests |
 | `tests/Apollo.Bot.Tests` | Recorders against `FakeChatPlatform` + Testcontainers DB |
 | `tests/Apollo.Stats.Tests` | Stats queries against a seeded Testcontainers DB |
 | `tests/Apollo.Platform.Discord.Tests` | NetCord payload → platform event mapping |
 | `tests/Apollo.Web.Tests` | API endpoints and auth policies (`WebApplicationFactory`) |
 | `tests/Apollo.Web.Client.Tests` | bUnit component tests |
-| `tests/Apollo.IntegrationTests` | Few, slow Aspire smoke tests |
+| `tests/Apollo.IntegrationTests` | Few, slow Aspire smoke tests; AppHost model and data/migration tests |
+| `tests/Apollo.ArchitectureTests` | Platform boundary: no NetCord/Fluxer types outside `Apollo.Platform.*` |
 
 Packages are versioned centrally in `Directory.Packages.props`: never put `Version=` in a `.csproj`.
 Test projects get xunit v3, Shouldly, NSubstitute and `Apollo.Testing` automatically via `tests/Directory.Build.props`.
+
+## Writing a DB test
+
+Derive from `TimescaleTest` (`Apollo.Testing.Data`): the class joins the `TimescaleCollection` (one container per test
+assembly, migrations applied once) and the database is reset with Respawn before every test.
+
+```csharp
+public sealed class VoiceSessionRecorderTests(TimescaleFixture fixture) : TimescaleTest(fixture)
+{
+    [Fact]
+    public async Task Record_WhenUserLeaves_ShouldPersistSession()
+    {
+        await using var db = Fixture.CreateDbContext();
+        // ...
+    }
+}
+```
+
+- The reset deletes rows in schema `public` (not `__EFMigrationsHistory`). Continuous aggregates are not reset: refresh them after seeding.
+- Need an unmigrated database? Use `[Collection<TimescaleCollection>]` and `fixture.NewDatabaseConnectionString()`.
+- Test data: builders derived from `TestDataBuilder<TBuilder, T>`. Time: `TestTime.CreateProvider()` (fixed UTC "now", `Europe/Zurich` local zone).
 
 ## TDD loop (mandatory)
 
