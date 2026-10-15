@@ -156,7 +156,7 @@ TimescaleDB is a Postgres extension, so Npgsql and EF Core work unchanged. Times
 | Hypertables for the event tables | `IsHypertable(x => x.OccurredAt)` with a chunk interval |
 | Daily rollups | `IsContinuousAggregate<TAgg, TSource>(...)` plus `AddAggregateFunction(...)` (Sum, Count, Min, Max, Avg, First, Last) |
 | Refresh, compression, retention | Fluent policy APIs from the package |
-| Time zone–aware daily buckets (`time_bucket('1 day', ts, 'Europe/Zurich')`) | **Must be verified in the M0 spike.** If the package can't do it, that one aggregate is created with `migrationBuilder.Sql(...)` |
+| Time zone–aware daily buckets (`time_bucket('1 day', ts, 'Europe/Zurich')`) | The fluent API can't add the time zone. These aggregates are written by hand in the migration with CmdScale's `CreateContinuousAggregate(viewDefinition: ...)` and read through a keyless `ToView` entity ([ADR 0001](adr/0001-timescale-ef.md)) |
 | Reading aggregates | Keyless entities, queried with LINQ |
 
 - **Aspire:** `AddPostgres("db").WithImage("timescale/timescaledb", "<latest-pg tag>")`. This needs no extra setup and is still one container in the compose output.
@@ -365,7 +365,7 @@ Alongside the template, the repo gets a **`CLAUDE.md`** with build and test comm
 | D4 | Opt-out | ~~Soft-delete flag~~ → **replaced by D15**. Removing the tracking role stops recording, and existing data stays. Hard delete only on explicit request |
 | D5 | Slash commands (M1) | `/apollo tracking on\|off\|status`, `/apollo privacy delete` and `/apollo stats` (replies with a link to `/me`) |
 | D6 | Style | Dark-first, Discord/Fluxer-like, mobile-usable |
-| D7 | Versions | Latest .NET and Aspire at implementation time (currently .NET 10 / Aspire 13.x); EF Core version must match what CmdScale supports |
+| D7 | Versions | Latest .NET and Aspire at implementation time (currently .NET 10 / Aspire 13.x); EF Core version must match what CmdScale supports (today: latest EF Core 10.0.x, not 11, see [ADR 0001](adr/0001-timescale-ef.md)) |
 | D8 | Admin | Administrator permission only, no allowlist |
 | D9 | Member access | List of member access roles, any match grants access. Stored in the DB per platform and edited in the admin UI (§5.1.2) |
 | D10 | Timescale in EF | CmdScale.EntityFrameworkCore.TimescaleDB first, raw SQL only as fallback |
@@ -377,5 +377,5 @@ Alongside the template, the repo gets a **`CLAUDE.md`** with build and test comm
 
 ## 12. Open questions
 
-None blocking. Spikes to schedule in M0/M1:
-- CmdScale: daily `time_bucket` with a time zone in continuous aggregates, and compatibility with the latest EF Core version
+None blocking. Answered by spikes:
+- CmdScale: daily `time_bucket` with a time zone in continuous aggregates, and compatibility with the latest EF Core version → [ADR 0001](adr/0001-timescale-ef.md)
