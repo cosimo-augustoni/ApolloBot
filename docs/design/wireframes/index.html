@@ -94,11 +94,41 @@
         </table>
       </section>
 
+      <section class="wf-card" style="margin-bottom: 24px">
+        <h2>Member area: concepts B/C/D</h2>
+        <p>
+          Owner feedback on PR #58: the member side should feel lighter and more stylised than an app with a drawer.
+          These three alternatives replace the <code>/me</code> overview and recaps above once one is picked
+          (the <code>me-*.html</code> pages stay as they are until then). Shared rules: no drawer; a minimal header with logo,
+          period switch and avatar menu (Privatsphäre, Datenschutz, Abmelden, "Admin" for admins);
+          the "not tracked" hint is a friendly card in the content.
+        </p>
+        <table class="wf-table wf-stack wf-index-list">
+          <thead>
+            <tr><th>Concept</th><th>Overview</th><th>Recaps</th><th>Empty state</th></tr>
+          </thead>
+          <tbody>
+            <tr><td data-label="Concept"><strong>B · Magazine</strong><br><span class="wf-stat-sub">long editorial page in chapters, recap covers on top, sticky period pill</span></td>
+              <td data-label="Overview"><a href="member-variants/b-magazine/index.html">desktop</a><a href="member-variants/b-magazine/index.html" target="phone">360px</a><a href="member-variants/b-magazine/index.html#paused" target="phone">not tracked</a></td>
+              <td data-label="Recaps"><a href="member-variants/b-magazine/recap.html">detail</a><a href="member-variants/b-magazine/recap.html" target="phone">360px</a></td>
+              <td data-label="Empty state"><a href="member-variants/b-magazine/empty.html">desktop</a><a href="member-variants/b-magazine/empty.html" target="phone">360px</a></td></tr>
+            <tr><td data-label="Concept"><strong>C · Bento</strong><br><span class="wf-stat-sub">grid of tiles in different sizes; a tile opens a bottom sheet (mobile) or side panel (desktop)</span></td>
+              <td data-label="Overview"><a href="member-variants/c-bento/index.html">desktop</a><a href="member-variants/c-bento/index.html" target="phone">360px</a><a href="member-variants/c-bento/index.html#sheet-voice" target="phone">sheet open</a></td>
+              <td data-label="Recaps"><a href="member-variants/c-bento/recaps.html">covers</a><a href="member-variants/c-bento/recaps.html" target="phone">360px</a><a href="member-variants/c-bento/recap.html">detail</a><a href="member-variants/c-bento/recap.html" target="phone">360px</a></td>
+              <td data-label="Empty state"><a href="member-variants/c-bento/empty.html">desktop</a><a href="member-variants/c-bento/empty.html" target="phone">360px</a></td></tr>
+            <tr><td data-label="Concept"><strong>D · Timeline</strong><br><span class="wf-stat-sub">months newest first; current month expanded, older months compact; year separators</span></td>
+              <td data-label="Overview"><a href="member-variants/d-timeline/index.html">desktop</a><a href="member-variants/d-timeline/index.html" target="phone">360px</a></td>
+              <td data-label="Recaps"><a href="member-variants/d-timeline/recap.html">detail</a><a href="member-variants/d-timeline/recap.html" target="phone">360px</a></td>
+              <td data-label="Empty state"><a href="member-variants/d-timeline/empty.html">desktop</a><a href="member-variants/d-timeline/empty.html" target="phone">360px</a></td></tr>
+          </tbody>
+        </table>
+      </section>
+
       <section class="wf-card">
         <h2>Navigation</h2>
         <ul>
           <li>Admins (Administrator permission) see two drawer groups: <em>Server</em> (admin area) and <em>Meine Statistik</em>. Admin home is <code>/admin</code>.</li>
-          <li>Members (a Zugriffsrolle) see only <em>Meine Statistik</em>. Member home is <code>/me</code>.</li>
+          <li>Members (a Zugriffsrolle) see only <em>Meine Statistik</em>. Member home is <code>/me</code>. (The member concepts B/C/D above drop the drawer for members; admins then reach the admin shell from the avatar menu.)</li>
           <li>Everyone else gets <code>/kein-zugriff</code> after login. <code>/datenschutz</code> needs no login.</li>
           <li>Out of scope (scope §3): no web tracking toggle and no web delete; tracking changes only via <code>/apollo</code> commands.</li>
         </ul>

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rückblicke · C · Bento · Apollo wireframe</title>
+  <link rel="stylesheet" href="../../wireframes.css">
+  <link rel="stylesheet" href="../variants.css">
+</head>
+<body>
+  <header class="mv-header">
+    <a class="mv-logo" href="index.html">Apollo</a>
+    <span class="mv-spacer"></span>
+    <details class="mv-menu">
+      <summary>Oktober 2026 ▾</summary>
+      <div class="mv-menu-list">
+        <span class="mv-menu-label">Zeitraum</span>
+        <a href="index.html" aria-current="true">Oktober 2026 (läuft)</a>
+        <a href="recap.html" aria-current="false">September 2026</a>
+        <a href="recap.html">August 2026</a>
+        <a href="recap.html">Jahr 2025</a>
+        <hr>
+        <a href="#">Benutzerdefiniert …</a>
+      </div>
+    </details>
+    <details class="mv-menu mv-avatar">
+      <summary title="Konto"></summary>
+      <div class="mv-menu-list">
+        <span class="mv-menu-label">Anna</span>
+        <a href="../../me-privacy.html">Privatsphäre</a>
+        <a href="../../privacy.html">Datenschutz</a>
+        <hr>
+        <a href="../../admin-status.html">Admin <span class="wf-tag">nur für Admins</span></a>
+        <hr>
+        <a href="../../login.html">Abmelden</a>
+      </div>
+    </details>
+  </header>
+  <main class="mv-page">
+    <p><a href="index.html" class="wf-stat-sub">← Übersicht</a></p>
+    <h1 class="mv-hello">Deine Rückblicke</h1>
+    <h2 style="margin-top: 20px">Jahre</h2>
+    <div class="bt-covers">
+      <a class="mv-cover mv-year" href="recap.html" style="min-height: 200px"><span class="mv-kicker">Jahresrückblick</span><strong>2025</strong></a>
+    </div>
+    <h2>Monate</h2>
+    <div class="bt-covers">
+      <a class="mv-cover mv-soon" href="#"><span class="mv-kicker">läuft · ab 1. November</span><strong>Oktober</strong></a>
+      <a class="mv-cover " href="recap.html"><span class="mv-kicker">2026</span><strong>September</strong></a>
+      <a class="mv-cover " href="recap.html"><span class="mv-kicker">2026</span><strong>August</strong></a>
+      <a class="mv-cover " href="recap.html"><span class="mv-kicker">2026</span><strong>Juli</strong></a>
+      <a class="mv-cover " href="recap.html"><span class="mv-kicker">2026</span><strong>Juni</strong></a>
+      <a class="mv-cover " href="recap.html"><span class="mv-kicker">2026</span><strong>Mai</strong></a>
+    </div>
+    <aside class="wf-notes" lang="en">
+      <h2>Annotations</h2>
+      <ul>
+        <li>Opened from the "Neuer Rückblick" tile. A list of covers, newest first; years above months. Tapping a cover opens the recap detail.</li>
+        <li>Empty: "Noch keine Rückblicke · Der erste Monatsrückblick erscheint am 1. November."</li>
+        <li>Member shell (all concepts): no drawer. Header = Apollo logo (home), period switch ("Oktober 2026 ▾": running month, past months/years, Benutzerdefiniert) and avatar menu (Privatsphäre, Datenschutz, Abmelden; "Admin" only for admins, leads to the existing admin shell).</li>
+        <li>Menus are <code>&lt;details&gt;</code> here so they work without JS; real pages use MudMenu.</li>
+        <li>Privatsphäre currently links to the existing <code>me-privacy.html</code>; it gets restyled to the chosen concept later.</li>
+      </ul>
+    </aside>
+    <p class="wf-stat-sub" lang="en"><a href="../../index.html">← Wireframe index</a> · Concept C · Bento</p>
+  </main>
+  <script src="../../wireframes.js"></script>
+</body>
+</html>

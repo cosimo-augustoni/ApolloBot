@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Monatsrückblick September 2026 · D · Zeitleiste · Apollo wireframe</title>
+  <link rel="stylesheet" href="../../wireframes.css">
+  <link rel="stylesheet" href="../variants.css">
+</head>
+<body>
+  <header class="mv-header">
+    <a class="mv-logo" href="index.html">Apollo</a>
+    <span class="mv-spacer"></span>
+    <details class="mv-menu">
+      <summary>September 2026 ▾</summary>
+      <div class="mv-menu-list">
+        <span class="mv-menu-label">Zeitraum</span>
+        <a href="index.html" aria-current="false">Oktober 2026 (läuft)</a>
+        <a href="recap.html" aria-current="true">September 2026</a>
+        <a href="recap.html">August 2026</a>
+        <a href="recap.html">Jahr 2025</a>
+        <hr>
+        <a href="#">Benutzerdefiniert …</a>
+      </div>
+    </details>
+    <details class="mv-menu mv-avatar">
+      <summary title="Konto"></summary>
+      <div class="mv-menu-list">
+        <span class="mv-menu-label">Anna</span>
+        <a href="../../me-privacy.html">Privatsphäre</a>
+        <a href="../../privacy.html">Datenschutz</a>
+        <hr>
+        <a href="../../admin-status.html">Admin <span class="wf-tag">nur für Admins</span></a>
+        <hr>
+        <a href="../../login.html">Abmelden</a>
+      </div>
+    </details>
+  </header>
+  <main class="mv-page">
+    <p><a href="index.html#m-september" class="wf-stat-sub">← Zur Zeitleiste</a></p>
+    <div class="mv-kicker">Monatsrückblick</div>
+    <h1 class="mv-hello">September 2026</h1>
+    <p class="wf-stat-sub" style="margin-bottom: 20px">Erstellt am 01.10.2026 · Erfasst an 30 von 30 Tagen</p>
+    <div class="tl">
+      <div class="tl-item">
+        <article class="wf-recap-card" style="min-height: 200px">
+          <div class="mv-kicker">Du hast geschrieben</div>
+          <div><div class="mv-big">1'190</div></div>
+          <div class="wf-stat-sub">Nachrichten · 40 pro Tag · 286 Reaktionen</div>
+        </article>
+      </div>
+      <div class="tl-item">
+        <article class="wf-recap-card" style="min-height: 200px">
+          <div class="mv-kicker">Im Voice warst du</div>
+          <div><div class="mv-big">40.2 h</div></div>
+          <div class="wf-stat-sub">Längste Session: 5 h 12 min · am meisten mit Ben</div>
+        </article>
+      </div>
+      <div class="tl-item">
+        <article class="wf-recap-card" style="min-height: 200px">
+          <div class="mv-kicker">Dein Top-Kanal</div>
+          <div><div class="mv-big">#allgemein</div></div>
+          <div class="wf-stat-sub">512 Nachrichten · 43 % deiner Nachrichten</div>
+        </article>
+      </div>
+      <div class="tl-item">
+        <article class="wf-recap-card" style="min-height: 200px">
+          <div class="mv-kicker">Dein Lieblings-Emoji</div>
+          <div><div class="mv-big">◯</div></div>
+          <div class="wf-stat-sub">87-mal verwendet</div>
+        </article>
+      </div>
+      <div class="tl-item">
+        <article class="wf-recap-card" style="min-height: 200px">
+          <div class="mv-kicker">Deine aktivste Zeit</div>
+          <div><div class="mv-big">Mi, 21 Uhr</div><div class="wf-heatmap" style="height: 90px; margin-top: 8px"></div></div>
+          <div class="wf-stat-sub">Aktiv an 24 von 30 Tagen</div>
+        </article>
+      </div>
+      <div class="tl-item">
+        <article class="wf-recap-card wf-optional" style="min-height: 200px">
+          <div class="mv-kicker">Am meisten gespielt</div>
+          <div><div class="mv-big">Spiel A</div></div>
+          <div class="wf-stat-sub">18.2 h · nur wenn Daten vorhanden</div>
+        </article>
+      </div>
+    </div>
+    <div class="wf-toolbar" style="justify-content: space-between; margin-top: 24px">
+      <a class="wf-btn" href="recap.html">← August 2026</a>
+      <a class="wf-btn" href="index.html">Oktober 2026 →</a>
+    </div>
+    <aside class="wf-notes" lang="en">
+      <h2>Annotations</h2>
+      <ul>
+        <li>Recap detail continues the timeline idea: a vertical story of "Wrapped" cards, one fact per card, on the same timeline rail.</li>
+        <li>Back link returns to the month's position in the timeline. Year recaps use the same page with 12 months of numbers.</li>
+        <li>Snapshot data (scope §5.3). Hi-fi card design is #45. Games card only with data.</li>
+        <li>Member shell (all concepts): no drawer. Header = Apollo logo (home), period switch ("Oktober 2026 ▾": running month, past months/years, Benutzerdefiniert) and avatar menu (Privatsphäre, Datenschutz, Abmelden; "Admin" only for admins, leads to the existing admin shell).</li>
+        <li>Menus are <code>&lt;details&gt;</code> here so they work without JS; real pages use MudMenu.</li>
+        <li>Privatsphäre currently links to the existing <code>me-privacy.html</code>; it gets restyled to the chosen concept later.</li>
+      </ul>
+    </aside>
+    <p class="wf-stat-sub" lang="en"><a href="../../index.html">← Wireframe index</a> · Concept D · Zeitleiste</p>
+  </main>
+  <script src="../../wireframes.js"></script>
+</body>
+</html>
