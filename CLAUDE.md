@@ -104,6 +104,18 @@ dotnet ef migrations add <DescriptiveName> --project src/Apollo.Data --startup-p
 4. Entity + migration in `Apollo.Data` if it is persisted.
 5. Add or update the row in `docs/platform-parity.md`.
 
+## How to add a typed API client (web)
+
+Pages never call `HttpClient` directly ([coding-guidelines §8](docs/coding-guidelines.md#8-ui-conventions)). Sample: `IAppInfoClient` (#28).
+
+1. DTO as a `record` in `Apollo.Web.Client/Contracts` (the host references it, so both sides share one type).
+2. Endpoint in `Apollo.Web/Api/<Area>Endpoints.cs` (`Map<Area>Endpoints()`, under `/api`), plus a `WebApplicationFactory` test in `Apollo.Web.Tests`.
+3. `I<Area>Client` and `Http<Area>Client` in `Apollo.Web.Client/Api`, `Mock<Area>Client` in `Api/Mock`.
+4. Register both branches in `AddApolloApiClients` (`ApiClientServiceCollectionExtensions`); `Apollo:Web:Client:UseMockData` in the client's `wwwroot/appsettings*.json` picks the mock.
+5. bUnit tests use the mocks by default (`ApolloTestContext`); `UseApiClients(false, …)` swaps in the HTTP client with a stub handler.
+
+UI text goes in `Apollo.Web.Client/Resources/Strings.resx` and is read via `IStringLocalizer<Strings>` (`@inject IStringLocalizer<Strings> L`, then `@L["Key"]`). `StringsTests` fails on missing keys and on text literals in the shell files.
+
 ## Git workflow
 
 - Branch off up-to-date `main`: `feature/<issue#>-<slug>`, `fix/<issue#>-<slug>`, `chore/<issue#>-<slug>`.
