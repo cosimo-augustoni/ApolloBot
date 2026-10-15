@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Apollo.Domain\Apollo.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

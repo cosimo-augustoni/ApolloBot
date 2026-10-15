@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Shared test helpers (fixtures, builders, fakes). Filled in #7. -->
+
+</Project>

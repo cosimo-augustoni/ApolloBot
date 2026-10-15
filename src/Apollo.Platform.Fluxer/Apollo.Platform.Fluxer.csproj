@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Apollo.Platform.Abstractions\Apollo.Platform.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>
