@@ -53,11 +53,14 @@ public sealed class ComposePublishTests(ComposePublishFixture fixture) : IClassF
     }
 
     [Fact]
-    public void Publish_MigrationService_ShouldNotBeRestartedBySwarm()
+    public void Publish_MigrationService_ShouldBeRestartedBySwarmOnlyOnFailure()
     {
+        // Exit 0 is never restarted (runs once); a failed run is retried, e.g. while db still pulls or runs initdb.
         var restartPolicy = Map(Map(Service("migrationservice"), "deploy"), "restart_policy");
 
-        Scalar(restartPolicy, "condition").ShouldBe("none");
+        Scalar(restartPolicy, "condition").ShouldBe("on-failure");
+        Scalar(restartPolicy, "delay").ShouldBe("10s");
+        Scalar(restartPolicy, "max_attempts").ShouldBe("10");
     }
 
     [Fact]

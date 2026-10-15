@@ -12,7 +12,8 @@ var registry = AddRegistry(builder);
 var db = AddPostgres(builder);
 var apollo = db.AddDatabase("apollo");
 
-// Applies EF migrations, then exits (#6), so Swarm must not restart it.
+// Applies EF migrations, then exits (#6). Swarm restarts it only after a non-zero exit, e.g. when db was still
+// pulling its image or running initdb for longer than the migrator's own retries; a successful run stays done.
 var migrations = builder.AddProject<Apollo_MigrationService>("migrationservice")
     .WithReference(apollo)
     .WaitFor(db)
@@ -20,7 +21,10 @@ var migrations = builder.AddProject<Apollo_MigrationService>("migrationservice")
     .PublishAsDockerComposeService((_, service) =>
     {
         UseSwarm(service, ComposeNetworks.Internal);
-        service.Deploy = new Deploy { RestartPolicy = new RestartPolicy { Condition = "none" } };
+        service.Deploy = new Deploy
+        {
+            RestartPolicy = new RestartPolicy { Condition = "on-failure", Delay = "10s", MaxAttempts = 10 },
+        };
     });
 
 // WaitForCompletion orders the run mode only; the published stack has no depends_on (UseSwarm), so outside
