@@ -1,10 +1,12 @@
 using ApexCharts;
+using Apollo.Data;
 using Apollo.Web.Components;
 using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+builder.AddApolloDbContext();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -15,6 +17,12 @@ builder.Services.AddMudServices();
 builder.Services.AddApexCharts();
 
 var app = builder.Build();
+
+// In Development the AppHost starts web only after the migrationservice finished; Swarm has no start order.
+if (!app.Environment.IsDevelopment())
+{
+    await app.Services.WaitForMigrationsAsync();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

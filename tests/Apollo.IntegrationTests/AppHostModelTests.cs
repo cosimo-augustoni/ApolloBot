@@ -90,6 +90,28 @@ public sealed partial class AppHostModelTests
     [Theory]
     [InlineData("bot")]
     [InlineData("apollo-web")]
+    public async Task AppHost_Project_ShouldWaitForMigrationServiceCompletion(string resourceName)
+    {
+        await using var builder = await CreateBuilderAsync(Environments.Development);
+        var project = builder.Resources.OfType<ProjectResource>().Single(r => r.Name == resourceName);
+
+        project.Annotations.OfType<WaitAnnotation>()
+            .ShouldContain(w => w.Resource.Name == "migrationservice" && w.WaitType == WaitType.WaitForCompletion);
+    }
+
+    [Fact]
+    public async Task AppHost_MigrationService_ShouldWaitForDb()
+    {
+        await using var builder = await CreateBuilderAsync(Environments.Development);
+        var project = builder.Resources.OfType<ProjectResource>().Single(r => r.Name == "migrationservice");
+
+        project.Annotations.OfType<WaitAnnotation>().ShouldContain(w => w.Resource.Name == "db");
+    }
+
+    [Theory]
+    [InlineData("bot")]
+    [InlineData("apollo-web")]
+    [InlineData("migrationservice")]
     public async Task AppHost_Project_ShouldReceiveApolloConnectionString(string resourceName)
     {
         await using var builder = await CreateBuilderAsync(Environments.Development);

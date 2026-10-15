@@ -42,6 +42,12 @@ Parameters that are still missing are prompted for by the Aspire CLI. **Aspire s
 
 Discord and OAuth values for the bot and web are added in #25.
 
+Service settings with a default (not AppHost parameters):
+
+| Name | Default | What it is |
+|---|---|---|
+| `Apollo:Data:MigrationWaitTimeout` (`Apollo__Data__MigrationWaitTimeout`) | `00:05:00` | How long `bot` and `apollo-web` wait at startup for pending migrations before they exit (see below). Validated at startup: 1 second to 1 day |
+
 ## Steps
 
 From the repository root:
@@ -79,12 +85,12 @@ Run it against the Swarm manager, for example through a Docker context. To check
 | Service | Networks | Notes |
 |---|---|---|
 | `db` | `apollo_internal` | TimescaleDB (pinned tag, `TimescaleImage`), bind mount `PostgresDataPath` → `/var/lib/postgresql`. Postgres 18+ refuses a mount at `/var/lib/postgresql/data` |
-| `migrationservice` | `apollo_internal` | `deploy.restart_policy.condition: none`: it exits after applying migrations (#6) and Swarm must not restart it |
+| `migrationservice` | `apollo_internal` | `deploy.restart_policy.condition: none`: it applies the EF migrations, then exits with 0 (or 1 on failure) and Swarm must not restart it. While the database is unreachable it retries (10 attempts, 3 s apart, on top of the EF retry strategy) |
 | `bot` | `apollo_internal` | Swarm's default restart policy, so it restarts on crash |
 | `apollo-web` | `apollo_internal`, reverse-proxy network | Listens on port 80 (`HTTP_PORTS=80`), no published host port. The reverse proxy targets **`apollo-web:80`** |
 | `pgadmin` | `apollo_internal` | `dpage/pgadmin4` with a pinned tag (`PgAdminImage`), host port `PgAdminPort` → 80, bind mount `PgAdminDataPath` → `/var/lib/pgadmin`. Production only: in development `WithPgAdmin()` adds it |
 
-There is no Aspire dashboard, no `expose:` section and no `depends_on` in the stack. Swarm ignores `depends_on`, and its stack schema rejects the long form Aspire emits. Bot and web wait for the migrations themselves (`WaitForMigrationsAsync`, #6) instead of relying on start order.
+There is no Aspire dashboard, no `expose:` section and no `depends_on` in the stack. Swarm ignores `depends_on`, and its stack schema rejects the long form Aspire emits. Bot and web wait for the migrations themselves instead of relying on start order: outside Development they call `WaitForMigrationsAsync()` (`src/Apollo.Data/MigrationExtensions.cs`) before starting, which polls every 2 s until no migration is pending. Errors while the database is unreachable or not created yet count as "still waiting". After `Apollo:Data:MigrationWaitTimeout` they exit with a `TimeoutException`, and Swarm restarts them, so they keep waiting until the migration service has run. In local development the AppHost orders them instead (`WaitForCompletion(migrationservice)`).
 
 The service name `apollo-web` is its DNS alias on the shared reverse-proxy network, so it has to be unique there. That is why the resource isn't called `web`.
 
@@ -99,7 +105,7 @@ docker service logs apollo_migrationservice
 docker service ps apollo_migrationservice
 ```
 
-The task should show `Complete`. With restart condition `none`, a failed migration stays `Failed` until the next deploy.
+The task should show `Complete`. With restart condition `none`, a failed migration stays `Failed` until the next deploy; the log has the exception under `crit: Apollo.MigrationService.MigrationWorker`. Meanwhile `bot` and `apollo-web` keep waiting and restarting (see above).
 
 **Rerun migrations** without other changes: `docker service update --force apollo_migrationservice`.
 
@@ -128,3 +134,4 @@ Apollo found two more:
 
 - `tests/Apollo.IntegrationTests/ComposePublishTests.cs` runs the AppHost in publish mode with placeholder values and asserts the compose shape above: networks, restart policy, no `expose`/`depends_on`/dashboard, bind mounts and pgAdmin.
 - `tests/Apollo.IntegrationTests/RenderStackScriptTests.cs` runs `Render-Stack.ps1` with `pwsh`: full substitution, `:-default`, missing or empty values, escaping, and no values in the output.
+- `tests/Apollo.IntegrationTests/AppHostTests.cs` starts the AppHost and checks that `migrationservice` finishes with exit code 0 before `bot` and `apollo-web` start. `tests/Apollo.IntegrationTests/Data/` covers the migrator's retries and `WaitForMigrationsAsync` against a TimescaleDB container.

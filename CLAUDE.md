@@ -85,8 +85,13 @@ No production code without a failing test first. Exceptions: pure wiring (AppHos
 ## EF Core migrations
 
 ```bash
+dotnet tool restore                                  # dotnet-ef pinned to the EF Core version (dotnet-tools.json)
 dotnet ef migrations add <DescriptiveName> --project src/Apollo.Data --startup-project src/Apollo.MigrationService
 ```
+
+- Works without a running AppHost (`ApolloDbContextFactory`). Generated files under `src/Apollo.Data/Migrations/` are excluded from style rules (`src/Apollo.Data/.editorconfig`).
+- Event tables are hypertables: composite key `(Id, OccurredAt)`, `IsHypertable(x => x.OccurredAt)`, no unique index without `occurred_at` ([ADR 0001](docs/adr/0001-timescale-ef.md)).
+- Services register the context with `builder.AddApolloDbContext()`. Only `Apollo.MigrationService` migrates; bot and web call `WaitForMigrationsAsync()` outside Development.
 
 - One migration per issue, with a descriptive name (`AddVoiceSessions`). Never edit a migration that has been merged.
 - Timescale objects (hypertables, continuous aggregates, policies) via CmdScale fluent APIs. Raw SQL only with a comment explaining why.
