@@ -85,7 +85,7 @@ Run it against the Swarm manager, for example through a Docker context. To check
 | Service | Networks | Notes |
 |---|---|---|
 | `db` | `apollo_internal` | TimescaleDB (pinned tag, `TimescaleImage`), bind mount `PostgresDataPath` → `/var/lib/postgresql`. Postgres 18+ refuses a mount at `/var/lib/postgresql/data` |
-| `migrationservice` | `apollo_internal` | `deploy.restart_policy.condition: none`: it applies the EF migrations, then exits with 0 (or 1 on failure) and Swarm must not restart it. While the database is unreachable it retries (10 attempts, 3 s apart, on top of the EF retry strategy) |
+| `migrationservice` | `apollo_internal` | `deploy.restart_policy`: `condition: on-failure`, `delay: 10s`, `max_attempts: 10`. It applies the EF migrations, then exits with 0 (or 1 on failure). Exit 0 is never restarted, so it runs once per deploy. While the database is unreachable it retries itself (10 attempts, 3 s apart, on top of the EF retry strategy). If `db` takes longer than that, e.g. on a first deploy while the TimescaleDB image is still being pulled or initdb is running, Swarm starts it again (up to 10 more runs, 10 s apart) |
 | `bot` | `apollo_internal` | Swarm's default restart policy, so it restarts on crash |
 | `apollo-web` | `apollo_internal`, reverse-proxy network | Listens on port 80 (`HTTP_PORTS=80`), no published host port. The reverse proxy targets **`apollo-web:80`** |
 | `pgadmin` | `apollo_internal` | `dpage/pgadmin4` with a pinned tag (`PgAdminImage`), host port `PgAdminPort` → 80, bind mount `PgAdminDataPath` → `/var/lib/pgadmin`. Production only: in development `WithPgAdmin()` adds it |
@@ -105,7 +105,7 @@ docker service logs apollo_migrationservice
 docker service ps apollo_migrationservice
 ```
 
-The task should show `Complete`. With restart condition `none`, a failed migration stays `Failed` until the next deploy; the log has the exception under `crit: Apollo.MigrationService.MigrationWorker`. Meanwhile `bot` and `apollo-web` keep waiting and restarting (see above).
+The latest task should show `Complete`; earlier `Failed` tasks are restarts after a non-zero exit (`on-failure`). A migration that fails on every attempt (a broken migration, wrong credentials) ends `Failed` after 10 restarts and stays so until the next deploy; the log has the exception under `crit: Apollo.MigrationService.MigrationWorker`. Meanwhile `bot` and `apollo-web` keep waiting and restarting (see above).
 
 **Rerun migrations** without other changes: `docker service update --force apollo_migrationservice`.
 
@@ -116,7 +116,7 @@ For topg, the generated compose had to be edited by hand before Swarm accepted i
 | # | Change made by hand in topg | Why | How Apollo handles it |
 |---|---|---|---|
 | 1 | All `${VAR}` placeholders replaced with literal values (passwords, connection strings, `HTTP_PORTS`, image names, bind-mount path) | `docker stack deploy` does not read `.env` files | `deploy/Render-Stack.ps1` resolves placeholders from the generated env file into a deployable stack file |
-| 2 | `migrationservice` got `deploy.restart_policy.condition: none` | Swarm restarts exited containers forever, and the migration service exits on purpose | AppHost sets `Deploy.RestartPolicy` |
+| 2 | `migrationservice` got `deploy.restart_policy.condition: none` | Swarm restarts exited containers forever, and the migration service exits on purpose | AppHost sets `Deploy.RestartPolicy` to `on-failure` (10 s delay, max 10 attempts) instead of `none`: a successful exit is still never restarted, but a run that gave up because `db` was not ready yet (first deploy: image pull, initdb) is retried instead of staying failed and leaving bot and web crash-looping |
 | 3 | Network list `"topg_internal, topg"` split into two entries | Bug in topg's AppHost (one string instead of two) | AppHost lists the networks separately |
 | 4 | `web` renamed to `topg_web` | The service name is its DNS alias on the shared reverse-proxy network and must be unique there. The proxy targets that name | AppHost names the resource `apollo-web` |
 | 5 | `expose:` entries removed (`db`, `web`) | Ignored by Swarm, just noise | AppHost clears `Expose` |
