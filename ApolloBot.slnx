@@ -18,6 +18,7 @@
     <Project Path="tests/Apollo.Bot.Tests/Apollo.Bot.Tests.csproj" />
     <Project Path="tests/Apollo.Domain.Tests/Apollo.Domain.Tests.csproj" />
     <Project Path="tests/Apollo.IntegrationTests/Apollo.IntegrationTests.csproj" />
+    <Project Path="tests/Apollo.Platform.Abstractions.Tests/Apollo.Platform.Abstractions.Tests.csproj" />
     <Project Path="tests/Apollo.Platform.Discord.Tests/Apollo.Platform.Discord.Tests.csproj" />
     <Project Path="tests/Apollo.Stats.Tests/Apollo.Stats.Tests.csproj" />
     <Project Path="tests/Apollo.Testing/Apollo.Testing.csproj" />
