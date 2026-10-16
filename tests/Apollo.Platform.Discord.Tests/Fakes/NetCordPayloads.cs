@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using NetCord;
 using NetCord.Gateway;
 using NetCord.Gateway.JsonModels.EventArgs;
 using NetCord.JsonModels;
@@ -16,6 +17,52 @@ internal static class NetCordPayloads
     public static readonly RestClient Rest = new();
 
     private static readonly JsonSerializerOptions _gatewayJson = new() { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+
+    public static JsonRole JsonRole(ulong id, string name, int position = 1, Permissions permissions = default, bool managed = false, int color = 0) =>
+        new() { Id = id, Name = name, Position = position, Permissions = permissions, Managed = managed, Colors = new() { PrimaryColor = new Color(color) } };
+
+    public static JsonGuildUser JsonMember(
+        ulong userId,
+        string username = "alice",
+        string? globalName = null,
+        string? nickname = null,
+        ulong[]? roles = null,
+        bool bot = false,
+        DateTimeOffset? joinedAt = null,
+        string? avatarHash = null) => new()
+        {
+            User = new JsonUser { Id = userId, Username = username, GlobalName = globalName, IsBot = bot, AvatarHash = avatarHash },
+            Nickname = nickname,
+            RoleIds = roles ?? [],
+            JoinedAt = joinedAt,
+        };
+
+    public static JsonChannel JsonChannel(ulong guildId, ulong id, string name, ChannelType type, ulong? parentId = null) =>
+        new() { Id = id, Name = name, Type = type, GuildId = guildId, ParentId = parentId, PermissionOverwrites = [] };
+
+    public static GuildUser Member(ulong guildId, ulong userId, string username = "alice", ulong[]? roles = null) =>
+        new(JsonMember(userId, username, roles: roles), guildId, Rest);
+
+    public static Role Role(ulong guildId, ulong id, string name, int position = 1, Permissions permissions = default, int color = 0) =>
+        new(JsonRole(id, name, position, permissions, color: color), guildId, Rest);
+
+    public static RoleDeleteEventArgs RoleDelete(ulong guildId, ulong roleId) =>
+        new(new JsonRoleDeleteEventArgs { GuildId = guildId, RoleId = roleId });
+
+    public static IGuildChannel Channel(ulong guildId, ulong id, string name, ChannelType type, ulong? parentId = null) =>
+        IGuildChannel.CreateFromJson(JsonChannel(guildId, id, name, type, parentId), guildId, Rest);
+
+    /// <summary>
+    /// A thread as NetCord builds it from a guild's active threads (threads need more than a plain channel payload).
+    /// </summary>
+    public static GuildThread Thread(ulong guildId, ulong id, string name, ulong parentId)
+    {
+        using var gateway = new TestGateway(new DiscordGuildBuilder(guildId).WithChannel(id, name, ChannelType.PublicGuildThread, parentId).Build());
+        return gateway.Client.Cache.Guilds[guildId].ActiveThreads[id];
+    }
+
+    public static GuildUserChunkEventArgs Chunk(ulong guildId, string? nonce, int index, int count, params JsonGuildUser[] members) =>
+        new(new JsonGuildUserChunkEventArgs { GuildId = guildId, Nonce = nonce!, ChunkIndex = index, ChunkCount = count, Users = members, NotFound = [] }, Rest);
 
     public static GuildUserRemoveEventArgs GuildUserRemove(ulong guildId, ulong userId) =>
         new(new JsonGuildUserRemoveEventArgs { GuildId = guildId, User = new JsonUser { Id = userId, Username = "alice" } }, Rest);

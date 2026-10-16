@@ -1,3 +1,4 @@
+using Apollo.Platform.Abstractions;
 using Apollo.Platform.Abstractions.Events;
 using Apollo.Platform.Abstractions.Snapshots;
 
@@ -5,6 +6,10 @@ namespace Apollo.Testing.Platform;
 
 public sealed class PlatformGuildAvailableBuilder : PlatformEventBuilder<PlatformGuildAvailableBuilder, PlatformGuildAvailable>
 {
+    public PlatformGuildAvailableBuilder Named(string name) => With(e => e with { Name = name });
+
+    public PlatformGuildAvailableBuilder OwnedBy(PlatformRef owner) => With(e => e with { Owner = owner });
+
     public PlatformGuildAvailableBuilder WithRoles(params PlatformRole[] roles) => With(e => e with { Roles = roles });
 
     public PlatformGuildAvailableBuilder WithChannels(params PlatformChannel[] channels) => With(e => e with { Channels = channels });
@@ -19,6 +24,7 @@ public sealed class PlatformGuildAvailableBuilder : PlatformEventBuilder<Platfor
         Guild: TestPlatform.Guild,
         OccurredAt: TestTime.Now,
         Name: "Apollo Test Guild",
+        Owner: TestPlatform.User("owner"),
         Roles: [new PlatformRoleBuilder().Build()],
         Channels: [new PlatformChannelBuilder().Build()],
         Members: [new PlatformMemberBuilder().Build()],

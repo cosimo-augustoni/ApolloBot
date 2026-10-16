@@ -34,13 +34,13 @@ dotnet run --project src/Apollo.AppHost              # local stack + Aspire dash
 | `src/Apollo.Platform.Abstractions` | `IChatPlatform`, `PlatformRef`, neutral events (`Events/`), snapshots (`Snapshots/`), event dispatch (`Dispatch/`), command model and handler contracts (`Commands/`) |
 | `src/Apollo.Platform.Discord` | NetCord adapter: the only place NetCord types may appear |
 | `src/Apollo.Platform.Fluxer` | Fluxer.Net adapter (stub for now): the only place Fluxer.Net types may appear |
-| `src/Apollo.Data` | EF Core `DbContext`, migrations, TimescaleDB setup (CmdScale); `Identity/`: internal IDs, platform ID mappings, `IPlatformIdResolver` |
+| `src/Apollo.Data` | EF Core `DbContext`, migrations, TimescaleDB setup (CmdScale); `Identity/`: internal IDs with snapshot columns, platform ID mappings, `IPlatformIdResolver`; `Guilds/`: `guild_members`, `member_roles` |
 | `src/Apollo.MigrationService` | Applies migrations on startup, then exits |
-| `src/Apollo.Bot` | Worker: hosts the platform adapter, records events, routes commands (`Commands/`), German reply text (`Resources/`) |
+| `src/Apollo.Bot` | Worker: hosts the platform adapter, records events, routes commands (`Commands/`), German reply text (`Resources/`); `GuildState/`: guild state sync and its change notifications (`IGuildStateNotificationHandler<T>`) |
 | `src/Apollo.Stats` | Date-range stats queries and recap builders |
 | `src/Apollo.Web` | ASP.NET Core host: API, auth, serves the WASM client |
 | `src/Apollo.Web.Client` | Blazor WASM UI (German) |
-| `tests/Apollo.Testing` | Shared test helpers: `TimescaleFixture`, `TestDataBuilder<,>`, `TestTime`; `Platform/`: `FakeChatPlatform`, `TestPlatform`, event and snapshot builders |
+| `tests/Apollo.Testing` | Shared test helpers: `TimescaleFixture`, `TestDataBuilder<,>`, `TestTime`; `Data/`: `GuildBuilder`, `UserBuilder`, `ChannelBuilder`, `RoleBuilder` (seed through `IPlatformIdResolver`); `Platform/`: `FakeChatPlatform`, `TestPlatform`, event and snapshot builders |
 | `tests/Apollo.Domain.Tests` | Pure unit tests |
 | `tests/Apollo.Platform.Abstractions.Tests` | `PlatformRef`, event contract rules, dispatcher, `FakeChatPlatform` self-tests |
 | `tests/Apollo.Bot.Tests` | Recorders against `FakeChatPlatform` + Testcontainers DB |

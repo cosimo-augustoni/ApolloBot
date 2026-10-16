@@ -92,7 +92,7 @@ The bot is configured with `Apollo:Platform:Discord:GuildId`. Events from any ot
 | `membership_events` | user_id, kind (join/leave/ban/unban), | GUILD_MEMBER_ADD/REMOVE, ban events | growth curve, member tenure |
 | `presence_activity_sessions` | user_id, activity_type (playing/listening/…), activity_name, started_at, ended_at | PRESENCE_UPDATE | top games, "hours played" |
 
-Reference / snapshot tables: `guilds`, `users` (display name, avatar, joined_at), `channels` (name, type, category, deleted), `roles`, `member_roles`, plus the platform mapping tables.
+Reference / snapshot tables: `guilds` (name, owner), `users` (display name, avatar), `channels` (name, type, category, thread parent, deleted_at), `roles` (name, colour, position, is_administrator, deleted_at), `guild_members` (joined_at, is_administrator, is_bot, left_at: the guild-scoped member facts, since `users` is guild-neutral), `member_roles` (current assignments), plus the platform mapping tables. They are not event tables: the guild state sync (#13) updates them, reconciles them against the full guild snapshot on every (re)connect and marks deleted roles and channels and departed members instead of removing them.
 
 **Notes**
 - **Voice is stored as sessions, not individual events.** The recorder keeps the open sessions in memory. When the bot starts, it reconciles them with the current voice states: sessions left open by a crash get closed, and users who are already in a channel get a new session. Any gap is recorded as `end_reason = bot_restart` so it can be filtered out later.

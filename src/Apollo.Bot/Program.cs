@@ -1,4 +1,5 @@
 using Apollo.Bot.Commands;
+using Apollo.Bot.GuildState;
 using Apollo.Data;
 using Apollo.Platform.Discord;
 
@@ -8,6 +9,7 @@ builder.AddServiceDefaults();
 builder.AddApolloDbContext();
 builder.Services.AddDiscordPlatform();
 builder.Services.AddCommandRouting();
+builder.Services.AddGuildStateSync();
 
 var host = builder.Build();
 

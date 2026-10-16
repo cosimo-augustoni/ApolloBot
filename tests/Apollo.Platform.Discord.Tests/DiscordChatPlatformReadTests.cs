@@ -12,7 +12,9 @@ public sealed class DiscordChatPlatformReadTests : IDisposable
 {
     private static readonly PlatformRef _guild = Ref(DiscordHost.GuildId);
 
+    private readonly FakeGatewayCommands _commands = new();
     private TestGateway? _gateway;
+    private DiscordMemberDownloader? _downloader;
 
     [Fact]
     public async Task GetMemberAsync_WhenMemberIsCached_ShouldMapTheMember()
@@ -187,9 +189,9 @@ public sealed class DiscordChatPlatformReadTests : IDisposable
 
         roles.ShouldBe(
         [
-            new PlatformRole(Ref(7), "Statistik", 2, IsAdministrator: false, IsManaged: false),
-            new PlatformRole(Ref(8), "Admin", 3, IsAdministrator: true, IsManaged: false),
-            new PlatformRole(Ref(9), "Apollo", 4, IsAdministrator: false, IsManaged: true),
+            new PlatformRole(Ref(7), "Statistik", 2, IsAdministrator: false, IsManaged: false, Color: null),
+            new PlatformRole(Ref(8), "Admin", 3, IsAdministrator: true, IsManaged: false, Color: null),
+            new PlatformRole(Ref(9), "Apollo", 4, IsAdministrator: false, IsManaged: true, Color: null),
         ], ignoreOrder: true);
     }
 
@@ -222,13 +224,31 @@ public sealed class DiscordChatPlatformReadTests : IDisposable
     }
 
     [Fact]
-    public async Task ListMembersAsync_WhenGuildIsCached_ShouldMapEveryCachedMember()
+    public async Task ListMembersAsync_WhenGuildIsCached_ShouldReturnTheFullMemberListFromTheGateway()
     {
-        var platform = Platform(new DiscordGuildBuilder().WithMember(42, "alice").WithMember(43, "bob"));
+        var platform = Platform(new DiscordGuildBuilder()
+            .WithRole(8, "Admin", permissions: Permissions.Administrator)
+            .WithMember(42, "alice"));
+        _commands.OnGuildUserRequest = request => _downloader!.HandleAsync(NetCordPayloads.Chunk(
+            DiscordHost.GuildId, request.Nonce, index: 0, count: 1,
+            NetCordPayloads.JsonMember(42, "alice"), NetCordPayloads.JsonMember(43, "bob", roles: [8])));
 
         var members = await platform.ListMembersAsync(_guild, TestContext.Current.CancellationToken);
 
-        members.Select(m => (m.User, m.DisplayName)).ShouldBe([(Ref(42), "alice"), (Ref(43), "bob")], ignoreOrder: true);
+        _commands.GuildUserRequests.ShouldHaveSingleItem().GuildId.ShouldBe(DiscordHost.GuildId);
+        members.Select(m => (m.User, m.DisplayName, m.IsAdministrator))
+            .ShouldBe([(Ref(42), "alice", false), (Ref(43), "bob", true)], ignoreOrder: true);
+    }
+
+    [Fact]
+    public async Task ListMembersAsync_WhenGuildIsNotCachedYet_ShouldNotRequestMembers()
+    {
+        var platform = Platform();
+
+        var members = await platform.ListMembersAsync(_guild, TestContext.Current.CancellationToken);
+
+        members.ShouldBeEmpty();
+        _commands.GuildUserRequests.ShouldBeEmpty();
     }
 
     [Fact]
@@ -316,6 +336,10 @@ public sealed class DiscordChatPlatformReadTests : IDisposable
     private DiscordChatPlatform Platform(params DiscordGuildBuilder[] guilds)
     {
         _gateway = new TestGateway([.. guilds.Select(g => g.Build())]);
-        return new DiscordChatPlatform(_gateway.Client, Options.Create(new DiscordPlatformOptions { Token = DiscordHost.Token, GuildId = DiscordHost.GuildId }));
+        _downloader = new DiscordMemberDownloader(_commands, TimeProvider.System);
+        return new DiscordChatPlatform(
+            _gateway.Client,
+            _downloader,
+            Options.Create(new DiscordPlatformOptions { Token = DiscordHost.Token, GuildId = DiscordHost.GuildId }));
     }
 }
