@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Apollo.Domain\Apollo.Domain.csproj" />
+    <ProjectReference Include="..\Apollo.Platform.Abstractions\Apollo.Platform.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>

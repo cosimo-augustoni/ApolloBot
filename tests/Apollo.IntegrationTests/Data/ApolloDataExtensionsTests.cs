@@ -1,4 +1,5 @@
 using Apollo.Data;
+using Apollo.Data.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -35,6 +36,18 @@ public sealed class ApolloDataExtensionsTests
         using var scope = host.Services.CreateScope();
 
         scope.ServiceProvider.GetRequiredService<ApolloDbContext>().ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void AddApolloDbContext_ShouldRegisterScopedResolverWithOneSharedCache()
+    {
+        using var host = BuildHost(timeout: null);
+        using var first = host.Services.CreateScope();
+        using var second = host.Services.CreateScope();
+
+        first.ServiceProvider.GetRequiredService<IPlatformIdResolver>().ShouldBeOfType<PlatformIdResolver>();
+        first.ServiceProvider.GetRequiredService<PlatformIdCache>()
+            .ShouldBeSameAs(second.ServiceProvider.GetRequiredService<PlatformIdCache>());
     }
 
     private static IHost BuildHost(string? timeout)

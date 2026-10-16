@@ -1,3 +1,4 @@
+using Apollo.Data.Identity;
 using CmdScale.EntityFrameworkCore.TimescaleDB;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,6 +15,22 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
     /// </summary>
     public const string ConnectionName = "apollo";
 
+    public DbSet<Guild> Guilds => Set<Guild>();
+
+    public DbSet<User> Users => Set<User>();
+
+    public DbSet<Channel> Channels => Set<Channel>();
+
+    public DbSet<Role> Roles => Set<Role>();
+
+    public DbSet<GuildPlatformId> GuildPlatformIds => Set<GuildPlatformId>();
+
+    public DbSet<UserPlatformId> UserPlatformIds => Set<UserPlatformId>();
+
+    public DbSet<ChannelPlatformId> ChannelPlatformIds => Set<ChannelPlatformId>();
+
+    public DbSet<RolePlatformId> RolePlatformIds => Set<RolePlatformId>();
+
     /// <summary>
     /// Options for a context outside dependency injection (design time, tests).
     /// </summary>
@@ -27,5 +44,7 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
     {
         // CmdScale never emits CREATE EXTENSION; this makes the first migration do it (docs/adr/0001-timescale-ef.md).
         modelBuilder.HasPostgresExtension("timescaledb");
+
+        IdentityModel.Configure(modelBuilder);
     }
 }

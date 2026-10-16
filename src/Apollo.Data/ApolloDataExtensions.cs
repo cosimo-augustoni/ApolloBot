@@ -1,3 +1,4 @@
+using Apollo.Data.Identity;
 using CmdScale.EntityFrameworkCore.TimescaleDB;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -9,7 +10,8 @@ public static class ApolloDataExtensions
 {
     /// <summary>
     /// Registers <see cref="ApolloDbContext"/> through the Aspire Npgsql EF integration (connection string
-    /// <c>ConnectionStrings:apollo</c>, retries, health check, tracing) plus CmdScale, and binds <see cref="DataOptions"/>.
+    /// <c>ConnectionStrings:apollo</c>, retries, health check, tracing) plus CmdScale, binds <see cref="DataOptions"/>
+    /// and registers <see cref="IPlatformIdResolver"/> (scoped, like the context) with one cache per process.
     /// </summary>
     public static TBuilder AddApolloDbContext<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
@@ -23,6 +25,9 @@ public static class ApolloDataExtensions
             .ValidateOnStart();
 
         builder.Services.TryAddSingleton(TimeProvider.System);
+
+        builder.Services.AddSingleton<PlatformIdCache>();
+        builder.Services.AddScoped<IPlatformIdResolver, PlatformIdResolver>();
 
         return builder;
     }
