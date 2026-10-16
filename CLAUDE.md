@@ -31,7 +31,7 @@ dotnet run --project src/Apollo.AppHost              # local stack + Aspire dash
 | `src/Apollo.AppHost` | Aspire orchestration and compose publishing |
 | `src/Apollo.ServiceDefaults` | OpenTelemetry, health checks, resilience (`AddServiceDefaults()`) |
 | `src/Apollo.Domain` | Entities, value objects, pure domain logic. No references |
-| `src/Apollo.Platform.Abstractions` | `IChatPlatform`, neutral platform events, `PlatformRef` |
+| `src/Apollo.Platform.Abstractions` | `IChatPlatform`, `PlatformRef`, neutral events (`Events/`), snapshots (`Snapshots/`), event dispatch (`Dispatch/`) |
 | `src/Apollo.Platform.Discord` | NetCord adapter: the only place NetCord types may appear |
 | `src/Apollo.Platform.Fluxer` | Fluxer.Net adapter (stub for now): the only place Fluxer.Net types may appear |
 | `src/Apollo.Data` | EF Core `DbContext`, migrations, TimescaleDB setup (CmdScale) |
@@ -40,8 +40,9 @@ dotnet run --project src/Apollo.AppHost              # local stack + Aspire dash
 | `src/Apollo.Stats` | Date-range stats queries and recap builders |
 | `src/Apollo.Web` | ASP.NET Core host: API, auth, serves the WASM client |
 | `src/Apollo.Web.Client` | Blazor WASM UI (German) |
-| `tests/Apollo.Testing` | Shared test helpers: `TimescaleFixture`, `TestDataBuilder<,>`, `TestTime`, `FakeChatPlatform` (#10) |
+| `tests/Apollo.Testing` | Shared test helpers: `TimescaleFixture`, `TestDataBuilder<,>`, `TestTime`; `Platform/`: `FakeChatPlatform`, `TestPlatform`, event and snapshot builders |
 | `tests/Apollo.Domain.Tests` | Pure unit tests |
+| `tests/Apollo.Platform.Abstractions.Tests` | `PlatformRef`, event contract rules, dispatcher, `FakeChatPlatform` self-tests |
 | `tests/Apollo.Bot.Tests` | Recorders against `FakeChatPlatform` + Testcontainers DB |
 | `tests/Apollo.Stats.Tests` | Stats queries against a seeded Testcontainers DB |
 | `tests/Apollo.Platform.Discord.Tests` | NetCord payload → platform event mapping |
@@ -118,13 +119,23 @@ dotnet ef migrations add <DescriptiveName> --project src/Apollo.Data --startup-p
 - One migration per issue, with a descriptive name (`AddVoiceSessions`). Never edit a migration that has been merged.
 - Timescale objects (hypertables, continuous aggregates, policies) via CmdScale fluent APIs. Raw SQL only with a comment explaining why.
 
-## How to add a platform event (refine once #10 lands)
+## How to add a platform event
 
-1. Neutral record in `Apollo.Platform.Abstractions` (e.g. `PlatformMessageCreated`), no platform types.
-2. Mapping from the NetCord event in `Apollo.Platform.Discord`, plus a mapping test in `Apollo.Platform.Discord.Tests`.
-3. Handler/recorder in `Apollo.Bot`, applying the tracking gate, with tests against `FakeChatPlatform`.
-4. Entity + migration in `Apollo.Data` if it is persisted.
-5. Add or update the row in `docs/platform-parity.md`.
+1. Neutral `sealed record` in `Apollo.Platform.Abstractions/Events`, deriving from `PlatformEvent(Guild, OccurredAt)`.
+   Reference users, channels, roles and messages only as `PlatformRef`; reuse the shapes in `Snapshots/`
+   (`PlatformMember`, `PlatformRole`, `PlatformChannel`, `PlatformVoiceState`, ...). References a platform may omit are
+   nullable and resolved by the recorder, never the adapter. Message events carry `MessageMetadata`, never content.
+   `PlatformEventContractTests` checks these rules for every event; add the event to its expected list.
+2. Builder in `Apollo.Testing/Platform/Events`, derived from `PlatformEventBuilder<TBuilder, TEvent>`
+   (defaults: `TestPlatform.Guild`, `TestTime.Now`).
+3. Mapping from the NetCord event in `Apollo.Platform.Discord`, plus a mapping test in `Apollo.Platform.Discord.Tests`.
+   The adapter delivers events with `IPlatformEventDispatcher.DispatchAsync`.
+4. Handler in `Apollo.Bot`: implement `IPlatformEventHandler<TEvent>`, register it with
+   `services.AddPlatformEventHandler<TEvent, THandler>()` (scoped, one DI scope per event), apply the tracking gate.
+   Test it against `FakeChatPlatform`: seed state with `With*`, deliver with `RaiseAsync`, assert `RoleChanges`.
+5. Entity + migration in `Apollo.Data` if it is persisted.
+6. Add or update the row in `docs/platform-parity.md`. If a platform cannot deliver it at all, add a flag to
+   `PlatformCapabilities` (like `PresenceActivities`) instead of sending empty data.
 
 ## How to add a typed API client (web)
 

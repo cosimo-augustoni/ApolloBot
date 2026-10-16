@@ -68,7 +68,7 @@ Platform events (neutral records)   e.g. MessageCreated, VoiceStateChanged, Reac
 Event recorder (Apollo.Bot)  ── resolves platform IDs → internal IDs ──► DB
 ```
 
-- **Inbound:** the adapter turns gateway events into neutral records like `PlatformMessageCreated(PlatformRef Guild, PlatformRef Channel, PlatformRef Author, DateTimeOffset At, MessageMetadata Meta)`.
+- **Inbound:** the adapter turns gateway events into neutral records like `PlatformMessageCreated(PlatformRef Guild, DateTimeOffset OccurredAt, PlatformRef Channel, PlatformRef Message, PlatformRef Author, …, MessageMetadata Metadata)` and delivers them through `IPlatformEventDispatcher` to every `IPlatformEventHandler<TEvent>` (#10).
 - **Outbound:** an `IChatPlatform` interface with only the operations we need, such as `GetMemberRoles`, `GetMemberPermissions`, `ListChannels`, and later `AddRole` and `SendEmbed`.
 - **Identity:** `PlatformRef = (Platform, ExternalId)`. The tables `users`, `channels`, `guilds` and `roles` each have an internal `Guid` plus one or more platform mappings. A future Fluxer account can be linked to an existing internal user, which keeps that user's history.
 - **Parity:** every issue that touches the platform includes a Fluxer.Net parity table. The parity spike (#9) confirmed that messages, reactions, voice, membership, threads, role changes and OAuth are portable to [Fluxer.Net](https://github.com/Nexfinity/Fluxer.Net). Presence activities and interactions (slash commands, ephemeral replies, buttons) don't exist on Fluxer; [platform-parity.md](platform-parity.md) lists the fallbacks.
