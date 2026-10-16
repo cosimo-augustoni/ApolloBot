@@ -30,17 +30,17 @@ dotnet run --project src/Apollo.AppHost              # local stack + Aspire dash
 |---|---|
 | `src/Apollo.AppHost` | Aspire orchestration and compose publishing |
 | `src/Apollo.ServiceDefaults` | OpenTelemetry, health checks, resilience (`AddServiceDefaults()`) |
-| `src/Apollo.Domain` | Entities, value objects, pure domain logic. No references |
+| `src/Apollo.Domain` | Entities, value objects, pure domain logic (`Tracking/`: `TrackingRule`). No references |
 | `src/Apollo.Platform.Abstractions` | `IChatPlatform`, `IPlatformConnectionStatus`, `PlatformRef`, neutral events (`Events/`), snapshots (`Snapshots/`), event dispatch (`Dispatch/`), command model and handler contracts (`Commands/`), event counters (`Diagnostics/RecordedEventMetrics`), login (`Identity/`: `IPlatformIdentityProvider`) |
 | `src/Apollo.Platform.Discord` | NetCord adapter: the only place NetCord types may appear |
 | `src/Apollo.Platform.Fluxer` | Fluxer.Net adapter (stub for now): the only place Fluxer.Net types may appear |
-| `src/Apollo.Data` | EF Core `DbContext`, migrations, TimescaleDB setup (CmdScale); `Identity/`: internal IDs with snapshot columns, platform ID mappings, `IPlatformIdResolver`; `Guilds/`: `guild_members`, `member_roles` |
+| `src/Apollo.Data` | EF Core `DbContext`, migrations, TimescaleDB setup (CmdScale); `Identity/`: internal IDs with snapshot columns, platform ID mappings, `IPlatformIdResolver`; `Guilds/`: `guild_members`, `member_roles`; `Tracking/`: `role_settings` (a trigger writes `role_setting_changes`), `tracking_periods` |
 | `src/Apollo.MigrationService` | Applies migrations on startup, then exits |
-| `src/Apollo.Bot` | Worker: hosts the platform adapter, records events, routes commands (`Commands/`), German reply text (`Resources/`); `GuildState/`: guild state sync and its change notifications (`IGuildStateNotificationHandler<T>`); `Status/`: 30 s heartbeat into `bot_status`, gateway health check |
+| `src/Apollo.Bot` | Worker: hosts the platform adapter, records events, routes commands (`Commands/`), German reply text (`Resources/`); `GuildState/`: guild state sync and its change notifications (`IGuildStateNotificationHandler<T>`); `Status/`: 30 s heartbeat into `bot_status`, gateway health check; `Tracking/`: tracking gate (`ITrackingGate`, `ITrackingLifecycleHandler`) |
 | `src/Apollo.Stats` | Date-range stats queries and recap builders |
 | `src/Apollo.Web` | ASP.NET Core host: API, auth (`Auth/`: BFF cookie session, `/auth/*`), serves the WASM client |
 | `src/Apollo.Web.Client` | Blazor WASM UI (German) |
-| `tests/Apollo.Testing` | Shared test helpers: `TimescaleFixture`, `TestDataBuilder<,>`, `TestTime`; `Data/`: `GuildBuilder`, `UserBuilder`, `ChannelBuilder`, `RoleBuilder` (seed through `IPlatformIdResolver`); `Platform/`: `FakeChatPlatform`, `TestPlatform`, event and snapshot builders |
+| `tests/Apollo.Testing` | Shared test helpers: `TimescaleFixture`, `TestDataBuilder<,>`, `TestTime`; `Data/`: `GuildBuilder`, `UserBuilder`, `ChannelBuilder`, `RoleBuilder`, `RoleSettingBuilder` (seed through `IPlatformIdResolver`); `Platform/`: `FakeChatPlatform`, `TestPlatform`, event and snapshot builders |
 | `tests/Apollo.Domain.Tests` | Pure unit tests |
 | `tests/Apollo.Platform.Abstractions.Tests` | `PlatformRef`, event contract rules, dispatcher, `FakeChatPlatform` self-tests |
 | `tests/Apollo.Bot.Tests` | Recorders against `FakeChatPlatform` + Testcontainers DB |
@@ -131,7 +131,8 @@ dotnet ef migrations add <DescriptiveName> --project src/Apollo.Data --startup-p
 3. Mapping from the NetCord event in `Apollo.Platform.Discord`, plus a mapping test in `Apollo.Platform.Discord.Tests`.
    The adapter delivers events with `IPlatformEventDispatcher.DispatchAsync`.
 4. Handler in `Apollo.Bot`: implement `IPlatformEventHandler<TEvent>`, register it with
-   `services.AddPlatformEventHandler<TEvent, THandler>()` (scoped, one DI scope per event), apply the tracking gate.
+   `services.AddPlatformEventHandler<TEvent, THandler>()` (scoped, one DI scope per event), apply the tracking gate
+   (`ITrackingGate.IsTracked`; references to other users via `TryGetTrackedUserId`, which is `null` for untracked users).
    Test it against `FakeChatPlatform`: seed state with `With*`, deliver with `RaiseAsync`, assert `RoleChanges`.
    Turn every `PlatformRef` into an internal ID with `IPlatformIdResolver` (`Apollo.Data.Identity`): `Resolve*Async`
    creates the row on first sight; references that must not create data (e.g. untracked users) use `TryGet*Async`.
