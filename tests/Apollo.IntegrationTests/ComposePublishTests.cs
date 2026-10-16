@@ -7,7 +7,7 @@ namespace Apollo.IntegrationTests;
 /// </summary>
 public sealed class ComposePublishTests(ComposePublishFixture fixture) : IClassFixture<ComposePublishFixture>
 {
-    private const string Internal = "apollo_internal";
+    private const string Internal = "apollo_bot_internal";
 
     [Fact]
     public void Publish_ShouldDefineInternalOverlayNetwork()
