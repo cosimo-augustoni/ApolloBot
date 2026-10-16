@@ -34,7 +34,7 @@ dotnet run --project src/Apollo.AppHost              # local stack + Aspire dash
 | `src/Apollo.Platform.Abstractions` | `IChatPlatform`, `PlatformRef`, neutral events (`Events/`), snapshots (`Snapshots/`), event dispatch (`Dispatch/`) |
 | `src/Apollo.Platform.Discord` | NetCord adapter: the only place NetCord types may appear |
 | `src/Apollo.Platform.Fluxer` | Fluxer.Net adapter (stub for now): the only place Fluxer.Net types may appear |
-| `src/Apollo.Data` | EF Core `DbContext`, migrations, TimescaleDB setup (CmdScale) |
+| `src/Apollo.Data` | EF Core `DbContext`, migrations, TimescaleDB setup (CmdScale); `Identity/`: internal IDs, platform ID mappings, `IPlatformIdResolver` |
 | `src/Apollo.MigrationService` | Applies migrations on startup, then exits |
 | `src/Apollo.Bot` | Worker: hosts the platform adapter, records events |
 | `src/Apollo.Stats` | Date-range stats queries and recap builders |
@@ -133,6 +133,8 @@ dotnet ef migrations add <DescriptiveName> --project src/Apollo.Data --startup-p
 4. Handler in `Apollo.Bot`: implement `IPlatformEventHandler<TEvent>`, register it with
    `services.AddPlatformEventHandler<TEvent, THandler>()` (scoped, one DI scope per event), apply the tracking gate.
    Test it against `FakeChatPlatform`: seed state with `With*`, deliver with `RaiseAsync`, assert `RoleChanges`.
+   Turn every `PlatformRef` into an internal ID with `IPlatformIdResolver` (`Apollo.Data.Identity`): `Resolve*Async`
+   creates the row on first sight; references that must not create data (e.g. untracked users) use `TryGet*Async`.
 5. Entity + migration in `Apollo.Data` if it is persisted.
 6. Add or update the row in `docs/platform-parity.md`. If a platform cannot deliver it at all, add a flag to
    `PlatformCapabilities` (like `PresenceActivities`) instead of sending empty data.
