@@ -84,7 +84,8 @@ The bot is configured with `Apollo:Platform:Discord:GuildId`. Events from any ot
 
 | Event table | Columns (besides id, guild_id, occurred_at) | Source | Needed for |
 |---|---|---|---|
-| `message_events` | user_id, channel_id, thread_parent_id?, message_ext_id, kind (create/edit/delete), length, word_count, attachment_count, embed_count, has_link, emoji_count, mention_count, reply_to_user_id?, is_bot | MESSAGE_CREATE/UPDATE/DELETE | messages per day/hour/channel, chattiest times, reply graph ("who talks to whom"), media sharer |
+| `message_events` | user_id, channel_id, thread_parent_id?, message_ext_id, kind (create/edit/delete), length, word_count, attachment_count, embed_count, emoji_count, user_mention_count, role_mention_count, mentions_everyone, content_parts (flags: text, link, mention, emoji, attachment), reply_to_user_id?, is_bot | MESSAGE_CREATE/UPDATE/DELETE | messages per day/hour/channel, chattiest times, reply graph ("who talks to whom"), media sharer, link-only vs. text posts |
+| `message_mentions` | user_id, channel_id, message_ext_id, mentioned_user_id? (one row per distinct mentioned user, on create) | MESSAGE_CREATE | mention graph ("who pings whom"), most mentioned |
 | `voice_sessions` | user_id, channel_id, started_at, ended_at, end_reason | VOICE_STATE_UPDATE (join/leave/move) | voice time, favourite channel, longest session, voice buddies (overlap) |
 | `voice_state_segments` | session_id, from, to, self_mute, self_deaf, streaming, video | VOICE_STATE_UPDATE | muted ratio, stream time |
 | `reaction_events` | user_id, message_ext_id, message_author_id, channel_id, emoji (unicode or custom id+name), kind (add/remove) | MESSAGE_REACTION_ADD/REMOVE | top emojis, most-reacted-to user |
@@ -116,7 +117,7 @@ else (bootstrap, before the admin UI exists):
     record event  ⇔  user has the Administrator permission
 ```
 
-- **Bootstrap fallback:** M1 deploys data collection before the admin UI exists (M2). Until a tracking role has been set in the admin UI, the bot tracks members with the **Administrator** permission. That's enough to check that collection works end to end on real data. The fallback ends for good once a tracking role is configured. Admins who want to stay tracked then need the role themselves. The bot logs at startup which mode it's in.
+- **Bootstrap fallback (temporary):** M1 deploys data collection before the admin UI exists (M2). Until a tracking role has been set in the admin UI, the bot tracks members with the **Administrator** permission. That's enough to check that collection works end to end on real data. The fallback ends for good once a tracking role is configured, and the code for it is removed completely once the admin UI exists (#62). Admins who want to stay tracked then need the role themselves. The bot logs at startup which mode it's in.
 - **Intended setup:** I give the tracking role to all members by hand at the start. After that, members manage it themselves with `/apollo tracking on|off` (§5.4).
 - **Role changes take effect live.** The member role sync (§6.2) keeps `member_roles` up to date, and the recorder checks it from an in-memory cache. It makes no difference whether the role was changed by command, by an admin in Discord, or by some other bot.
   - Losing the tracking role closes any open voice/presence session and stops recording. Existing data is **kept and stays visible**. Removing it requires an explicit delete (§5.4).
@@ -368,7 +369,7 @@ Alongside the template, the repo gets a **`CLAUDE.md`** with build and test comm
 | D8 | Admin | Administrator permission only, no allowlist |
 | D9 | Member access | List of member access roles, any match grants access. Stored in the DB per platform and edited in the admin UI (§5.1.2) |
 | D10 | Timescale in EF | CmdScale.EntityFrameworkCore.TimescaleDB first, raw SQL only as fallback |
-| D11 | Tracking scope | Exactly one tracking role per platform, and only its holders are recorded. Until one is configured, Administrator holders are tracked (bootstrap). References to untracked users are stored as NULL (§5.1.1) |
+| D11 | Tracking scope | Exactly one tracking role per platform, and only its holders are recorded. Until one is configured, Administrator holders are tracked (bootstrap; temporary, removed by #62 after the admin UI). References to untracked users are stored as NULL (§5.1.1) |
 | D14 | Role settings storage | Tracking role and member access roles live in the DB as `role_settings`, scoped to (guild, platform) and referencing internal role IDs. No config seeding. Edited in the admin UI from M2 on, and the bot picks up changes within 30 s. Admin access is never configurable |
 | D15 | Opt-in/out = role | No separate opt-out flag. Users toggle the tracking role with `/apollo tracking on\|off`. Ephemeral replies explain that existing data stays and how to delete it. I give the role to all members by hand at the start. No web toggle or web delete for now |
 | D12 | Development style | TDD (red → green → refactor), see [coding-guidelines.md](coding-guidelines.md) |
