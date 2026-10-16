@@ -24,7 +24,7 @@ All values are read by the AppHost. Secrets are listed by name only and are neve
 |---|---|---|---|
 | `REGISTRY_ENDPOINT` | config | Registry host, `registry.kallisto.li` | env var or AppHost user-secret |
 | `REGISTRY_REPOSITORY` | config | Repository below the registry, e.g. `apollo` | env var or AppHost user-secret |
-| `Apollo:Deploy:ReverseProxyNetwork` | config | Name of the external reverse-proxy overlay network | `src/Apollo.AppHost/appsettings.json` has the placeholder `reverse-proxy`. Override it with an AppHost user-secret or the env var `Apollo__Deploy__ReverseProxyNetwork` |
+| `Apollo:Deploy:ReverseProxyNetwork` | config | Name of the external reverse-proxy overlay network | `src/Apollo.AppHost/appsettings.json` sets `apollo_bot` (the reverse proxy has one attachable network per service). Override it with an AppHost user-secret or the env var `Apollo__Deploy__ReverseProxyNetwork` |
 | `db-password` | **secret** parameter | Postgres password | AppHost user-secret `Parameters:db-password`, env var `Parameters__db-password`, or the CLI prompt. If none is set, Aspire generates one |
 | `PostgresDataPath` | parameter | Host directory for the database (mounted at `/var/lib/postgresql`) | AppHost user-secret `Parameters:PostgresDataPath`, env var, or prompt |
 | `PgAdminEmail` | parameter | pgAdmin login e-mail | as above |
@@ -84,11 +84,11 @@ Run it against the Swarm manager, for example through a Docker context. To check
 
 | Service | Networks | Notes |
 |---|---|---|
-| `db` | `apollo_internal` | TimescaleDB (pinned tag, `TimescaleImage`), bind mount `PostgresDataPath` → `/var/lib/postgresql`. Postgres 18+ refuses a mount at `/var/lib/postgresql/data` |
-| `migrationservice` | `apollo_internal` | `deploy.restart_policy`: `condition: on-failure`, `delay: 10s`, `max_attempts: 10`. It applies the EF migrations, then exits with 0 (or 1 on failure). Exit 0 is never restarted, so it runs once per deploy. While the database is unreachable it retries itself (10 attempts, 3 s apart, on top of the EF retry strategy). If `db` takes longer than that, e.g. on a first deploy while the TimescaleDB image is still being pulled or initdb is running, Swarm starts it again (up to 10 more runs, 10 s apart) |
-| `bot` | `apollo_internal` | Swarm's default restart policy, so it restarts on crash |
-| `apollo-web` | `apollo_internal`, reverse-proxy network | Listens on port 80 (`HTTP_PORTS=80`), no published host port. The reverse proxy targets **`apollo-web:80`** |
-| `pgadmin` | `apollo_internal` | `dpage/pgadmin4` with a pinned tag (`PgAdminImage`), host port `PgAdminPort` → 80, bind mount `PgAdminDataPath` → `/var/lib/pgadmin`. Production only: in development `WithPgAdmin()` adds it |
+| `db` | `apollo_bot_internal` | TimescaleDB (pinned tag, `TimescaleImage`), bind mount `PostgresDataPath` → `/var/lib/postgresql`. Postgres 18+ refuses a mount at `/var/lib/postgresql/data` |
+| `migrationservice` | `apollo_bot_internal` | `deploy.restart_policy`: `condition: on-failure`, `delay: 10s`, `max_attempts: 10`. It applies the EF migrations, then exits with 0 (or 1 on failure). Exit 0 is never restarted, so it runs once per deploy. While the database is unreachable it retries itself (10 attempts, 3 s apart, on top of the EF retry strategy). If `db` takes longer than that, e.g. on a first deploy while the TimescaleDB image is still being pulled or initdb is running, Swarm starts it again (up to 10 more runs, 10 s apart) |
+| `bot` | `apollo_bot_internal` | Swarm's default restart policy, so it restarts on crash |
+| `apollo-web` | `apollo_bot_internal`, reverse-proxy network (`apollo_bot`) | Listens on port 80 (`HTTP_PORTS=80`), no published host port. The reverse proxy targets **`apollo-web:80`** |
+| `pgadmin` | `apollo_bot_internal` | `dpage/pgadmin4` with a pinned tag (`PgAdminImage`), host port `PgAdminPort` → 80, bind mount `PgAdminDataPath` → `/var/lib/pgadmin`. Production only: in development `WithPgAdmin()` adds it |
 
 There is no Aspire dashboard, no `expose:` section and no `depends_on` in the stack. Swarm ignores `depends_on`, and its stack schema rejects the long form Aspire emits. Bot and web wait for the migrations themselves instead of relying on start order: outside Development they call `WaitForMigrationsAsync()` (`src/Apollo.Data/MigrationExtensions.cs`) before starting, which polls every 2 s until no migration is pending. Errors while the database is unreachable or not created yet count as "still waiting". After `Apollo:Data:MigrationWaitTimeout` they exit with a `TimeoutException`, and Swarm restarts them, so they keep waiting until the migration service has run. In local development the AppHost orders them instead (`WaitForCompletion(migrationservice)`).
 

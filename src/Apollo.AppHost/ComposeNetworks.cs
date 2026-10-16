@@ -5,5 +5,5 @@ namespace Apollo.AppHost;
 /// </summary>
 internal static class ComposeNetworks
 {
-    public const string Internal = "apollo_internal";
+    public const string Internal = "apollo_bot_internal";
 }
