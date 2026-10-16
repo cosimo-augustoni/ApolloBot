@@ -137,6 +137,20 @@ The latest task should show `Complete`; earlier `Failed` tasks are restarts afte
 
 **Rerun migrations** without other changes: `docker service update --force apollo_migrationservice`.
 
+**Is the bot collecting?** The bot appends a heartbeat row to `bot_status` every 30 s, connected or not (#24). In pgAdmin:
+
+```sql
+SELECT occurred_at, connected, gateway_latency_ms, last_event_at, open_voice_sessions
+FROM bot_status ORDER BY occurred_at DESC LIMIT 10;
+```
+
+No row for the last minute means the bot process is down or cannot write; rows with `connected = false` mean it runs but
+the gateway is disconnected. After 2 minutes of that the bot's `gateway` health check turns unhealthy and the bot logs
+`Health check gateway changed from Degraded to Unhealthy` at Error (and logs again when it recovers; at start it logs the initial status once, e.g. `Health check gateway is Degraded` at Information). `last_event_at`
+counts only guild events, not reconnects, so far behind `occurred_at` on a connected row means nothing is arriving. Locally, the counters `apollo.events.recorded`
+(tag `event_type`) and `apollo.events.dropped` (tag `reason`) of meter `Apollo.Bot` are in the Aspire dashboard's
+metrics view for the `bot` resource.
+
 ## Why no hand editing (topg comparison)
 
 For topg, the generated compose had to be edited by hand before Swarm accepted it. This is how Apollo handles each of those edits:

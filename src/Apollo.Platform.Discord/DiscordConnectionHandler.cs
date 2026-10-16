@@ -13,8 +13,10 @@ namespace Apollo.Platform.Discord;
 /// <remarks>NetCord's gateway handlers carry no cancellation token, so dispatching is not cancellable.</remarks>
 internal sealed partial class DiscordConnectionHandler(
     DiscordEventMapper mapper,
+    DiscordConnectionStatus status,
     TimeProvider timeProvider,
-    ILogger<DiscordConnectionHandler> logger) : IReadyGatewayHandler, IResumeGatewayHandler, IDisconnectGatewayHandler
+    ILogger<DiscordConnectionHandler> logger)
+    : IReadyGatewayHandler, IResumeGatewayHandler, IDisconnectGatewayHandler, ILatencyUpdateGatewayHandler
 {
     public ValueTask HandleAsync(ReadyEventArgs arg)
     {
@@ -34,8 +36,31 @@ internal sealed partial class DiscordConnectionHandler(
         return ReportAsync(PlatformConnectionState.Disconnected);
     }
 
-    private ValueTask ReportAsync(PlatformConnectionState state) =>
-        mapper.ForwardConnectionStateAsync(state, timeProvider.GetUtcNow(), CancellationToken.None);
+    /// <summary>
+    /// NetCord measured a new gateway round-trip time (heartbeat ack).
+    /// </summary>
+    public ValueTask HandleAsync(TimeSpan arg)
+    {
+        status.LatencyUpdated(arg);
+        return ValueTask.CompletedTask;
+    }
+
+    /// <summary>
+    /// Updates <see cref="DiscordConnectionStatus"/> before dispatching, so handlers of the event see the new state.
+    /// </summary>
+    private ValueTask ReportAsync(PlatformConnectionState state)
+    {
+        if (state == PlatformConnectionState.Disconnected)
+        {
+            status.Disconnected();
+        }
+        else
+        {
+            status.Connected();
+        }
+
+        return mapper.ForwardConnectionStateAsync(state, timeProvider.GetUtcNow(), CancellationToken.None);
+    }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Discord gateway {ConnectionState}, recording guild {GuildId}")]
     private partial void LogConnected(PlatformConnectionState connectionState, string guildId);

@@ -1,6 +1,7 @@
 using Apollo.Platform.Abstractions;
 using Apollo.Platform.Abstractions.Commands;
 using Apollo.Platform.Discord.Tests.Fakes;
+using Apollo.Testing.Diagnostics;
 using Microsoft.Extensions.Logging.Testing;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
@@ -18,6 +19,7 @@ public sealed class DiscordInteractionHandlerTests : IDisposable
 
     private readonly NetCordInteractions _interactions = new();
     private readonly StubCommandRouter _router = new();
+    private readonly TestMeterFactory _meterFactory = new();
     private readonly FakeTimeProvider _time;
     private readonly DiscordInteractionHandler _handler;
 
@@ -28,6 +30,7 @@ public sealed class DiscordInteractionHandlerTests : IDisposable
         var mapper = new DiscordEventMapper(
             Options.Create(new DiscordPlatformOptions { Token = DiscordHost.Token, GuildId = DiscordHost.GuildId }),
             new RecordingEventDispatcher(),
+            new(_meterFactory),
             new FakeLogger<DiscordEventMapper>());
         _handler = new DiscordInteractionHandler(mapper, _router, _time, new FakeLogger<DiscordInteractionHandler>());
     }
@@ -218,7 +221,11 @@ public sealed class DiscordInteractionHandlerTests : IDisposable
         _interactions.Rest.Bodies.ShouldHaveSingleItem().ShouldNotBeNull().ShouldContain(StubCommandRouter.ErrorText);
     }
 
-    public void Dispose() => _interactions.Dispose();
+    public void Dispose()
+    {
+        _interactions.Dispose();
+        _meterFactory.Dispose();
+    }
 
     private static InteractionMessageProperties MessageResponse(InteractionCallbackProperties callback)
     {

@@ -1,4 +1,5 @@
 using Apollo.Platform.Abstractions;
+using Apollo.Platform.Abstractions.Diagnostics;
 using Apollo.Platform.Abstractions.Dispatch;
 using Apollo.Platform.Abstractions.Events;
 using Microsoft.Extensions.Logging;
@@ -13,6 +14,7 @@ namespace Apollo.Platform.Discord;
 internal sealed partial class DiscordEventMapper(
     IOptions<DiscordPlatformOptions> options,
     IPlatformEventDispatcher dispatcher,
+    RecordedEventMetrics metrics,
     ILogger<DiscordEventMapper> logger)
 {
     private readonly ulong _guildId = options.Value.GuildId
@@ -54,12 +56,14 @@ internal sealed partial class DiscordEventMapper(
         if (guildId is null)
         {
             LogDroppedGuildless(gatewayEvent);
+            metrics.Dropped(EventDropReason.OtherGuild);
             return false;
         }
 
         if (guildId != _guildId)
         {
             LogDroppedForeignGuild(gatewayEvent, guildId.Value);
+            metrics.Dropped(EventDropReason.OtherGuild);
             return false;
         }
 

@@ -34,6 +34,8 @@ public static class DiscordPlatformServiceCollectionExtensions
         services.AddPlatformEventDispatcher();
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<DiscordEventMapper>();
+        services.AddSingleton<DiscordConnectionStatus>();
+        services.AddSingleton<IPlatformConnectionStatus>(sp => sp.GetRequiredService<DiscordConnectionStatus>());
         services.AddGatewayHandler<DiscordConnectionHandler>(ServiceLifetime.Singleton);
         services.AddGatewayHandler<DiscordCommandRegistrar>(ServiceLifetime.Singleton);
         services.AddGatewayHandler<DiscordInteractionHandler>(ServiceLifetime.Singleton);

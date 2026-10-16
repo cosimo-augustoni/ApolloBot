@@ -56,7 +56,10 @@ public static class Extensions
             {
                 metrics.AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
-                    .AddRuntimeInstrumentation();
+                    .AddRuntimeInstrumentation()
+                    // The bot's event counters: RecordedEventMetrics.MeterName (Apollo.Platform.Abstractions), kept in sync by
+                    // ServiceDefaultsMetricsTests.
+                    .AddMeter("Apollo.Bot");
             })
             .WithTracing(tracing =>
             {
