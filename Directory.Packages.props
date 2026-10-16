@@ -2,7 +2,14 @@
 
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- Lets the versions below also lift transitive dependencies (security pins such as MessagePack). -->
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
+
+  <ItemGroup Label="Security pins (transitive)">
+    <!-- GHSA-qhrr-8q5h-9q3h: MessagePack < 2.5.303, pulled in by Aspire.Hosting/StreamJsonRpc 13.6.1. Remove once Aspire ships a fixed version. -->
+    <PackageVersion Include="MessagePack" Version="2.5.307" />
+  </ItemGroup>
 
   <ItemGroup Label="Hosting">
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.13" />
