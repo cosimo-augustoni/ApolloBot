@@ -1,5 +1,6 @@
 using Apollo.Platform.Abstractions.Dispatch;
 using Apollo.Platform.Abstractions.Events;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Apollo.Bot.GuildState;
 
@@ -13,6 +14,7 @@ public static class GuildStateServiceCollectionExtensions
     public static IServiceCollection AddGuildStateSync(this IServiceCollection services)
     {
         services.AddPlatformEventDispatcher();
+        services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<GuildStateSyncLock>();
         services.AddScoped<GuildStateNotificationPublisher>();
         services.AddScoped<GuildStateSync>();

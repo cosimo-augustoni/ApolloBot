@@ -241,14 +241,16 @@ public sealed class DiscordChatPlatformReadTests : IDisposable
     }
 
     [Fact]
-    public async Task ListMembersAsync_WhenGuildIsNotCachedYet_ShouldNotRequestMembers()
+    public async Task ListMembersAsync_WhenGuildIsNotCachedYet_ShouldStillDownloadTheMemberList()
     {
         var platform = Platform();
+        _commands.OnGuildUserRequest = request => _downloader!.HandleAsync(NetCordPayloads.Chunk(
+            DiscordHost.GuildId, request.Nonce, index: 0, count: 1, NetCordPayloads.JsonMember(42, "alice")));
 
         var members = await platform.ListMembersAsync(_guild, TestContext.Current.CancellationToken);
 
-        members.ShouldBeEmpty();
-        _commands.GuildUserRequests.ShouldBeEmpty();
+        _commands.GuildUserRequests.ShouldHaveSingleItem().GuildId.ShouldBe(DiscordHost.GuildId);
+        members.ShouldHaveSingleItem().User.ShouldBe(Ref(42));
     }
 
     [Fact]
@@ -308,14 +310,13 @@ public sealed class DiscordChatPlatformReadTests : IDisposable
     }
 
     [Fact]
-    public async Task ListRolesAsync_WhenGuildIsNotCachedYet_ShouldReturnEmptyLists()
+    public async Task ListAsync_WhenGuildIsNotCachedYet_ShouldReturnEmptyCachedLists()
     {
         var platform = Platform();
         var ct = TestContext.Current.CancellationToken;
 
         (await platform.ListRolesAsync(_guild, ct)).ShouldBeEmpty();
         (await platform.ListChannelsAsync(_guild, ct)).ShouldBeEmpty();
-        (await platform.ListMembersAsync(_guild, ct)).ShouldBeEmpty();
         (await platform.ListVoiceStatesAsync(_guild, ct)).ShouldBeEmpty();
         (await platform.ListPresencesAsync(_guild, ct)).ShouldBeEmpty();
     }

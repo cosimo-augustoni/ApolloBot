@@ -46,19 +46,16 @@ internal sealed class DiscordChatPlatform(
 
     /// <summary>
     /// Requests the full member list over the gateway, because GUILD_CREATE lists only part of the members of a large
-    /// guild. Takes a gateway round trip per call; empty until the guild's GUILD_CREATE arrived.
+    /// guild. Takes a gateway round trip per call. Does not depend on the cache: right after connecting, NetCord may not
+    /// have cached the guild yet.
     /// </summary>
     /// <exception cref="TimeoutException">The member list did not arrive in time (<see cref="DiscordMemberDownloader.Timeout"/>).</exception>
     public async Task<IReadOnlyList<PlatformMember>> ListMembersAsync(PlatformRef guild, CancellationToken cancellationToken)
     {
-        if (CachedGuild(guild) is null)
-        {
-            return [];
-        }
+        var guildId = ConfiguredGuild(guild);
+        var users = await memberDownloader.DownloadAsync(guildId, cancellationToken);
 
-        var users = await memberDownloader.DownloadAsync(_guildId, cancellationToken);
-
-        // Read the guild again: its roles (for the permissions) may have changed during the download.
+        // Read the guild after the download: its roles (for the permissions) may have changed, or arrived, meanwhile.
         var cached = CachedGuild(guild);
         return [.. users.Select(user => DiscordSnapshots.ToMember(user, cached))];
     }
