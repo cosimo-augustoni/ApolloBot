@@ -244,6 +244,8 @@ Blazor WASM, MudBlazor, Blazor-ApexCharts. The UI is in German. All UI strings g
 - Recaps: monthly and yearly snapshots, shown as "Wrapped"-style cards
 - Privacy (read-only): tracking status, tracked since, explanation of what is stored and of the `/apollo tracking` / `/apollo privacy delete` commands
 
+Layout (D16, chosen from the wireframe concepts in #27): the member area is a **magazine page**, not an app shell. There is no drawer. A minimal header has the logo, a period switch and an avatar menu (Privatsphäre, Datenschutz, Abmelden). The overview is one long page in themed chapters (channels, voice, times, games), each opening with a headline and a key number. A row of recap covers at the top replaces a separate recaps list. A recap opens in the same magazine layout for its period. Admins reach `/admin` through an "Admin" entry in the avatar menu; the admin area keeps its drawer. Wireframes: [docs/design/wireframes/](design/wireframes/index.html).
+
 **Admin area (`/admin`)**
 - Bot status: connected, gateway latency, last event received, events per hour, open voice sessions. This is the "data is being collected" proof for M2.
 - Server dashboard: totals, growth, activity over time, channel ranking, heatmap
@@ -371,6 +373,7 @@ Alongside the template, the repo gets a **`CLAUDE.md`** with build and test comm
 | D15 | Opt-in/out = role | No separate opt-out flag. Users toggle the tracking role with `/apollo tracking on\|off`. Ephemeral replies explain that existing data stays and how to delete it. I give the role to all members by hand at the start. No web toggle or web delete for now |
 | D12 | Development style | TDD (red → green → refactor), see [coding-guidelines.md](coding-guidelines.md) |
 | D13 | Test stack | xUnit v3, Shouldly, NSubstitute (edges only), Testcontainers (Timescale image), bUnit, Aspire.Hosting.Testing |
+| D16 | Member area layout | Magazine page without a drawer: header with logo, period switch and avatar menu; themed chapters; recap covers instead of a recaps list; admins reach `/admin` from the avatar menu. Picked over a bento grid and a timeline in the #27 wireframe review (§7.2) |
 
 ## 12. Open questions
 

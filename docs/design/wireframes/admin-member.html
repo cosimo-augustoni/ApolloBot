@@ -23,10 +23,8 @@
       <a href="admin-recaps.html">Rückblicke</a>
       <a href="admin-data.html">Daten</a>
       <a href="admin-settings.html">Einstellungen</a>
-      <div class="wf-drawer-group">Meine Statistik</div>
-      <a href="me-overview.html">Übersicht</a>
-      <a href="me-recaps.html">Rückblicke</a>
-      <a href="me-privacy.html">Privatsphäre</a>
+      <div class="wf-drawer-group">Mitgliederbereich</div>
+      <a href="me-overview.html">Meine Statistik</a>
       <div class="wf-drawer-group">Info</div>
       <a href="privacy.html">Datenschutz</a>
       <a href="index.html" lang="en">← Wireframe index</a>
@@ -40,89 +38,120 @@
           <h1 style="display: flex; gap: 12px; align-items: center"><span class="wf-avatar"></span>Anna</h1>
           <div class="wf-stat-sub"><span class="wf-status">Erfasst</span> seit 03.02.2025 · Discord</div>
         </div>
-      <div class="wf-toolbar" aria-label="Zeitraum">
-        <span class="wf-chip" aria-pressed="false">7 Tage</span>
-        <span class="wf-chip" aria-pressed="true">30 Tage</span>
-        <span class="wf-chip" aria-pressed="false">Dieser Monat</span>
-        <span class="wf-chip" aria-pressed="false">Dieses Jahr</span>
-        <span class="wf-chip" aria-pressed="false">Benutzerdefiniert</span>
-        <span class="wf-input">16.09.2026 – 15.10.2026</span>
+        <div class="wf-toolbar"><span class="wf-chip" aria-pressed="true">Oktober 2026 ▾</span></div>
       </div>
+      <div class="wf-alert wf-info"><p>Du siehst, was Anna unter <code>/me</code> sieht.</p></div>
+    <div class="mv-kicker">Deine Rückblicke</div>
+    <nav class="mg-covers" aria-label="Rückblicke">
+      <a class="mv-cover mv-soon" href="me-overview.html" aria-current="page" style="outline: 3px solid var(--wf-text)"><span class="mv-kicker">läuft</span><strong>Oktober</strong></a>
+      <a class="mv-cover " href="me-recap-detail.html"><span class="mv-kicker">2026</span><strong>September</strong></a>
+      <a class="mv-cover " href="me-recap-detail.html"><span class="mv-kicker">2026</span><strong>August</strong></a>
+      <a class="mv-cover " href="me-recap-detail.html"><span class="mv-kicker">2026</span><strong>Juli</strong></a>
+      <a class="mv-cover mv-year" href="me-recap-detail.html"><span class="mv-kicker">Jahr</span><strong>2025</strong></a>
+      <a class="mv-cover " href="me-recap-detail.html"><span class="mv-kicker">2026</span><strong>Juni</strong></a>
+    </nav>
+    <div class="mg-pill">
+      <div class="mg-pill-inner">
+        <span class="mg-period">Oktober 2026 ▾</span>
+        <a class="mg-chapter-link" href="#kanaele">Kanäle</a>
+        <a class="mg-chapter-link" href="#voice">Voice</a>
+        <a class="mg-chapter-link" href="#zeiten">Zeiten</a>
+        <a class="mg-chapter-link" href="#spiele">Spiele</a>
       </div>
-      <div class="wf-grid">
-        <div class="wf-card wf-sm-6 wf-md-3">
-          <div class="wf-stat-label">Nachrichten</div>
-          <div class="wf-stat-value">1'284</div>
-          <div class="wf-stat-sub">+12.5 % zum Vorzeitraum</div>
-        </div>
-        <div class="wf-card wf-sm-6 wf-md-3">
-          <div class="wf-stat-label">Voice-Stunden</div>
-          <div class="wf-stat-value">42.5 h</div>
-          <div class="wf-stat-sub">-3 % zum Vorzeitraum</div>
-        </div>
-        <div class="wf-card wf-sm-6 wf-md-3">
-          <div class="wf-stat-label">Reaktionen</div>
-          <div class="wf-stat-value">312</div>
-          <div class="wf-stat-sub">±0 % zum Vorzeitraum</div>
-        </div>
-        <div class="wf-card wf-sm-6 wf-md-3">
-          <div class="wf-stat-label">Aktive Tage</div>
-          <div class="wf-stat-value">22 von 30</div>
-          <div class="wf-stat-sub">Erfasst an 30 von 30 Tagen</div>
-        </div>
-        <section class="wf-card wf-md-8">
-          <div class="wf-card-header"><h2>Aktivität</h2><span class="wf-chip" aria-pressed="true">Nachrichten</span></div>
-          <div class="wf-chart">Diagramm: Aktivität über Zeit<br>(Nachrichten und Voice-Minuten pro Tag)</div>
-        </section>
-        <section class="wf-card wf-md-4">
-          <div class="wf-card-header"><h2>Top-Kanäle</h2><a href="#" class="wf-tag">Alle anzeigen</a></div>
-          <ol class="wf-rank">
-            <li style="--w: 90%"><span>#allgemein</span><span class="wf-num">512</span></li>
-            <li style="--w: 55%"><span>#gaming</span><span class="wf-num">301</span></li>
-            <li style="--w: 35%"><span>#memes</span><span class="wf-num">188</span></li>
-            <li style="--w: 18%"><span>#musik</span><span class="wf-num">97</span></li>
-            <li style="--w: 12%"><span>#off-topic</span><span class="wf-num">64</span></li>
-          </ol>
-        </section>
-        <section class="wf-card wf-md-4">
-          <div class="wf-card-header"><h2>Top-Emojis</h2></div>
-          <ol class="wf-rank">
-            <li style="--w: 90%"><span>◯ :lachen:</span><span class="wf-num">87</span></li>
-            <li style="--w: 60%"><span>◯ :daumen:</span><span class="wf-num">54</span></li>
-            <li style="--w: 35%"><span>◯ :herz:</span><span class="wf-num">31</span></li>
-            <li style="--w: 14%"><span>◯ :apollo_custom:</span><span class="wf-num">12</span></li>
-          </ol>
-        </section>
-        <section class="wf-card wf-md-8">
-          <div class="wf-card-header"><h2>Aktivität nach Wochentag und Stunde</h2></div>
-          <div class="wf-heatmap"><span><b>Heatmap: Mo–So × 0–23 Uhr</b></span></div>
-        </section>
-        <section class="wf-card wf-optional">
-          <div class="wf-card-header"><h2>Spiele</h2><span class="wf-tag">Bonus · nur wenn Daten vorhanden</span></div>
-          <ol class="wf-rank">
-            <li style="--w: 80%"><span>Spiel A</span><span class="wf-num">18.2 h</span></li>
-            <li style="--w: 30%"><span>Spiel B</span><span class="wf-num">6.5 h</span></li>
-            <li style="--w: 6%"><span>Spiel C</span><span class="wf-num">1.1 h</span></li>
-          </ol>
-        </section>
+    </div>
+    <section class="mv-friendly" data-states="paused">
+      <div>
+        <h2>Du wirst gerade nicht erfasst</h2>
+        <p>Seit dem 12.08.2026 sammelt Apollo nichts mehr über dich. Deine Zahlen bis dahin bleiben hier. Mit <code>/apollo tracking on</code> bist du jederzeit wieder dabei.</p>
+        <p><a href="me-privacy.html">Mehr zu deiner Privatsphäre</a></p>
       </div>
-      <section class="wf-card">
-        <div class="wf-card-header"><h2>Rückblicke von Anna</h2><a href="me-recaps.html" class="wf-tag">Alle anzeigen</a></div>
-        <div class="wf-toolbar"><a class="wf-chip" href="me-recap-detail.html">September 2026</a><a class="wf-chip" href="me-recap-detail.html">August 2026</a><a class="wf-chip" href="me-recap-detail.html">2025</a></div>
-      </section>
+    </section>
+    <header class="mg-hero">
+      <div class="mv-kicker">Dein Oktober bisher</div>
+      <h1>Hallo Anna, das war dein Monat bis jetzt.</h1>
+      <p class="mg-lede">612 Nachrichten und 19.5 Stunden im Voice in 15 Tagen. Am liebsten bist du mittwochabends da.</p>
+      <div class="mg-numbers">
+        <div><div class="wf-stat-label">Nachrichten</div><div class="wf-stat-value">612</div></div>
+        <div><div class="wf-stat-label">Voice-Stunden</div><div class="wf-stat-value">19.5 h</div></div>
+        <div><div class="wf-stat-label">Reaktionen</div><div class="wf-stat-value">148</div></div>
+        <div><div class="wf-stat-label">Aktive Tage</div><div class="wf-stat-value">12 von 15</div></div>
+      </div>
+      <p class="wf-stat-sub">+12.5 % Nachrichten zum gleichen Zeitraum im September</p>
+      <div class="wf-chart">Diagramm: Aktivität über Zeit (Nachrichten und Voice-Minuten pro Tag)</div>
+    </header>
+    <section class="mg-chapter" id="kanaele">
+      <div class="mg-chapter-head">
+        <div><div class="mv-kicker">Kapitel 1</div><h2>Du und deine Kanäle</h2></div>
+        <div class="mg-key"><div class="mv-big">#allgemein</div><div class="wf-stat-sub">41 % deiner Nachrichten</div></div>
+      </div>
+      <p class="mg-lede">Hier bist du zu Hause. Danach kommen #gaming und #memes.</p>
+      <div class="mg-two">
+        <div><h3>Top-Kanäle</h3>
+        <ol class="wf-rank">
+          <li style="--w: 90%"><span>#allgemein</span><span class="wf-num">248</span></li>
+          <li style="--w: 52%"><span>#gaming</span><span class="wf-num">141</span></li>
+          <li style="--w: 35%"><span>#memes</span><span class="wf-num">96</span></li>
+          <li style="--w: 18%"><span>#musik</span><span class="wf-num">51</span></li>
+          <li style="--w: 11%"><span>#off-topic</span><span class="wf-num">30</span></li>
+        </ol>
+        </div>
+        <div><h3>Top-Emojis</h3>
+        <ol class="wf-rank">
+          <li style="--w: 90%"><span>◯ :lachen:</span><span class="wf-num">41</span></li>
+          <li style="--w: 60%"><span>◯ :daumen:</span><span class="wf-num">27</span></li>
+          <li style="--w: 33%"><span>◯ :herz:</span><span class="wf-num">15</span></li>
+          <li style="--w: 13%"><span>◯ :apollo_custom:</span><span class="wf-num">6</span></li>
+        </ol>
+        </div>
+      </div>
+    </section>
+    <section class="mg-chapter" id="voice">
+      <div class="mg-chapter-head">
+        <div><div class="mv-kicker">Kapitel 2</div><h2>Deine Leute im Voice</h2></div>
+        <div class="mg-key"><div class="mv-big">19.5 h</div><div class="wf-stat-sub">im Voice, am meisten mit Ben</div></div>
+      </div>
+      <div class="mg-two">
+        <div class="wf-chart wf-small">Diagramm: Voice-Minuten pro Tag</div>
+        <div><h3>Am meisten Zeit zusammen</h3>
+        <ol class="wf-rank">
+          <li style="--w: 90%"><span>Ben</span><span class="wf-num">6.2 h</span></li>
+          <li style="--w: 58%"><span>Chris</span><span class="wf-num">4.0 h</span></li>
+          <li style="--w: 22%"><span>Dana</span><span class="wf-num">1.5 h</span></li>
+        </ol>
+        </div>
+      </div>
+    </section>
+    <section class="mg-chapter" id="zeiten">
+      <div class="mg-chapter-head">
+        <div><div class="mv-kicker">Kapitel 3</div><h2>Deine Zeiten</h2></div>
+        <div class="mg-key"><div class="mv-big">Mi, 21 Uhr</div><div class="wf-stat-sub">deine aktivste Stunde</div></div>
+      </div>
+      <p class="mg-lede">Du warst an 12 von 15 Tagen aktiv. Abends ist am meisten los.</p>
+      <div class="wf-heatmap"><span><b>Heatmap: Mo–So × 0–23 Uhr</b></span></div>
+    </section>
+    <section class="mg-chapter wf-card wf-optional" id="spiele" style="padding: 24px">
+      <div class="mg-chapter-head">
+        <div><div class="mv-kicker">Bonus · nur wenn Daten vorhanden</div><h2>Spiele</h2></div>
+        <div class="mg-key"><div class="mv-big">8.1 h</div><div class="wf-stat-sub">Spiel A</div></div>
+      </div>
+        <ol class="wf-rank">
+          <li style="--w: 80%"><span>Spiel A</span><span class="wf-num">8.1 h</span></li>
+          <li style="--w: 24%"><span>Spiel B</span><span class="wf-num">2.4 h</span></li>
+        </ol>
+    </section>
       <aside class="wf-notes" lang="en">
         <h2>Annotations</h2>
         <ul>
-          <li>Same view as <code>/me</code> (same component), for any member; only admins can open it.</li>
-          <li>Header adds avatar, name, tracking status and platform. An untracked member without data shows the <a href="me-empty.html">empty state</a> wording in third person ("Für Anna werden keine Daten erfasst").</li>
-          <li>Below the stats: links to the member's recaps (same recap pages as the member sees).</li>
-          <li>Date range presets: 7 Tage, 30 Tage (default), Dieser Monat, Dieses Jahr, Benutzerdefiniert (date picker). Changing the range reloads all cards; no auto refresh.</li>
-          <li>All numbers come from the date-range stats layer (scope §5.3). Deltas compare with the previous range of the same length; when the member was not tracked for the whole previous range the delta shows <code>–</code>.</li>
-          <li>"Erfasst an X von Y Tagen": untracked days (tracking_periods) are left out of averages.</li>
-          <li>Each card shows the style guide EmptyState ("Noch keine Daten") when its range has no data.</li>
-          <li>Spiele is a bonus section: hidden completely when there is no presence data (Discord only, incomplete by design).</li>
-          <li>Bot messages are excluded. Threads roll up to their parent channel.</li>
-          <li>At 360px tiles stack (one per row), charts keep full card width; the heatmap keeps 7 × 24 cells (≈ 12px each).</li>
+          <li>Same view as <code>/me</code> (same magazine component, scope D16), so admins see exactly what the member sees; it sits inside the admin shell with the drawer.</li>
+          <li>Header adds avatar, name, tracking status and platform, plus the period switch (the member header is not shown here).</li>
+          <li>Covers and the period switch open the member's recaps at <code>/admin/members/{id}/recaps/{period}</code>, again in the magazine layout.</li>
+          <li>An untracked member without data shows the <a href="me-empty.html">empty state</a> wording in third person ("Für Anna werden keine Daten erfasst").</li>
+          <li>Magazine layout (scope D16): one long editorial page in chapters (Kanäle, Voice, Zeiten, Spiele). Each chapter opens with a big headline and one key number, then its chart or list.</li>
+          <li>The row of recap covers at the top <strong>replaces a separate recaps list</strong> (there is no <code>/me/recaps</code> list page): running month (dashed), past months, years (darker). Newest first; the row scrolls sideways inside itself on small screens, the page never does.</li>
+          <li>Sticky period pill: shows the period (opens the same period switch as the header) and, from 760px up, jump links to the chapters. On phones only the period is shown.</li>
+          <li>Headline sentences are generated from the numbers ("Am liebsten bist du mittwochabends da"); keep templates simple and fall back to a plain title when data is thin.</li>
+          <li>The games chapter is a bonus and is left out completely without presence data. Chapters with no data in the period are left out too. Bot messages are excluded; threads roll up to their parent channel.</li>
+          <li>At 360px: the 4 numbers become a 2×2 grid, chapter headline and key number stack, two-column parts stack.</li>
         </ul>
       </aside>
     </main>

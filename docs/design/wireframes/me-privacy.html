@@ -7,82 +7,95 @@
   <link rel="stylesheet" href="wireframes.css">
 </head>
 <body data-default-state="tracked">
-  <input type="checkbox" id="wf-nav" class="wf-nav-toggle">
-  <header class="wf-appbar">
-    <label for="wf-nav" class="wf-hamburger" title="Navigation öffnen">☰</label>
-    <a class="wf-brand" href="me-overview.html">Apollo</a>
-    <span class="wf-appbar-spacer"></span>
-    <div class="wf-user"><span class="wf-avatar"></span><span class="wf-user-name">Anna</span><a class="wf-btn" href="login.html">Abmelden</a></div>
+  <header class="mv-header">
+    <a class="mv-logo" href="me-overview.html">Apollo</a>
+    <span class="mv-spacer"></span>
+    <details class="mv-menu">
+      <summary>Oktober 2026 ▾</summary>
+      <div class="mv-menu-list">
+        <span class="mv-menu-label">Zeitraum</span>
+        <a href="me-overview.html" aria-current="true">Oktober 2026 (läuft)</a>
+        <a href="me-recap-detail.html" aria-current="false">September 2026</a>
+        <a href="me-recap-detail.html">August 2026</a>
+        <a href="me-recap-detail.html">Jahr 2025</a>
+        <hr>
+        <a href="#">Benutzerdefiniert …</a>
+      </div>
+    </details>
+    <details class="mv-menu mv-avatar">
+      <summary title="Konto"></summary>
+      <div class="mv-menu-list">
+        <span class="mv-menu-label">Anna</span>
+        <a href="me-privacy.html">Privatsphäre</a>
+        <a href="privacy.html">Datenschutz</a>
+        <hr>
+        <a href="admin-status.html">Admin <span class="wf-tag">nur für Admins</span></a>
+        <hr>
+        <a href="login.html">Abmelden</a>
+      </div>
+    </details>
   </header>
-  <div class="wf-layout">
-    <nav class="wf-drawer" aria-label="Navigation">
-      <div class="wf-drawer-group">Meine Statistik</div>
-      <a href="me-overview.html">Übersicht</a>
-      <a href="me-recaps.html">Rückblicke</a>
-      <a href="me-privacy.html" aria-current="page">Privatsphäre</a>
-      <div class="wf-drawer-group">Info</div>
-      <a href="privacy.html">Datenschutz</a>
-      <a href="index.html" lang="en">← Wireframe index</a>
-    </nav>
-    <label for="wf-nav" class="wf-drawer-backdrop" title="Navigation schliessen"></label>
-    <main class="wf-main">
-      <div class="wf-page-header">
-        <div>
-          <div class="wf-route">/me/privacy</div>
-          <h1>Privatsphäre</h1>
-        </div>
+  <main class="mv-page">
+    <div class="mv-kicker">Privatsphäre</div>
+    <h1 class="mv-hello">Deine Daten, deine Entscheidung</h1>
+    <p class="mg-lede">Hier siehst du, ob Apollo bei dir mitzählt und was schon gespeichert ist. Ändern kannst du das jederzeit mit einem Befehl auf dem Server.</p>
+    <section class="mv-friendly" data-states="tracked" style="margin-top: 20px">
+      <div>
+        <h2>Apollo zählt bei dir mit</h2>
+        <p>Auf Discord, seit dem 03.02.2025.</p>
       </div>
+    </section>
+    <section class="mv-friendly" data-states="untracked" style="margin-top: 20px">
+      <div>
+        <h2>Apollo zählt bei dir gerade nicht mit</h2>
+        <p>Seit dem 12.08.2026. Was bis dahin erfasst wurde, bleibt gespeichert, bis du es löschst.</p>
+      </div>
+    </section>
+    <section class="mv-friendly" data-states="bootstrap" style="margin-top: 20px">
+      <div>
+        <h2>Tracking ist noch nicht eingerichtet</h2>
+        <p>Die Admins haben noch keine Tracking-Rolle festgelegt.</p>
+      </div>
+    </section>
+    <div class="mg-numbers" data-states="tracked untracked">
+      <div><div class="wf-stat-label">Nachrichten-Ereignisse</div><div class="wf-stat-value">12'340</div></div>
+      <div><div class="wf-stat-label">Voice-Sessions</div><div class="wf-stat-value">410</div></div>
+      <div><div class="wf-stat-label">Reaktionen</div><div class="wf-stat-value">2'115</div></div>
+      <div><div class="wf-stat-label">Erfasst seit</div><div class="wf-stat-value">03.02.2025</div></div>
+    </div>
+    <section class="mg-chapter">
+      <div class="mg-chapter-head"><div><h2>So änderst du das</h2></div></div>
+      <p class="mg-lede">Schreib einen dieser Befehle auf dem Server. Die Antwort siehst nur du.</p>
       <div class="wf-grid">
-        <section class="wf-card wf-md-6">
-          <div class="wf-card-header"><h2>Dein Status auf Discord</h2></div>
-          <p data-states="tracked"><span class="wf-status">Erfasst</span></p>
-          <p data-states="untracked"><span class="wf-status wf-off">Nicht erfasst</span></p>
-          <p data-states="bootstrap"><span class="wf-status wf-off">Tracking ist noch nicht eingerichtet</span></p>
-          <table class="wf-table wf-stack" data-states="tracked untracked">
-            <thead><tr><th>Was</th><th>Wert</th></tr></thead>
-            <tbody>
-              <tr><td data-label="Was">Erfasst seit</td><td data-label="Wert">03.02.2025</td></tr>
-              <tr><td data-label="Was">Nachrichten-Ereignisse</td><td data-label="Wert" class="wf-num">12'340</td></tr>
-              <tr><td data-label="Was">Voice-Sessions</td><td data-label="Wert" class="wf-num">410</td></tr>
-              <tr><td data-label="Was">Reaktionen</td><td data-label="Wert" class="wf-num">2'115</td></tr>
-            </tbody>
-          </table>
-        </section>
-        <section class="wf-card wf-md-6">
-          <div class="wf-card-header"><h2>Was wird erfasst?</h2></div>
-          <div class="wf-lines"><div class="wf-line"></div><div class="wf-line w-80"></div><div class="wf-line w-60"></div></div>
-          <p style="margin-top: 12px">Nachrichteninhalte werden nie gespeichert. <a href="privacy.html">Alles zum Datenschutz</a></p>
-        </section>
-        <section class="wf-card">
-          <div class="wf-card-header"><h2>So änderst du das</h2></div>
-          <div class="wf-alert wf-info"><p>Hier auf der Webseite kannst du nichts ändern. Schreib die Befehle auf dem Server; die Antwort siehst nur du.</p></div>
-          <table class="wf-table wf-stack">
-            <thead><tr><th>Befehl</th><th>Was passiert</th></tr></thead>
-            <tbody>
-              <tr><td data-label="Befehl"><code>/apollo tracking off</code></td><td data-label="Was passiert">Apollo erfasst ab sofort nichts mehr. Bereits erfasste Daten bleiben gespeichert.</td></tr>
-              <tr><td data-label="Befehl"><code>/apollo tracking on</code></td><td data-label="Was passiert">Apollo erfasst dich wieder. Die Zeit dazwischen bleibt eine Lücke.</td></tr>
-              <tr><td data-label="Befehl"><code>/apollo tracking status</code></td><td data-label="Was passiert">Zeigt, ob du erfasst wirst, seit wann und wie viele Daten gespeichert sind.</td></tr>
-              <tr><td data-label="Befehl"><code>/apollo privacy delete</code></td><td data-label="Was passiert">Löscht alle deine Daten endgültig und beendet die Erfassung. Das kann nicht rückgängig gemacht werden.</td></tr>
-            </tbody>
-          </table>
-        </section>
+        <div class="wf-card wf-sm-6 wf-md-6"><code>/apollo tracking off</code><p style="margin-top: 8px">Apollo hört auf mitzuzählen. Was schon gespeichert ist, bleibt.</p></div>
+        <div class="wf-card wf-sm-6 wf-md-6"><code>/apollo tracking on</code><p style="margin-top: 8px">Apollo zählt wieder mit. Die Zeit dazwischen bleibt eine Lücke.</p></div>
+        <div class="wf-card wf-sm-6 wf-md-6"><code>/apollo tracking status</code><p style="margin-top: 8px">Zeigt dir, ob und seit wann du erfasst wirst und was gespeichert ist.</p></div>
+        <div class="wf-card wf-sm-6 wf-md-6" style="border-width: 2px"><code>/apollo privacy delete</code><p style="margin-top: 8px">Löscht alle deine Daten endgültig und beendet die Erfassung. Das lässt sich nicht rückgängig machen.</p></div>
       </div>
-      <aside class="wf-notes" lang="en">
-        <h2>Annotations</h2>
-        <div class="wf-states"><strong>Page state:</strong>
-          <a href="#tracked" data-state-link>Erfasst</a>
-          <a href="#untracked" data-state-link>Nicht erfasst</a>
-          <a href="#bootstrap" data-state-link>Bootstrap-Modus</a>
-        </div>
-        <ul>
-          <li>Read-only (scope §5.4): no toggle and no delete button on the web (scope §3).</li>
-          <li>Status is for the platform the member logged in with ("Dein Status auf Discord"); tracking roles are per platform.</li>
-          <li>The counts match <code>/apollo tracking status</code>.</li>
-          <li>On Fluxer the commands are text commands and replies arrive by DM (platform-parity.md); the table text then names the Fluxer form.</li>
-        </ul>
-      </aside>
-    </main>
-  </div>
+    </section>
+    <section class="mg-chapter">
+      <div class="mg-chapter-head"><div><h2>Was Apollo speichert</h2></div></div>
+      <p class="mg-lede">Wann und wo du aktiv bist, aber nie, was du schreibst. Alles Weitere steht im <a href="privacy.html">Datenschutz</a>.</p>
+      <div class="wf-lines"><div class="wf-line"></div><div class="wf-line w-80"></div><div class="wf-line w-60"></div></div>
+    </section>
+    <aside class="wf-notes" lang="en">
+      <h2>Annotations</h2>
+      <div class="wf-states"><strong>Page state:</strong>
+        <a href="#tracked" data-state-link>Erfasst</a>
+        <a href="#untracked" data-state-link>Nicht erfasst</a>
+        <a href="#bootstrap" data-state-link>Bootstrap-Modus</a>
+      </div>
+      <ul>
+        <li>Route <code>/me/privacy</code>, reached from the avatar menu. Same member shell and friendly tone as the magazine; no drawer.</li>
+        <li>Read-only (scope §5.4): no toggle and no delete button on the web (scope §3). The commands are explained instead.</li>
+        <li>Status is for the platform the member logged in with; tracking roles are per platform. Counts match <code>/apollo tracking status</code>.</li>
+        <li>On Fluxer the commands are text commands and replies arrive by DM (platform-parity.md); the command cards then name the Fluxer form.</li>
+        <li>Member shell (scope D16): no drawer. Header = Apollo logo (home), period switch ("Oktober 2026 ▾": running month, past months and years, Benutzerdefiniert) and avatar menu (Privatsphäre, Datenschutz, Abmelden; "Admin" only for admins, leads to <a href="admin-status.html">/admin</a>).</li>
+        <li>Menus are <code>&lt;details&gt;</code> here so they work without JS; real pages use MudMenu.</li>
+      </ul>
+    </aside>
+    <p class="wf-stat-sub" lang="en"><a href="index.html">← Wireframe index</a></p>
+  </main>
   <script src="wireframes.js"></script>
 </body>
 </html>

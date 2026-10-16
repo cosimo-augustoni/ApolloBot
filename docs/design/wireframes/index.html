@@ -14,7 +14,7 @@
     <main>
       <h1>Low-fi wireframes</h1>
       <p>
-        Design step 2 of <a href="../../scope.md">scope §7.3</a> (issue #27): grey-box wireframes for every page in scope §7.2,
+        Design step 2 of <a href="../../scope.md">scope §7.3</a> (issue #27): grey-box wireframes for every page in scope §7.2 (member area in the magazine layout picked in review, scope D16),
         plus login, "Kein Zugriff", the untracked empty state and the public privacy page.
         UI placeholder text is German; annotations (yellow boxes) are English.
         Plain HTML, CSS and a little vanilla JS: no build step, no server, no network requests.
@@ -54,19 +54,16 @@
             <tr><td data-label="Route"><code>/datenschutz</code></td><td data-label="Page">Datenschutz (public)</td><td data-label="Who">Everyone</td>
               <td data-label="Wireframe"><a href="privacy.html">privacy.html</a><a href="privacy.html" target="phone">360px</a></td>
               <td data-label="States">–</td></tr>
-            <tr><td data-label="Route"><code>/me</code></td><td data-label="Page">Meine Statistik</td><td data-label="Who">Member, Admin</td>
+            <tr><td data-label="Route"><code>/me</code></td><td data-label="Page">Meine Statistik (magazine, recap covers on top)</td><td data-label="Who">Member, Admin</td>
               <td data-label="Wireframe"><a href="me-overview.html">me-overview.html</a><a href="me-overview.html" target="phone">360px</a></td>
               <td data-label="States"><a href="me-overview.html#paused" target="phone">no longer tracked</a></td></tr>
             <tr><td data-label="Route"><code>/me</code> (no data)</td><td data-label="Page">Empty state "Für dich werden keine Daten erfasst"</td><td data-label="Who">Member</td>
               <td data-label="Wireframe"><a href="me-empty.html">me-empty.html</a><a href="me-empty.html" target="phone">360px</a></td>
               <td data-label="States"><a href="me-empty.html#bootstrap" target="phone">bootstrap</a><a href="me-empty.html#new" target="phone">tracked, empty</a></td></tr>
-            <tr><td data-label="Route"><code>/me/recaps</code></td><td data-label="Page">Meine Rückblicke</td><td data-label="Who">Member, Admin</td>
-              <td data-label="Wireframe"><a href="me-recaps.html">me-recaps.html</a><a href="me-recaps.html" target="phone">360px</a></td>
-              <td data-label="States"><a href="me-recaps.html#empty" target="phone">empty</a></td></tr>
-            <tr><td data-label="Route"><code>/me/recaps/{period}</code></td><td data-label="Page">Rückblick (detail)</td><td data-label="Who">Member, Admin</td>
+            <tr><td data-label="Route"><code>/me/recaps/{period}</code></td><td data-label="Page">Rückblick (same magazine layout)</td><td data-label="Who">Member, Admin</td>
               <td data-label="Wireframe"><a href="me-recap-detail.html">me-recap-detail.html</a><a href="me-recap-detail.html" target="phone">360px</a></td>
               <td data-label="States">–</td></tr>
-            <tr><td data-label="Route"><code>/me/privacy</code></td><td data-label="Page">Privatsphäre (read-only)</td><td data-label="Who">Member, Admin</td>
+            <tr><td data-label="Route"><code>/me/privacy</code></td><td data-label="Page">Privatsphäre (read-only, via avatar menu)</td><td data-label="Who">Member, Admin</td>
               <td data-label="Wireframe"><a href="me-privacy.html">me-privacy.html</a><a href="me-privacy.html" target="phone">360px</a></td>
               <td data-label="States"><a href="me-privacy.html#untracked" target="phone">not tracked</a><a href="me-privacy.html#bootstrap" target="phone">bootstrap</a></td></tr>
             <tr><td data-label="Route"><code>/admin</code></td><td data-label="Page">Bot-Status</td><td data-label="Who">Admin</td>
@@ -94,41 +91,11 @@
         </table>
       </section>
 
-      <section class="wf-card" style="margin-bottom: 24px">
-        <h2>Member area: concepts B/C/D</h2>
-        <p>
-          Owner feedback on PR #58: the member side should feel lighter and more stylised than an app with a drawer.
-          These three alternatives replace the <code>/me</code> overview and recaps above once one is picked
-          (the <code>me-*.html</code> pages stay as they are until then). Shared rules: no drawer; a minimal header with logo,
-          period switch and avatar menu (Privatsphäre, Datenschutz, Abmelden, "Admin" for admins);
-          the "not tracked" hint is a friendly card in the content.
-        </p>
-        <table class="wf-table wf-stack wf-index-list">
-          <thead>
-            <tr><th>Concept</th><th>Overview</th><th>Recaps</th><th>Empty state</th></tr>
-          </thead>
-          <tbody>
-            <tr><td data-label="Concept"><strong>B · Magazine</strong><br><span class="wf-stat-sub">long editorial page in chapters, recap covers on top, sticky period pill</span></td>
-              <td data-label="Overview"><a href="member-variants/b-magazine/index.html">desktop</a><a href="member-variants/b-magazine/index.html" target="phone">360px</a><a href="member-variants/b-magazine/index.html#paused" target="phone">not tracked</a></td>
-              <td data-label="Recaps"><a href="member-variants/b-magazine/recap.html">detail</a><a href="member-variants/b-magazine/recap.html" target="phone">360px</a></td>
-              <td data-label="Empty state"><a href="member-variants/b-magazine/empty.html">desktop</a><a href="member-variants/b-magazine/empty.html" target="phone">360px</a></td></tr>
-            <tr><td data-label="Concept"><strong>C · Bento</strong><br><span class="wf-stat-sub">grid of tiles in different sizes; a tile opens a bottom sheet (mobile) or side panel (desktop)</span></td>
-              <td data-label="Overview"><a href="member-variants/c-bento/index.html">desktop</a><a href="member-variants/c-bento/index.html" target="phone">360px</a><a href="member-variants/c-bento/index.html#sheet-voice" target="phone">sheet open</a></td>
-              <td data-label="Recaps"><a href="member-variants/c-bento/recaps.html">covers</a><a href="member-variants/c-bento/recaps.html" target="phone">360px</a><a href="member-variants/c-bento/recap.html">detail</a><a href="member-variants/c-bento/recap.html" target="phone">360px</a></td>
-              <td data-label="Empty state"><a href="member-variants/c-bento/empty.html">desktop</a><a href="member-variants/c-bento/empty.html" target="phone">360px</a></td></tr>
-            <tr><td data-label="Concept"><strong>D · Timeline</strong><br><span class="wf-stat-sub">months newest first; current month expanded, older months compact; year separators</span></td>
-              <td data-label="Overview"><a href="member-variants/d-timeline/index.html">desktop</a><a href="member-variants/d-timeline/index.html" target="phone">360px</a></td>
-              <td data-label="Recaps"><a href="member-variants/d-timeline/recap.html">detail</a><a href="member-variants/d-timeline/recap.html" target="phone">360px</a></td>
-              <td data-label="Empty state"><a href="member-variants/d-timeline/empty.html">desktop</a><a href="member-variants/d-timeline/empty.html" target="phone">360px</a></td></tr>
-          </tbody>
-        </table>
-      </section>
-
       <section class="wf-card">
         <h2>Navigation</h2>
         <ul>
-          <li>Admins (Administrator permission) see two drawer groups: <em>Server</em> (admin area) and <em>Meine Statistik</em>. Admin home is <code>/admin</code>.</li>
-          <li>Members (a Zugriffsrolle) see only <em>Meine Statistik</em>. Member home is <code>/me</code>. (The member concepts B/C/D above drop the drawer for members; admins then reach the admin shell from the avatar menu.)</li>
+          <li>Admin area (<code>/admin…</code>): app shell with a drawer (group <em>Server</em>, plus a <em>Meine Statistik</em> link to <code>/me</code>). Admin home is <code>/admin</code>.</li>
+          <li>Member area (<code>/me…</code>): magazine layout without a drawer (scope D16). Header with logo, period switch and avatar menu (Privatsphäre, Datenschutz, Abmelden; <em>Admin</em> for admins). The recap cover row on <code>/me</code> replaces a recaps list, so there is no <code>/me/recaps</code> list page. Member home is <code>/me</code>.</li>
           <li>Everyone else gets <code>/kein-zugriff</code> after login. <code>/datenschutz</code> needs no login.</li>
           <li>Out of scope (scope §3): no web tracking toggle and no web delete; tracking changes only via <code>/apollo</code> commands.</li>
         </ul>
