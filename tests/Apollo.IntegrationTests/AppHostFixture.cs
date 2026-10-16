@@ -7,7 +7,8 @@ namespace Apollo.IntegrationTests;
 /// <summary>
 /// Starts the AppHost once for all smoke tests in a class.
 /// The <c>db</c> container is switched to a session lifetime without volumes, so tests never reuse
-/// (or leave behind) the persistent dev container and its data.
+/// (or leave behind) the persistent dev container and its data. The bot gets placeholder Discord settings and does not
+/// connect to Discord.
 /// </summary>
 public sealed class AppHostFixture : IAsyncLifetime
 {
@@ -23,6 +24,7 @@ public sealed class AppHostFixture : IAsyncLifetime
 
         var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Apollo_AppHost>(cts.Token);
         UseThrowawayDatabase(builder);
+        UseOfflineBot(builder);
 
         _app = await builder.BuildAsync(cts.Token);
         await _app.StartAsync(cts.Token);
@@ -35,6 +37,13 @@ public sealed class AppHostFixture : IAsyncLifetime
             await _app.DisposeAsync();
         }
     }
+
+    // Environment variables win over the bot's user-secrets, so a developer's real token is never used here.
+    private static void UseOfflineBot(IDistributedApplicationTestingBuilder builder) =>
+        builder.CreateResourceBuilder<ProjectResource>("bot")
+            .WithEnvironment("Apollo__Platform__Discord__Token", "MTIzNDU2Nzg5MDEyMzQ1Njc4.placeholder.token")
+            .WithEnvironment("Apollo__Platform__Discord__GuildId", "111111111111111111")
+            .WithEnvironment("Apollo__Platform__Discord__Connect", "false");
 
     private static void UseThrowawayDatabase(IDistributedApplicationTestingBuilder builder)
     {
