@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <UserSecretsId>2dfc3c4f-6f09-4316-85a4-2a5cc26b6474</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,6 +12,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Apollo.Web.Client\Apollo.Web.Client.csproj" />
     <ProjectReference Include="..\Apollo.Data\Apollo.Data.csproj" />
+    <ProjectReference Include="..\Apollo.Platform.Abstractions\Apollo.Platform.Abstractions.csproj" />
+    <ProjectReference Include="..\Apollo.Platform.Discord\Apollo.Platform.Discord.csproj" />
     <ProjectReference Include="..\Apollo.Stats\Apollo.Stats.csproj" />
     <ProjectReference Include="..\Apollo.ServiceDefaults\Apollo.ServiceDefaults.csproj" />
   </ItemGroup>

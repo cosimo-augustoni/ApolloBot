@@ -1,0 +1,11 @@
+/* Long display names must not push the logout button off a 360px app bar. */
+.apollo-user-menu {
+    min-width: 0;
+}
+
+.apollo-user-menu ::deep .apollo-user-name {
+    max-width: 30vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

@@ -1,0 +1,42 @@
+@using Apollo.Web.Client.Auth
+@implements IDisposable
+@inject IStringLocalizer<Strings> L
+@inject NavigationManager Navigation
+@inject ApolloAuthenticationStateProvider AuthState
+
+@* Login and logout are full page loads: the host sets and deletes the HttpOnly session cookie (BFF, #29). *@
+<div class="d-flex align-center apollo-user-menu">
+    <AuthorizeView>
+        <Authorized>
+            <MudText Typo="Typo.body2" Class="apollo-user-name mr-2">@(context.User.Identity?.Name)</MudText>
+            <MudButton Variant="Variant.Text" Color="Color.Inherit" Class="apollo-logout"
+                       StartIcon="@Icons.Material.Filled.Logout" OnClick="LogoutAsync">@L["Auth_Logout"]</MudButton>
+        </Authorized>
+        <NotAuthorized>
+            <MudButton Variant="Variant.Outlined" Color="Color.Inherit" Class="apollo-login"
+                       StartIcon="@Icons.Material.Filled.Login" OnClick="Login">@L["Auth_Login"]</MudButton>
+        </NotAuthorized>
+    </AuthorizeView>
+</div>
+
+@code {
+    private readonly CancellationTokenSource _disposed = new();
+
+    private void Login()
+    {
+        var returnUrl = "/" + Navigation.ToBaseRelativePath(Navigation.Uri);
+        Navigation.NavigateTo($"/auth/login?returnUrl={Uri.EscapeDataString(returnUrl)}", forceLoad: true);
+    }
+
+    private async Task LogoutAsync()
+    {
+        await AuthState.LogoutAsync(_disposed.Token);
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
+
+    public void Dispose()
+    {
+        _disposed.Cancel();
+        _disposed.Dispose();
+    }
+}

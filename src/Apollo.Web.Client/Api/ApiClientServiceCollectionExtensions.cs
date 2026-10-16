@@ -16,10 +16,12 @@ public static class ApiClientServiceCollectionExtensions
         if (section.Get<ApiClientOptions>()?.UseMockData == true)
         {
             services.AddScoped<IAppInfoClient, MockAppInfoClient>();
+            services.AddScoped<IAuthClient, MockAuthClient>();
         }
         else
         {
             services.AddScoped<IAppInfoClient, HttpAppInfoClient>();
+            services.AddScoped<IAuthClient, HttpAuthClient>();
         }
 
         return services;

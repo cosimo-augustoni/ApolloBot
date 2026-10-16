@@ -56,6 +56,10 @@ if (builder.ExecutionContext.IsPublishMode)
     // The reverse proxy targets apollo-web:80.
     web.WithEndpoint("http", endpoint => endpoint.TargetPort = 80);
 
+    // Discord login (#29). In development the web project's user-secrets hold them instead (docs/deployment.md).
+    web.WithEnvironment("Apollo__Platform__Discord__OAuth__ClientId", builder.AddParameter("DiscordOAuthClientId"))
+        .WithEnvironment("Apollo__Platform__Discord__OAuth__ClientSecret", builder.AddParameter("DiscordOAuthClientSecret", secret: true));
+
     AddPgAdmin(builder);
 }
 

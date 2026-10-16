@@ -13,7 +13,7 @@ public sealed partial class StringsTests : ApolloTestContext
 
     /// <summary>Files whose visible text must come from <c>Strings.resx</c> (issue #28).</summary>
     private static readonly string[] _localizedFiles =
-        ["Layout/MainLayout.razor", "Layout/NavMenu.razor", "Pages/Home.razor", "Pages/NotFound.razor", "Pages/Placeholder.razor"];
+        ["Layout/MainLayout.razor", "Layout/NavMenu.razor", "Layout/UserMenu.razor", "Pages/Home.razor", "Pages/NotFound.razor", "Pages/Placeholder.razor"];
 
     [Fact]
     public void Strings_ShouldContainAllKeysUsedInRazorFiles()

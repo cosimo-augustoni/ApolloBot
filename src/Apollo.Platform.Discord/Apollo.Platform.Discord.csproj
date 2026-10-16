@@ -1,7 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" />
+    <!-- The OAuth login handler (Identity/) is ASP.NET Core authentication. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="NetCord" />
     <PackageReference Include="NetCord.Hosting" />
   </ItemGroup>

@@ -32,6 +32,8 @@ All values are read by the AppHost. Secrets are listed by name only and are neve
 | `PgAdminDataPath` | parameter | Host directory for pgAdmin (mounted at `/var/lib/pgadmin`) | as above |
 | `PgAdminPort` | parameter | Host port that publishes pgAdmin | as above |
 | `PublicWebUrl` | parameter | Public address of the website, the reverse-proxy URL in front of `apollo-web`, e.g. `https://apollo.example.ch`. Passed to `bot` as `Apollo__Links__PublicWebUrl`; the bot builds its links from it (privacy page `/datenschutz` in every command reply). Aspire only knows the internal address `http://apollo-web:80`, so the public one has to be given here | as above |
+| `DiscordOAuthClientId` | parameter | Client ID of the Discord application used for the web login; becomes `Apollo__Platform__Discord__OAuth__ClientId` on `apollo-web` | as above |
+| `DiscordOAuthClientSecret` | **secret** parameter | Its client secret; becomes `Apollo__Platform__Discord__OAuth__ClientSecret` on `apollo-web` | as above |
 
 Set AppHost user-secrets with, for example:
 
@@ -41,8 +43,9 @@ dotnet user-secrets set "Parameters:PgAdminPassword" "<value>" --project src/Apo
 
 Parameters that are still missing are prompted for by the Aspire CLI. **Aspire saves every parameter value, secrets included, in its deployment state** (`~/.aspire/deployments/<hash>/production.json`) and reuses those values on the next run, even over changed user-secrets or env vars. To change a value, delete that state file, or use `aspire deploy --clear-cache` (which `aspire do` does not offer in 13.6).
 
-Discord and OAuth values for the bot and web are added as AppHost parameters in #25. Until then the published stack
-has no Discord settings, and `bot` fails its startup validation in production.
+The bot's Discord values are added as AppHost parameters in #25. Until then the published stack has no bot token or
+guild ID, and `bot` fails its startup validation in production. The web login's OAuth client is already a pair of
+AppHost parameters (see [Web login](#web-login-discord-oauth)).
 
 Bot settings (`src/Apollo.Bot`, read by the Discord adapter, `src/Apollo.Platform.Discord/DiscordPlatformOptions.cs`).
 They are validated at startup, and a missing value stops the bot with an error that names the key:
@@ -75,6 +78,46 @@ Service settings with a default (not AppHost parameters):
 | Name | Default | What it is |
 |---|---|---|
 | `Apollo:Data:MigrationWaitTimeout` (`Apollo__Data__MigrationWaitTimeout`) | `00:05:00` | How long `bot` and `apollo-web` wait at startup for pending migrations before they exit (see below). Validated at startup: 1 second to 1 day |
+
+## Web login (Discord OAuth)
+
+`apollo-web` logs users in with Discord's OAuth2 authorization-code flow (scope `identify` only, with `state` and PKCE)
+and then keeps them in an HttpOnly session cookie that holds internal claims only ([scope §6.1](scope.md#61-login)).
+The OAuth handler lives in `src/Apollo.Platform.Discord/Identity/`.
+
+Settings (`src/Apollo.Platform.Discord/Identity/DiscordOAuthOptions.cs`) are validated at startup; a missing value
+stops `apollo-web` with an error that names the key:
+
+| Name | Kind | What it is |
+|---|---|---|
+| `Apollo:Platform:Discord:OAuth:ClientId` (`Apollo__Platform__Discord__OAuth__ClientId`) | config | The application's client ID (developer portal, OAuth2 page). Production: AppHost parameter `DiscordOAuthClientId` |
+| `Apollo:Platform:Discord:OAuth:ClientSecret` (`Apollo__Platform__Discord__OAuth__ClientSecret`) | **secret** | The client secret. Production: AppHost secret parameter `DiscordOAuthClientSecret` |
+
+For local development, set them as user-secrets on the web project (the AppHost runs it in Development):
+
+```bash
+dotnet user-secrets set "Apollo:Platform:Discord:OAuth:ClientId" "<client id>" --project src/Apollo.Web
+dotnet user-secrets set "Apollo:Platform:Discord:OAuth:ClientSecret" "<client secret>" --project src/Apollo.Web
+```
+
+**Redirect URI.** The callback path is fixed at `/signin-discord`; there is no setting for the redirect URL. Register
+it in the developer portal (OAuth2, Redirects) exactly as written:
+
+- production: `<PublicWebUrl>/signin-discord`, where `PublicWebUrl` is the public reverse-proxy address of
+  `apollo-web` (e.g. `https://apollo.example.ch/signin-discord`): the `PublicWebUrl` AppHost parameter above
+- local: the `apollo-web` endpoint shown in the Aspire dashboard plus `/signin-discord` (e.g.
+  `https://localhost:7174/signin-discord`)
+
+**Reverse proxy.** The redirect URI is built from the request's scheme and host. `apollo-web` listens on plain HTTP
+behind the proxy, so the proxy must send `X-Forwarded-Proto` (`https`) and `X-Forwarded-Host` (the public host).
+`apollo-web` applies them (and `X-Forwarded-For`) before anything else. Without them Discord rejects the login with an
+invalid `redirect_uri`, and the `Secure` session cookie is set on what looks like an HTTP request. `apollo-web` trusts
+these headers from any sender. That is safe only because nothing but the proxy can reach it (no published host port,
+see below).
+
+**Sessions across deploys.** The cookie keys (ASP.NET Core data protection, application name `Apollo`) are stored in
+the database table `data_protection_keys`, so logins survive restarts and redeploys. Deleting that table's rows logs
+everyone out.
 
 ## Steps
 

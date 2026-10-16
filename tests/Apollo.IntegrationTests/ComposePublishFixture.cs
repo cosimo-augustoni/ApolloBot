@@ -41,6 +41,8 @@ public sealed class ComposePublishFixture : IAsyncLifetime
             "Parameters:PgAdminPassword=placeholder-password",
             "Parameters:db-password=placeholder-password",
             "Parameters:PublicWebUrl=https://apollo.example.test",
+            "Parameters:DiscordOAuthClientId=123456789012345678",
+            "Parameters:DiscordOAuthClientSecret=placeholder-secret",
         ];
 
         var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Apollo_AppHost>(args, cts.Token);

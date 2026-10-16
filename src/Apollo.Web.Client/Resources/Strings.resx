@@ -145,4 +145,12 @@
     <value>Startseite öffnen</value>
     <comment>Not-found page button</comment>
   </data>
+  <data name="Auth_Login" xml:space="preserve">
+    <value>Anmelden</value>
+    <comment>App bar button that starts the Discord login</comment>
+  </data>
+  <data name="Auth_Logout" xml:space="preserve">
+    <value>Abmelden</value>
+    <comment>App bar button that ends the session</comment>
+  </data>
 </root>

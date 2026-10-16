@@ -82,7 +82,8 @@ Shorthand in the Source column: **NC** = NetCord source, **FN** = Fluxer.Net sou
 
 | Capability | Discord (NetCord) | Fluxer (Fluxer.Net) | Source | Notes |
 |---|---|---|---|---|
-| Authorization-code flow with `identify`-equivalent scope | [⚠️][dc-oauth] | [✅][fn-oauth-options] | DC [authorization code grant][dc-oauth] · NC: no OAuth handler (only bearer-token REST, see next row) · FN [`FluxerOAuthHandler`][fn-oauth-handler], [`Scope.Add("identify")`][fn-oauth-options], [endpoints][fn-oauth-defaults] · FX [OAuth2 scopes][fx-oauth-scopes], [authorisation code grant][fx-oauth-code] | Discord supports the flow, but NetCord does not implement the web flow. **Fallback:** a standard ASP.NET Core OAuth handler (e.g. `AspNet.Security.OAuth.Discord`) in `Apollo.Web` (#29). Fluxer.Net ships an ASP.NET Core `OAuthHandler` with `identify` as the default scope; its endpoints default to `api.fluxer.app` and are overridable. |
+| Authorization-code flow with `identify`-equivalent scope | [⚠️][dc-oauth] | [✅][fn-oauth-options] | DC [authorization code grant][dc-oauth] · NC: no OAuth handler (only bearer-token REST, see next row) · FN [`FluxerOAuthHandler`][fn-oauth-handler], [`Scope.Add("identify")`][fn-oauth-options], [endpoints][fn-oauth-defaults] · FX [OAuth2 scopes][fx-oauth-scopes], [authorisation code grant][fx-oauth-code] | Discord supports the flow, but NetCord does not implement the web flow. **Fallback (#29):** ASP.NET Core's generic OAuth handler (`AddOAuth`), registered by `AddDiscordIdentityProvider()` in `Apollo.Platform.Discord` (`Identity/`); `Apollo.Web` only sees `IPlatformIdentityProvider`. Fluxer.Net ships an ASP.NET Core `OAuthHandler` with `identify` as the default scope; its endpoints default to `api.fluxer.app` and are overridable. |
+| State / PKCE | [✅][dc-state] / [⚠️][dc-implicit] | [✅][fx-oauth-code] / [✅][fx-oauth-authorize] | DC [state and security][dc-state], [implicit grant warning][dc-implicit] · FX [authorisation code grant][fx-oauth-code], [authorise application][fx-oauth-authorize], [exchange token][fx-oauth-token] · FN [`FluxerOAuthOptions`][fn-oauth-options] | Checked in #29. `state` is documented on both. Fluxer documents PKCE (`code_challenge` with `S256` or `plain` on authorize, `code_verifier` on the token request). Discord recommends the "authorization code grant with PKCE" but lists no PKCE parameters; Apollo sends them anyway (`UsePkce = true`, S256) and still has `state` if Discord ignores them. Fluxer.Net's options leave `UsePkce` at the base default (off), so the M6 Fluxer provider must set `UsePkce = true` itself. |
 | User id endpoint | [✅][nc-current-user] | [✅][fx-oauth-userinfo] | NC [`BearerToken`][nc-bearer], [`GetCurrentUserAsync`][nc-current-user] · DC [`/users/@me`][dc-users-me] · FN [`UserInformationEndpoint`][fn-oauth-defaults] · FX [Get OAuth2 user information][fx-oauth-userinfo] | Discord: `GET /users/@me` with the bearer token. Fluxer: `GET /v1/oauth2/userinfo` returns `id` (and `sub`). |
 
 ## Consequences
@@ -146,7 +147,7 @@ What the findings mean for the platform abstraction and the recorders. Each item
 | Voice sessions | #16 | Works, incl. mute/deaf/stream/video. The recorder must cope with more than one connection per user (e.g. collapse to "in voice while any connection is in a channel"). |
 | Membership | #18 | Works (join, leave, ban, unban). |
 | Threads | #15, #13 | Works. `thread_parent_id` is filled on Fluxer too, so the "Fluxer probably has no threads" note in scope §5.1 is out of date. |
-| Login | #29 (M6 for Fluxer) | Works with `identify`; Fluxer.Net already has an ASP.NET Core handler for `IPlatformIdentityProvider`. |
+| Login | #29 (M6 for Fluxer) | Works with `identify`; Fluxer.Net already has an ASP.NET Core handler for `IPlatformIdentityProvider`. The Fluxer provider must sign in to the host's default sign-in scheme (the external cookie), turn `/v1/oauth2/userinfo` into the claims its `GetIdentity` reads, and set `UsePkce = true`. |
 
 ### Open points that need a live Fluxer guild
 
@@ -272,8 +273,12 @@ What the findings mean for the platform abstraction and the recorders. Each item
 [fx-oauth-scopes]: https://docs.fluxer.app/http-api/oauth2/#oauth2-scopes
 [fx-oauth-code]: https://docs.fluxer.app/http-api/oauth2/#authorisation-code-grant
 [fx-oauth-userinfo]: https://docs.fluxer.app/http-api/oauth2/#get-oauth2-user-information
+[fx-oauth-authorize]: https://docs.fluxer.app/http-api/oauth2/#authorise-application
+[fx-oauth-token]: https://docs.fluxer.app/http-api/oauth2/#exchange-oauth2-token
 
 <!-- Discord developer docs -->
 [dc-reaction-remove]: https://discord.com/developers/docs/events/gateway-events#message-reaction-remove
 [dc-oauth]: https://discord.com/developers/docs/topics/oauth2#authorization-code-grant
 [dc-users-me]: https://discord.com/developers/docs/resources/user#get-current-user
+[dc-state]: https://docs.discord.com/developers/topics/oauth2#state-and-security
+[dc-implicit]: https://docs.discord.com/developers/topics/oauth2#implicit-grant

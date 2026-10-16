@@ -31,14 +31,14 @@ dotnet run --project src/Apollo.AppHost              # local stack + Aspire dash
 | `src/Apollo.AppHost` | Aspire orchestration and compose publishing |
 | `src/Apollo.ServiceDefaults` | OpenTelemetry, health checks, resilience (`AddServiceDefaults()`) |
 | `src/Apollo.Domain` | Entities, value objects, pure domain logic. No references |
-| `src/Apollo.Platform.Abstractions` | `IChatPlatform`, `IPlatformConnectionStatus`, `PlatformRef`, neutral events (`Events/`), snapshots (`Snapshots/`), event dispatch (`Dispatch/`), command model and handler contracts (`Commands/`), event counters (`Diagnostics/RecordedEventMetrics`) |
+| `src/Apollo.Platform.Abstractions` | `IChatPlatform`, `IPlatformConnectionStatus`, `PlatformRef`, neutral events (`Events/`), snapshots (`Snapshots/`), event dispatch (`Dispatch/`), command model and handler contracts (`Commands/`), event counters (`Diagnostics/RecordedEventMetrics`), login (`Identity/`: `IPlatformIdentityProvider`) |
 | `src/Apollo.Platform.Discord` | NetCord adapter: the only place NetCord types may appear |
 | `src/Apollo.Platform.Fluxer` | Fluxer.Net adapter (stub for now): the only place Fluxer.Net types may appear |
 | `src/Apollo.Data` | EF Core `DbContext`, migrations, TimescaleDB setup (CmdScale); `Identity/`: internal IDs with snapshot columns, platform ID mappings, `IPlatformIdResolver`; `Guilds/`: `guild_members`, `member_roles` |
 | `src/Apollo.MigrationService` | Applies migrations on startup, then exits |
 | `src/Apollo.Bot` | Worker: hosts the platform adapter, records events, routes commands (`Commands/`), German reply text (`Resources/`); `GuildState/`: guild state sync and its change notifications (`IGuildStateNotificationHandler<T>`); `Status/`: 30 s heartbeat into `bot_status`, gateway health check |
 | `src/Apollo.Stats` | Date-range stats queries and recap builders |
-| `src/Apollo.Web` | ASP.NET Core host: API, auth, serves the WASM client |
+| `src/Apollo.Web` | ASP.NET Core host: API, auth (`Auth/`: BFF cookie session, `/auth/*`), serves the WASM client |
 | `src/Apollo.Web.Client` | Blazor WASM UI (German) |
 | `tests/Apollo.Testing` | Shared test helpers: `TimescaleFixture`, `TestDataBuilder<,>`, `TestTime`; `Data/`: `GuildBuilder`, `UserBuilder`, `ChannelBuilder`, `RoleBuilder` (seed through `IPlatformIdResolver`); `Platform/`: `FakeChatPlatform`, `TestPlatform`, event and snapshot builders |
 | `tests/Apollo.Domain.Tests` | Pure unit tests |

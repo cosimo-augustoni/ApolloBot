@@ -170,6 +170,15 @@ public sealed class ComposePublishTests(ComposePublishFixture fixture) : IClassF
     }
 
     [Fact]
+    public void Publish_Web_ShouldGetDiscordOAuthClientFromParameters()
+    {
+        var environment = Map(Service("apollo-web"), "environment");
+
+        Scalar(environment, "Apollo__Platform__Discord__OAuth__ClientId").ShouldBe("${DISCORDOAUTHCLIENTID}");
+        Scalar(environment, "Apollo__Platform__Discord__OAuth__ClientSecret").ShouldBe("${DISCORDOAUTHCLIENTSECRET}");
+    }
+
+    [Fact]
     public void Publish_EnvFile_ShouldDeclarePgAdminPasswordAsSecretPlaceholder()
     {
         // Proves the password is a parameter that only lands in the git-ignored env file.
