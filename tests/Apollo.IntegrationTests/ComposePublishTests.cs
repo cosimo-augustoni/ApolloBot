@@ -150,6 +150,13 @@ public sealed class ComposePublishTests(ComposePublishFixture fixture) : IClassF
     }
 
     [Fact]
+    public void Publish_Bot_ShouldGetPublicWebUrlFromParameter()
+    {
+        // The public domain lives in the reverse proxy; Aspire only knows the internal address (http://apollo-web:80).
+        Scalar(Map(Service("bot"), "environment"), "Apollo__Links__PublicWebUrl").ShouldBe("${PUBLICWEBURL}");
+    }
+
+    [Fact]
     public void Publish_Web_ShouldListenOnPort80()
     {
         Scalar(Map(Service("apollo-web"), "environment"), "HTTP_PORTS").ShouldBe("80");

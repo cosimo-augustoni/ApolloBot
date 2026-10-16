@@ -138,12 +138,50 @@ public sealed partial class AppHostModelTests
         configuration.EnvironmentVariables.Select(e => e.Key).ShouldContain("ConnectionStrings__apollo");
     }
 
+    [Fact]
+    public async Task AppHost_WhenRunning_ShouldPassTheWebEndpointToTheBotAsPublicWebUrl()
+    {
+        await using var builder = await CreateBuilderAsync(Environments.Development);
+        var bot = builder.Resources.OfType<ProjectResource>().Single(r => r.Name == "bot");
+        var web = builder.Resources.OfType<ProjectResource>().Single(r => r.Name == "apollo-web");
+
+        var environment = await GetEnvironmentAsync(bot, DistributedApplicationOperation.Run);
+
+        var endpoint = environment["Apollo__Links__PublicWebUrl"].ShouldBeOfType<EndpointReference>();
+        endpoint.Resource.ShouldBe(web);
+        endpoint.EndpointName.ShouldBe(web.Annotations.OfType<EndpointAnnotation>().Any(e => e.Name == "https") ? "https" : "http");
+    }
+
+    [Fact]
+    public async Task AppHost_WhenPublishing_ShouldPassThePublicWebUrlParameterToTheBot()
+    {
+        await using var builder = await CreateBuilderAsync(Environments.Production, "--operation", "publish");
+        var bot = builder.Resources.OfType<ProjectResource>().Single(r => r.Name == "bot");
+
+        var environment = await GetEnvironmentAsync(bot, DistributedApplicationOperation.Publish);
+
+        environment["Apollo__Links__PublicWebUrl"].ShouldBeOfType<ParameterResource>().Name.ShouldBe("PublicWebUrl");
+    }
+
+    private static async Task<Dictionary<string, object>> GetEnvironmentAsync(IResource resource, DistributedApplicationOperation operation)
+    {
+        var context = new EnvironmentCallbackContext(
+            new DistributedApplicationExecutionContext(operation),
+            cancellationToken: TestContext.Current.CancellationToken);
+        foreach (var callback in resource.Annotations.OfType<EnvironmentCallbackAnnotation>())
+        {
+            await callback.Callback(context);
+        }
+
+        return context.EnvironmentVariables;
+    }
+
     private static PostgresServerResource GetDb(IDistributedApplicationTestingBuilder builder) =>
         builder.Resources.OfType<PostgresServerResource>().Single(r => r.Name == "db");
 
-    private static Task<IDistributedApplicationTestingBuilder> CreateBuilderAsync(string environment) =>
+    private static Task<IDistributedApplicationTestingBuilder> CreateBuilderAsync(string environment, params string[] args) =>
         DistributedApplicationTestingBuilder.CreateAsync<Projects.Apollo_AppHost>(
-            [],
+            args,
             (_, hostSettings) => hostSettings.EnvironmentName = environment,
             TestContext.Current.CancellationToken);
 

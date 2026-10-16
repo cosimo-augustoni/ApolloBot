@@ -1,4 +1,5 @@
 using Apollo.Platform.Abstractions;
+using Apollo.Platform.Abstractions.Commands;
 using Apollo.Platform.Abstractions.Dispatch;
 using Apollo.Platform.Abstractions.Events;
 using Apollo.Platform.Abstractions.Snapshots;
@@ -8,7 +9,8 @@ namespace Apollo.Testing.Platform;
 /// <summary>
 /// In-memory <see cref="IChatPlatform"/> for recorder tests: seed guild state with the <c>With*</c> methods, raise
 /// events with <see cref="RaiseAsync"/> (through the real <see cref="IPlatformEventDispatcher"/>, like an adapter), and
-/// assert on <see cref="RoleChanges"/>.
+/// assert on <see cref="RoleChanges"/>. With <see cref="WithCommandRouter"/> it also runs commands and buttons and
+/// records the <see cref="Replies"/>.
 /// </summary>
 /// <example>
 /// <code>
@@ -32,6 +34,8 @@ public sealed class FakeChatPlatform(
     private readonly List<PlatformVoiceState> _voiceStates = [];
     private readonly List<PlatformPresence> _presences = [];
     private readonly List<FakeRoleChange> _roleChanges = [];
+    private readonly List<FakeReply> _replies = [];
+    private ICommandRouter? _commandRouter;
 
     public PlatformRef Guild { get; } = guild ?? TestPlatform.Guild;
 
@@ -52,6 +56,20 @@ public sealed class FakeChatPlatform(
             lock (_lock)
             {
                 return [.. _roleChanges];
+            }
+        }
+    }
+
+    /// <summary>
+    /// Every reply delivered after a command or button, in order.
+    /// </summary>
+    public IReadOnlyList<FakeReply> Replies
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return [.. _replies];
             }
         }
     }
@@ -94,6 +112,42 @@ public sealed class FakeChatPlatform(
     /// </summary>
     public Task RaiseAsync(PlatformEvent platformEvent, CancellationToken cancellationToken) =>
         dispatcher.DispatchAsync(platformEvent, cancellationToken);
+
+    /// <summary>
+    /// Lets <see cref="InvokeCommandAsync(PlatformRef, string, IReadOnlyDictionary{string, object?}, CancellationToken)"/>
+    /// and <see cref="ClickButtonAsync"/> deliver to <paramref name="router"/>, the way an adapter does.
+    /// </summary>
+    public FakeChatPlatform WithCommandRouter(ICommandRouter router)
+    {
+        _commandRouter = router;
+        return this;
+    }
+
+    /// <summary>
+    /// <paramref name="member"/> runs the command <paramref name="path"/> in <see cref="Guild"/>; the reply is recorded
+    /// in <see cref="Replies"/> and returned.
+    /// </summary>
+    public Task<CommandReply> InvokeCommandAsync(
+        PlatformRef member,
+        string path,
+        IReadOnlyDictionary<string, object?> options,
+        CancellationToken cancellationToken) =>
+        ReplyAsync(
+            member,
+            router => router.HandleCommandAsync(new CommandInvocation(Guild, member, path, options, timeProvider.GetUtcNow()), cancellationToken));
+
+    /// <inheritdoc cref="InvokeCommandAsync(PlatformRef, string, IReadOnlyDictionary{string, object?}, CancellationToken)"/>
+    public Task<CommandReply> InvokeCommandAsync(PlatformRef member, string path, CancellationToken cancellationToken) =>
+        InvokeCommandAsync(member, path, new Dictionary<string, object?>(), cancellationToken);
+
+    /// <summary>
+    /// <paramref name="member"/> uses the button <paramref name="buttonId"/> in <see cref="Guild"/>; the reply is
+    /// recorded in <see cref="Replies"/> and returned.
+    /// </summary>
+    public Task<CommandReply> ClickButtonAsync(PlatformRef member, string buttonId, CancellationToken cancellationToken) =>
+        ReplyAsync(
+            member,
+            router => router.HandleButtonAsync(new ButtonInvocation(Guild, member, buttonId, timeProvider.GetUtcNow()), cancellationToken));
 
     public Task<PlatformMember?> GetMemberAsync(PlatformRef guild, PlatformRef user, CancellationToken cancellationToken) =>
         Task.FromResult(FindMember(guild, user));
@@ -156,6 +210,19 @@ public sealed class FakeChatPlatform(
         }
 
         await RaiseAsync(new PlatformMemberUpdated(Guild, timeProvider.GetUtcNow(), updated), cancellationToken);
+    }
+
+    private async Task<CommandReply> ReplyAsync(PlatformRef member, Func<ICommandRouter, Task<CommandReply>> route)
+    {
+        var router = _commandRouter
+            ?? throw new InvalidOperationException($"Call {nameof(WithCommandRouter)} before running commands or buttons.");
+        var reply = await route(router);
+        lock (_lock)
+        {
+            _replies.Add(new FakeReply(member, reply));
+        }
+
+        return reply;
     }
 
     private PlatformMember? FindMember(PlatformRef guild, PlatformRef user)

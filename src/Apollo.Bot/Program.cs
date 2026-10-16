@@ -1,3 +1,4 @@
+using Apollo.Bot.Commands;
 using Apollo.Data;
 using Apollo.Platform.Discord;
 
@@ -6,6 +7,7 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.AddServiceDefaults();
 builder.AddApolloDbContext();
 builder.Services.AddDiscordPlatform();
+builder.Services.AddCommandRouting();
 
 var host = builder.Build();
 

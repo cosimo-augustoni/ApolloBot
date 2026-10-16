@@ -37,19 +37,33 @@ internal sealed partial class DiscordEventMapper(
         Func<PlatformRef, PlatformEvent> map,
         CancellationToken cancellationToken)
     {
+        if (IsConfiguredGuild(gatewayEvent, guildId))
+        {
+            await dispatcher.DispatchAsync(map(Guild), cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// The single-guild filter: whether <paramref name="guildId"/> is the configured guild. Logs why anything else is
+    /// dropped. Command and button interactions use it too, before they reach the command router.
+    /// </summary>
+    /// <param name="gatewayEvent">The NetCord event name, for the log.</param>
+    /// <param name="guildId">The event's guild; <see langword="null"/> for DMs and other guild-less events.</param>
+    public bool IsConfiguredGuild(string gatewayEvent, ulong? guildId)
+    {
         if (guildId is null)
         {
             LogDroppedGuildless(gatewayEvent);
-            return;
+            return false;
         }
 
         if (guildId != _guildId)
         {
             LogDroppedForeignGuild(gatewayEvent, guildId.Value);
-            return;
+            return false;
         }
 
-        await dispatcher.DispatchAsync(map(Guild), cancellationToken);
+        return true;
     }
 
     /// <summary>

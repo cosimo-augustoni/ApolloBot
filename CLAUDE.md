@@ -31,12 +31,12 @@ dotnet run --project src/Apollo.AppHost              # local stack + Aspire dash
 | `src/Apollo.AppHost` | Aspire orchestration and compose publishing |
 | `src/Apollo.ServiceDefaults` | OpenTelemetry, health checks, resilience (`AddServiceDefaults()`) |
 | `src/Apollo.Domain` | Entities, value objects, pure domain logic. No references |
-| `src/Apollo.Platform.Abstractions` | `IChatPlatform`, `PlatformRef`, neutral events (`Events/`), snapshots (`Snapshots/`), event dispatch (`Dispatch/`) |
+| `src/Apollo.Platform.Abstractions` | `IChatPlatform`, `PlatformRef`, neutral events (`Events/`), snapshots (`Snapshots/`), event dispatch (`Dispatch/`), command model and handler contracts (`Commands/`) |
 | `src/Apollo.Platform.Discord` | NetCord adapter: the only place NetCord types may appear |
 | `src/Apollo.Platform.Fluxer` | Fluxer.Net adapter (stub for now): the only place Fluxer.Net types may appear |
 | `src/Apollo.Data` | EF Core `DbContext`, migrations, TimescaleDB setup (CmdScale); `Identity/`: internal IDs, platform ID mappings, `IPlatformIdResolver` |
 | `src/Apollo.MigrationService` | Applies migrations on startup, then exits |
-| `src/Apollo.Bot` | Worker: hosts the platform adapter, records events |
+| `src/Apollo.Bot` | Worker: hosts the platform adapter, records events, routes commands (`Commands/`), German reply text (`Resources/`) |
 | `src/Apollo.Stats` | Date-range stats queries and recap builders |
 | `src/Apollo.Web` | ASP.NET Core host: API, auth, serves the WASM client |
 | `src/Apollo.Web.Client` | Blazor WASM UI (German) |
@@ -138,6 +138,22 @@ dotnet ef migrations add <DescriptiveName> --project src/Apollo.Data --startup-p
 5. Entity + migration in `Apollo.Data` if it is persisted.
 6. Add or update the row in `docs/platform-parity.md`. If a platform cannot deliver it at all, add a flag to
    `PlatformCapabilities` (like `PresenceActivities`) instead of sending empty data.
+
+## How to add a slash command
+
+Neutral model in `Apollo.Platform.Abstractions/Commands` (#20); handlers never see NetCord types or interaction concepts.
+
+1. Definition: `services.AddCommandDefinition(new CommandDefinition("apollo", …) { Groups = …, Subcommands = … })`.
+   Each feature adds its own part of `apollo`; definitions with the same name are merged. Descriptions are German.
+2. Handler in `Apollo.Bot`: implement `ICommandHandler` (its `Path`, e.g. `apollo tracking status`) and register it with
+   `services.AddCommandHandler<THandler>()` (scoped). Return a `CommandReply`; it is private by default
+   (`CommandReply.Private(text)`). The router adds the privacy footer and turns exceptions into a generic German error.
+3. Buttons: `new ReplyButton(ButtonId.For(prefix, invocation.Member, argument).ToString(), label, style)` plus an
+   `IButtonHandler` with that `IdPrefix` (`services.AddButtonHandler<THandler>()`). Only the member the button was
+   issued to reaches the handler.
+4. Reply text goes in `Apollo.Bot/Resources/Strings.resx` (`IStringLocalizer<Strings>`) and must read well as a DM too.
+5. Test against `FakeChatPlatform`: `.WithCommandRouter(router)`, then `InvokeCommandAsync` / `ClickButtonAsync`, and
+   assert on the returned reply or `Replies`.
 
 ## How to add a typed API client (web)
 

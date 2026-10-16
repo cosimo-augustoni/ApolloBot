@@ -86,4 +86,20 @@ public sealed class DiscordGatewaySetupTests
 
         host.Services.GetRequiredService<IChatPlatform>().Platform.ShouldBe(PlatformKind.Discord);
     }
+
+    [Fact]
+    public void AddDiscordPlatform_ShouldHandleInteractionsWithTheCommandRouter()
+    {
+        using var host = DiscordHost.Build(DiscordHost.ValidSettings());
+
+        DiscordHost.GatewayHandlers(host).ShouldContain(handler => handler is DiscordInteractionHandler);
+    }
+
+    [Fact]
+    public void AddDiscordPlatform_ShouldRegisterTheCommandsWhenTheGatewayIsReady()
+    {
+        using var host = DiscordHost.Build(DiscordHost.ValidSettings());
+
+        DiscordHost.GatewayHandlers(host).ShouldContain(handler => handler is DiscordCommandRegistrar);
+    }
 }

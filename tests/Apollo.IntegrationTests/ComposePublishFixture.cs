@@ -40,6 +40,7 @@ public sealed class ComposePublishFixture : IAsyncLifetime
             "Parameters:PgAdminEmail=admin@example.test",
             "Parameters:PgAdminPassword=placeholder-password",
             "Parameters:db-password=placeholder-password",
+            "Parameters:PublicWebUrl=https://apollo.example.test",
         ];
 
         var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Apollo_AppHost>(args, cts.Token);

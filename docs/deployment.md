@@ -31,6 +31,7 @@ All values are read by the AppHost. Secrets are listed by name only and are neve
 | `PgAdminPassword` | **secret** parameter | pgAdmin login password | as above |
 | `PgAdminDataPath` | parameter | Host directory for pgAdmin (mounted at `/var/lib/pgadmin`) | as above |
 | `PgAdminPort` | parameter | Host port that publishes pgAdmin | as above |
+| `PublicWebUrl` | parameter | Public address of the website, the reverse-proxy URL in front of `apollo-web`, e.g. `https://apollo.example.ch`. Passed to `bot` as `Apollo__Links__PublicWebUrl`; the bot builds its links from it (privacy page `/datenschutz` in every command reply). Aspire only knows the internal address `http://apollo-web:80`, so the public one has to be given here | as above |
 
 Set AppHost user-secrets with, for example:
 
@@ -51,6 +52,7 @@ They are validated at startup, and a missing value stops the bot with an error t
 | `Apollo:Platform:Discord:Token` (`Apollo__Platform__Discord__Token`) | **secret** | none, required | The bot token from the Discord developer portal |
 | `Apollo:Platform:Discord:GuildId` (`Apollo__Platform__Discord__GuildId`) | config | none, required | The one guild the bot records. Events from any other guild and DMs are dropped |
 | `Apollo:Platform:Discord:Connect` (`Apollo__Platform__Discord__Connect`) | config | `true` | `false` starts the bot without connecting to Discord. Only the AppHost smoke tests use it |
+| `Apollo:Links:PublicWebUrl` (`Apollo__Links__PublicWebUrl`) | config | none, required; set by the AppHost | Public address of the website. Must be an absolute http or https URL. Run mode: the `apollo-web` endpoint (https when its launch profile has one). Published stack: the `PublicWebUrl` parameter |
 
 For local development, set them as user-secrets on the bot (the AppHost runs it in Development, so they are loaded):
 
@@ -58,6 +60,11 @@ For local development, set them as user-secrets on the bot (the AppHost runs it 
 dotnet user-secrets set "Apollo:Platform:Discord:Token" "<token>" --project src/Apollo.Bot
 dotnet user-secrets set "Apollo:Platform:Discord:GuildId" "<guild id>" --project src/Apollo.Bot
 ```
+
+`Apollo:Links:PublicWebUrl` needs no user-secret: the AppHost sets it in both modes.
+
+On READY the bot overwrites the slash commands of the configured guild with the ones it defines (guild-scoped only,
+no global commands). An empty set clears them. A failed registration is logged and leaves the previous commands.
 
 The bot connects with the intents `Guilds`, `GuildMessages`, `MessageContent`, `GuildMessageReactions`,
 `GuildVoiceStates`, `GuildPresences`, `GuildUsers` and `GuildModeration`. Message content, presences and members are
