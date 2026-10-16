@@ -156,5 +156,13 @@ public sealed class CommandRouterTests : IDisposable
         reply.Text.ShouldEndWith("Datenschutz: https://apollo.example.test/datenschutz");
     }
 
+    [Fact]
+    public void CreateErrorReply_ShouldBeThePrivateGenericGermanErrorWithFooter()
+    {
+        var router = _host.Router;
+
+        router.CreateErrorReply().ShouldBe(new CommandReply(Error + Footer, [], ReplyVisibility.Private));
+    }
+
     public void Dispose() => _host.Dispose();
 }

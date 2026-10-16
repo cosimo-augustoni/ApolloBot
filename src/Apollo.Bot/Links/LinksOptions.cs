@@ -24,10 +24,22 @@ public sealed class LinksOptions : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (PublicWebUrl is not null && !TryGetBaseUrl(out _))
+        if (PublicWebUrl is null)
+        {
+            yield break;
+        }
+
+        if (!TryGetBaseUrl(out var baseUrl))
         {
             yield return new ValidationResult(
                 $"{SectionName}:{nameof(PublicWebUrl)} must be an absolute http or https URL.",
+                [nameof(PublicWebUrl)]);
+        }
+        else if (baseUrl.Query.Length > 0 || baseUrl.Fragment.Length > 0)
+        {
+            // Page paths are appended to it, so a query or fragment would end up in front of them.
+            yield return new ValidationResult(
+                $"{SectionName}:{nameof(PublicWebUrl)} must not have a query or fragment.",
                 [nameof(PublicWebUrl)]);
         }
     }

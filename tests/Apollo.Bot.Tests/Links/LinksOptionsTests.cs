@@ -35,8 +35,23 @@ public sealed class LinksOptionsTests
     }
 
     [Theory]
+    [InlineData("https://apollo.example.test/?a=b")]
+    [InlineData("https://apollo.example.test/#top")]
+    public void Start_WhenPublicWebUrlHasAQueryOrFragment_ShouldFailWithValidationError(string url)
+    {
+        var settings = CommandTestHost.ValidSettings();
+        settings["Apollo:Links:PublicWebUrl"] = url;
+        using var host = CommandTestHost.Build(settings);
+
+        var exception = Should.Throw<OptionsValidationException>(() => ValidateOnStart(host));
+
+        exception.Message.ShouldContain("Apollo:Links:PublicWebUrl must not have a query or fragment");
+    }
+
+    [Theory]
     [InlineData("https://apollo.example.test")]
     [InlineData("http://localhost:5123")]
+    [InlineData("https://example.test/apollo")]
     public void Start_WhenPublicWebUrlIsAnAbsoluteHttpUrl_ShouldPassValidation(string url)
     {
         var settings = CommandTestHost.ValidSettings();

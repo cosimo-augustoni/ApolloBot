@@ -8,7 +8,8 @@ public static class CommandRoutingServiceCollectionExtensions
 {
     /// <summary>
     /// Registers the <see cref="ICommandRouter"/> the adapter delivers commands and buttons to, its German reply text
-    /// and <see cref="LinksOptions"/> (validated on start). Safe to call more than once.
+    /// and <see cref="LinksOptions"/> (validated on start). Definitions and handlers are checked when the host starts
+    /// (<see cref="CommandCatalogValidator"/>). Safe to call more than once.
     /// </summary>
     public static IServiceCollection AddCommandRouting(this IServiceCollection services)
     {
@@ -19,6 +20,7 @@ public static class CommandRoutingServiceCollectionExtensions
 
         services.AddLocalization();
         services.TryAddSingleton<ICommandRouter, CommandRouter>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, CommandCatalogValidator>());
 
         return services;
     }

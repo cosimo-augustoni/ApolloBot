@@ -31,6 +31,8 @@ internal sealed class CommandTestHost : IDisposable
 
     public FakeChatPlatform Platform { get; }
 
+    public ICommandRouter Router => _host.Services.GetRequiredService<ICommandRouter>();
+
     public HandlerCalls Calls => _host.Services.GetRequiredService<HandlerCalls>();
 
     public FakeLogCollector Logs => _host.Services.GetFakeLogCollector();
@@ -40,7 +42,16 @@ internal sealed class CommandTestHost : IDisposable
         [$"{LinksOptions.SectionName}:PublicWebUrl"] = PublicWebUrl,
     };
 
-    public static IHost Build(IDictionary<string, string?> settings)
+    /// <summary>
+    /// The sample commands, as the definitions their handlers need.
+    /// </summary>
+    public static readonly CommandDefinition Apollo = new("apollo", "Apollo")
+    {
+        Groups = [new SubcommandGroupDefinition("tracking", "Erfassung", [new("status", "Status")])],
+        Subcommands = [new SubcommandDefinition("broken", "Kaputt")],
+    };
+
+    public static IHost Build(IDictionary<string, string?> settings, Action<IServiceCollection>? configure = null)
     {
         var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings { EnvironmentName = Environments.Production });
         builder.Configuration.AddInMemoryCollection(settings);
@@ -50,7 +61,9 @@ internal sealed class CommandTestHost : IDisposable
             .AddCommandHandler<TrackingStatusHandler>()
             .AddCommandHandler<ThrowingCommandHandler>()
             .AddButtonHandler<ConfirmButtonHandler>()
-            .AddButtonHandler<ThrowingButtonHandler>();
+            .AddButtonHandler<ThrowingButtonHandler>()
+            .AddCommandDefinition(Apollo);
+        configure?.Invoke(builder.Services);
         return builder.Build();
     }
 

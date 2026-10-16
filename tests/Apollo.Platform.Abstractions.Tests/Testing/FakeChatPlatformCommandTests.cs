@@ -72,5 +72,7 @@ public sealed class FakeChatPlatformCommandTests
             Buttons.Add(invocation);
             return Task.FromResult(CommandReply.Private($"button {invocation.ButtonId}"));
         }
+
+        public CommandReply CreateErrorReply() => CommandReply.Private("error");
     }
 }

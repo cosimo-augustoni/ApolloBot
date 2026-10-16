@@ -138,18 +138,26 @@ public sealed partial class AppHostModelTests
         configuration.EnvironmentVariables.Select(e => e.Key).ShouldContain("ConnectionStrings__apollo");
     }
 
-    [Fact]
-    public async Task AppHost_WhenRunning_ShouldPassTheWebEndpointToTheBotAsPublicWebUrl()
+    [Theory]
+    [InlineData("https", "https://localhost:7174")]
+    [InlineData("http", "http://localhost:5008")]
+    public async Task AppHost_WhenRunning_ShouldPassTheWebUrlOfTheLaunchProfileToTheBot(string launchProfile, string expectedUrl)
     {
-        await using var builder = await CreateBuilderAsync(Environments.Development);
+        // The web host's endpoints come from src/Apollo.Web/Properties/launchSettings.json, picked by the AppHost profile.
+        await using var builder = await CreateBuilderAsync(Environments.Development, $"DOTNET_LAUNCH_PROFILE={launchProfile}");
         var bot = builder.Resources.OfType<ProjectResource>().Single(r => r.Name == "bot");
         var web = builder.Resources.OfType<ProjectResource>().Single(r => r.Name == "apollo-web");
+        foreach (var annotation in web.Annotations.OfType<EndpointAnnotation>())
+        {
+            // Normally DCP allocates them when the app runs; here they get their launch-profile port.
+            annotation.AllocatedEndpoint = new AllocatedEndpoint(annotation, "localhost", annotation.Port!.Value);
+        }
 
         var environment = await GetEnvironmentAsync(bot, DistributedApplicationOperation.Run);
 
         var endpoint = environment["Apollo__Links__PublicWebUrl"].ShouldBeOfType<EndpointReference>();
         endpoint.Resource.ShouldBe(web);
-        endpoint.EndpointName.ShouldBe(web.Annotations.OfType<EndpointAnnotation>().Any(e => e.Name == "https") ? "https" : "http");
+        endpoint.Url.ShouldBe(expectedUrl);
     }
 
     [Fact]
