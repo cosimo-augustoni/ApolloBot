@@ -54,9 +54,9 @@ public sealed class RoleSettingBuilder : TestDataBuilder<RoleSettingBuilder, Rol
         RoleSettingPurpose? purpose = null,
         Guid? changedByUserId = null,
         DateTimeOffset? changedAt = null) => new()
-    {
-        Purpose = purpose ?? source.Purpose,
-        ChangedByUserId = changedByUserId ?? source.ChangedByUserId,
-        ChangedAt = changedAt ?? source.ChangedAt,
-    };
+        {
+            Purpose = purpose ?? source.Purpose,
+            ChangedByUserId = changedByUserId ?? source.ChangedByUserId,
+            ChangedAt = changedAt ?? source.ChangedAt,
+        };
 }
