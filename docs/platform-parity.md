@@ -126,6 +126,13 @@ What the findings mean for the platform abstraction and the recorders. Each item
 - **#20: registration is Discord-only.** `CommandDefinition` is still useful on Fluxer for help text and parsing, but
   there is nothing to register.
 - **#21, #23:** reply texts (German) must read well in a DM as well as in an ephemeral reply.
+- **Built in #20** (`Apollo.Platform.Abstractions/Commands`): `CommandInvocation`, `ButtonInvocation`, `CommandReply`
+  with `ReplyVisibility`, `ReplyButton`, `CommandDefinition` (merged by name with `CommandDefinition.Combine`), and the
+  contracts `ICommandHandler`, `IButtonHandler`, `ICommandRouter`. Button ids are `ButtonId` (`prefix:owner[:argument]`,
+  owner = the member's platform id), so a Fluxer confirm command can carry the same id as text. The router lives in
+  `Apollo.Bot`; the Discord adapter maps interactions, applies the single-guild filter, registers the definitions per
+  guild and defers on its own after 2 s. A Fluxer adapter (M6) calls the same `ICommandRouter` from parsed text commands
+  and delivers `ReplyVisibility.Private` as a DM.
 
 ### Recorders that degrade on Fluxer
 

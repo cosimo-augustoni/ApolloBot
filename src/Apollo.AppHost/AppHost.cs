@@ -29,7 +29,7 @@ var migrations = builder.AddProject<Apollo_MigrationService>("migrationservice")
 
 // WaitForCompletion orders the run mode only; the published stack has no depends_on (UseSwarm), so outside
 // Development bot and web wait for the migrations themselves (WaitForMigrationsAsync).
-builder.AddProject<Apollo_Bot>("bot")
+var bot = builder.AddProject<Apollo_Bot>("bot")
     .WithReference(apollo)
     .WaitForCompletion(migrations)
     .WithContainerRegistry(registry)
@@ -57,6 +57,17 @@ if (builder.ExecutionContext.IsPublishMode)
     web.WithEndpoint("http", endpoint => endpoint.TargetPort = 80);
 
     AddPgAdmin(builder);
+}
+
+// The bot links website pages in its replies (#20). Aspire only knows the internal address of apollo-web in the
+// stack (http://apollo-web:80); its public domain lives in the reverse proxy, so production passes it as a parameter.
+if (builder.ExecutionContext.IsPublishMode)
+{
+    bot.WithEnvironment("Apollo__Links__PublicWebUrl", builder.AddParameter("PublicWebUrl"));
+}
+else
+{
+    bot.WithEnvironment("Apollo__Links__PublicWebUrl", PreferredEndpoint(web));
 }
 
 builder.AddDockerComposeEnvironment("docker-compose")
@@ -144,5 +155,9 @@ static void UseSwarm(Service service, params string[] networks)
     service.Expose = [];
     service.DependsOn = [];
 }
+
+// The web host's endpoints come from its launch profile: https when that profile has one, else http.
+static EndpointReference PreferredEndpoint(IResourceBuilder<ProjectResource> project) =>
+    project.GetEndpoint(project.Resource.Annotations.OfType<EndpointAnnotation>().Any(e => e.Name == "https") ? "https" : "http");
 
 static Volume BindMount(string source, string target) => new() { Name = source, Type = "bind", Source = source, Target = target };

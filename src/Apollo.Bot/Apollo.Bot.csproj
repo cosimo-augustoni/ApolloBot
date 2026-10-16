@@ -2,10 +2,13 @@
 
   <PropertyGroup>
     <UserSecretsId>3706c6f7-0811-41cf-8423-3f4f35df0c42</UserSecretsId>
+    <!-- Strings.resx (no culture suffix) holds the German reply text, so German needs no satellite assembly. -->
+    <NeutralLanguage>de</NeutralLanguage>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Localization" />
   </ItemGroup>
 
   <ItemGroup>
@@ -13,6 +16,10 @@
     <ProjectReference Include="..\Apollo.Platform.Discord\Apollo.Platform.Discord.csproj" />
     <ProjectReference Include="..\Apollo.Data\Apollo.Data.csproj" />
     <ProjectReference Include="..\Apollo.ServiceDefaults\Apollo.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Apollo.Bot.Tests" />
   </ItemGroup>
 
 </Project>
