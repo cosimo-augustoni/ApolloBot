@@ -10,6 +10,7 @@ using Apollo.Testing.Platform;
 using CmdScale.EntityFrameworkCore.TimescaleDB;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Apollo.Bot.Tests.GuildState;
@@ -28,6 +29,7 @@ internal sealed class SyncHost : IAsyncDisposable
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddSingleton<TimeProvider>(Time);
+        services.AddSingleton<IHostApplicationLifetime>(Lifetime);
         services.AddDbContext<ApolloDbContext>(options => options.UseNpgsql(fixture.ConnectionString).UseTimescaleDb());
         services.AddSingleton<PlatformIdCache>();
         services.AddScoped<IPlatformIdResolver, PlatformIdResolver>();
@@ -51,6 +53,28 @@ internal sealed class SyncHost : IAsyncDisposable
     public FakeTimeProvider Time { get; } = TestTime.CreateProvider();
 
     public NotificationLog Notifications { get; } = new();
+
+    /// <summary>
+    /// The host lifetime; <see cref="TestApplicationLifetime.StopApplication"/> simulates the bot shutting down.
+    /// </summary>
+    public TestApplicationLifetime Lifetime { get; } = new();
+
+    /// <summary>
+    /// Waits (on the wall clock, briefly) until the platform was asked for the member list <paramref name="count"/> times.
+    /// </summary>
+    public async Task WaitForMemberListingsAsync(int count)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        while (Platform.MemberListings < count)
+        {
+            if (DateTime.UtcNow > deadline)
+            {
+                throw new TimeoutException($"Expected {count} member listings, saw {Platform.MemberListings}.");
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(10), TestContext.Current.CancellationToken);
+        }
+    }
 
     public Task RaiseAsync(PlatformEvent platformEvent) => Platform.RaiseAsync(platformEvent, TestContext.Current.CancellationToken);
 
@@ -94,5 +118,9 @@ internal sealed class SyncHost : IAsyncDisposable
         InScopeAsync(async (_, ids) => await ids.TryGetGuildAsync(TestPlatform.Guild, TestContext.Current.CancellationToken)
             ?? throw new InvalidOperationException("The guild was never resolved."));
 
-    public ValueTask DisposeAsync() => _services.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        await _services.DisposeAsync();
+        Lifetime.Dispose();
+    }
 }

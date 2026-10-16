@@ -34,6 +34,24 @@ public sealed class GuildStateSyncStaleEventTests(TimescaleFixture fixture) : Ti
     }
 
     [Fact]
+    public async Task MemberUpdated_WhenItStillListsADeletedAdministratorRole_ShouldNotRestoreTheRoleOrTheFlag()
+    {
+        await using var host = await SyncedHostAsync();
+        await host.RaiseAsync(new PlatformRoleUpdatedBuilder()
+            .WithRole(new PlatformRoleBuilder().WithRef(_mods).Named("Mods").AsAdministrator().Build())
+            .Build());
+        await host.RaiseAsync(new PlatformRoleDeletedBuilder().ForRole(_mods).At(_removedAt).Build());
+
+        await host.RaiseAsync(new PlatformMemberUpdatedBuilder()
+            .WithMember(new PlatformMemberBuilder().ForUser(_alice).WithRoles(_mods).Build())
+            .Build());
+
+        var state = await GuildStateView.LoadAsync(Fixture);
+        state.RolesOf("alice").ShouldBeEmpty();
+        state.Members["alice"].IsAdministrator.ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task RoleUpdated_WhenRoleWasDeleted_ShouldKeepItDeleted()
     {
         await using var host = await SyncedHostAsync();

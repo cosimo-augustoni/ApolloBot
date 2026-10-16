@@ -8,14 +8,15 @@ public static class GuildStateServiceCollectionExtensions
 {
     /// <summary>
     /// Registers <see cref="GuildStateSync"/> for the guild snapshot and the member, role and channel events (#13).
-    /// Needs an <see cref="Apollo.Platform.Abstractions.IChatPlatform"/>, the <c>ApolloDbContext</c> and
-    /// <c>IPlatformIdResolver</c>.
+    /// Needs an <see cref="Apollo.Platform.Abstractions.IChatPlatform"/>, the <c>ApolloDbContext</c>,
+    /// <c>IPlatformIdResolver</c> and the host's <c>IHostApplicationLifetime</c>.
     /// </summary>
     public static IServiceCollection AddGuildStateSync(this IServiceCollection services)
     {
         services.AddPlatformEventDispatcher();
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<GuildStateSyncLock>();
+        services.AddSingleton<GuildSnapshotRuns>();
         services.AddScoped<GuildStateNotificationPublisher>();
         services.AddScoped<GuildStateSync>();
 
