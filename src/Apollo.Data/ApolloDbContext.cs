@@ -2,6 +2,7 @@ using Apollo.Data.DataProtection;
 using Apollo.Data.Guilds;
 using Apollo.Data.Identity;
 using Apollo.Data.Status;
+using Apollo.Data.Tracking;
 using CmdScale.EntityFrameworkCore.TimescaleDB;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -40,6 +41,13 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
     public DbSet<RolePlatformId> RolePlatformIds => Set<RolePlatformId>();
 
     public DbSet<BotStatus> BotStatuses => Set<BotStatus>();
+
+    public DbSet<RoleSetting> RoleSettings => Set<RoleSetting>();
+
+    public DbSet<RoleSettingChange> RoleSettingChanges => Set<RoleSettingChange>();
+
+    public DbSet<TrackingPeriod> TrackingPeriods => Set<TrackingPeriod>();
+
     /// <summary>The web host's data protection keys (<c>PersistKeysToDbContext</c>).</summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
@@ -60,6 +68,7 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
         IdentityModel.Configure(modelBuilder);
         GuildStateModel.Configure(modelBuilder);
         StatusModel.Configure(modelBuilder);
+        TrackingModel.Configure(modelBuilder);
         DataProtectionModel.Configure(modelBuilder);
     }
 }
