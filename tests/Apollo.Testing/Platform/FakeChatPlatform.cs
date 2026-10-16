@@ -36,6 +36,8 @@ public sealed class FakeChatPlatform(
     private readonly List<FakeRoleChange> _roleChanges = [];
     private readonly List<FakeReply> _replies = [];
     private ICommandRouter? _commandRouter;
+    private int _memberListingFailures;
+    private int _memberListings;
 
     public PlatformRef Guild { get; } = guild ?? TestPlatform.Guild;
 
@@ -72,6 +74,21 @@ public sealed class FakeChatPlatform(
                 return [.. _replies];
             }
         }
+    }
+
+    /// <summary>
+    /// How often <see cref="ListMembersAsync"/> was called, failed calls included.
+    /// </summary>
+    public int MemberListings => Volatile.Read(ref _memberListings);
+
+    /// <summary>
+    /// Makes the next <paramref name="times"/> <see cref="ListMembersAsync"/> calls throw a <see cref="TimeoutException"/>,
+    /// as a member download that never completes would.
+    /// </summary>
+    public FakeChatPlatform FailMemberListings(int times)
+    {
+        Volatile.Write(ref _memberListingFailures, times);
+        return this;
     }
 
     public FakeChatPlatform WithCapabilities(PlatformCapabilities capabilities)
@@ -164,8 +181,16 @@ public sealed class FakeChatPlatform(
     public Task<IReadOnlyList<PlatformChannel>> ListChannelsAsync(PlatformRef guild, CancellationToken cancellationToken) =>
         List(guild, _channels);
 
-    public Task<IReadOnlyList<PlatformMember>> ListMembersAsync(PlatformRef guild, CancellationToken cancellationToken) =>
-        List(guild, _members);
+    /// <summary>
+    /// The seeded members, unless <see cref="FailMemberListings"/> is still making calls fail.
+    /// </summary>
+    public Task<IReadOnlyList<PlatformMember>> ListMembersAsync(PlatformRef guild, CancellationToken cancellationToken)
+    {
+        Interlocked.Increment(ref _memberListings);
+        return Interlocked.Decrement(ref _memberListingFailures) >= 0
+            ? Task.FromException<IReadOnlyList<PlatformMember>>(new TimeoutException("The fake member listing was set to fail."))
+            : List(guild, _members);
+    }
 
     public Task<IReadOnlyList<PlatformVoiceState>> ListVoiceStatesAsync(PlatformRef guild, CancellationToken cancellationToken) =>
         List(guild, _voiceStates);

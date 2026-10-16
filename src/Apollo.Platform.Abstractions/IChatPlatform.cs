@@ -42,8 +42,11 @@ public interface IChatPlatform
     Task<IReadOnlyList<PlatformChannel>> ListChannelsAsync(PlatformRef guild, CancellationToken cancellationToken);
 
     /// <summary>
-    /// All members of the guild. On Fluxer the adapter has to request the full member list first.
+    /// All members of the guild. Adapters request the full member list from the platform on every call (the gateway
+    /// snapshot is incomplete), so this is expensive: on Discord a gateway round trip that may take up to two minutes,
+    /// on Fluxer at most one request per 30 s. Call it for reconciliation, not per event.
     /// </summary>
+    /// <exception cref="TimeoutException">The platform did not deliver the list in time.</exception>
     Task<IReadOnlyList<PlatformMember>> ListMembersAsync(PlatformRef guild, CancellationToken cancellationToken);
 
     /// <summary>

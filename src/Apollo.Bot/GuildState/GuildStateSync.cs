@@ -19,12 +19,22 @@ namespace Apollo.Bot.GuildState;
 /// </summary>
 /// <remarks>
 /// <para>
-/// After a committed change it publishes <see cref="MemberAccessStateChanged"/> for every member whose membership,
-/// roles or Administrator flag changed, and <see cref="GuildStateSynchronized"/> after each snapshot.
+/// A snapshot runs in two passes. The structure pass applies the guild, roles and channels from the event. The member
+/// pass applies the full member list from <see cref="IChatPlatform.ListMembersAsync"/>; members missing from it are
+/// marked left. An empty or failed list is never taken as "everyone left": the member pass is retried
+/// (<see cref="MemberListAttempts"/>, <see cref="MemberListRetryDelays"/>) and otherwise skipped until the next snapshot.
 /// </para>
 /// <para>
-/// Every handler resolves its platform IDs before it opens a transaction: <see cref="PlatformIdCache"/> keeps what
-/// it resolved, so an ID created inside a transaction that rolls back would stay cached without a row.
+/// Live events are serialised but not ordered, so an update may arrive after the delete or leave it predates. Updates
+/// therefore never clear <c>deleted_at</c> / <c>left_at</c>; only a create, a join or a snapshot does.
+/// </para>
+/// <para>
+/// After a committed change it publishes <see cref="MemberAccessStateChanged"/> for every member whose membership,
+/// roles or Administrator flag changed, and <see cref="GuildStateSynchronized"/> once a snapshot's member pass is done.
+/// </para>
+/// <para>
+/// Every pass resolves its platform IDs before it opens a transaction: <see cref="PlatformIdCache"/> keeps what it
+/// resolved, so an ID created inside a transaction that rolls back would stay cached without a row.
 /// </para>
 /// </remarks>
 internal sealed partial class GuildStateSync(
@@ -33,6 +43,7 @@ internal sealed partial class GuildStateSync(
     IChatPlatform platform,
     GuildStateSyncLock syncLock,
     GuildStateNotificationPublisher publisher,
+    TimeProvider timeProvider,
     ILogger<GuildStateSync> logger)
     : IPlatformEventHandler<PlatformGuildAvailable>,
         IPlatformEventHandler<PlatformMemberJoined>,
@@ -45,91 +56,43 @@ internal sealed partial class GuildStateSync(
         IPlatformEventHandler<PlatformChannelUpdated>,
         IPlatformEventHandler<PlatformChannelDeleted>
 {
+    /// <summary>
+    /// How often a snapshot asks for the full member list before it gives up on members until the next snapshot.
+    /// </summary>
+    public const int MemberListAttempts = 3;
+
+    /// <summary>
+    /// The pause before each retry of the member list. At least 30 s: Fluxer allows one full request per 30 s per guild.
+    /// </summary>
+    public static readonly IReadOnlyList<TimeSpan> MemberListRetryDelays = [TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(60)];
+
     public async Task HandleAsync(PlatformGuildAvailable platformEvent, CancellationToken cancellationToken)
     {
-        using var _ = await syncLock.AcquireAsync(cancellationToken);
+        var guildId = await ApplyStructureAsync(platformEvent, cancellationToken);
 
-        // The snapshot's member list may be partial (large guilds, Fluxer): always ask for the full list first
-        // (docs/platform-parity.md). Under the lock, so live member events wait and apply on top of it.
-        var members = await platform.ListMembersAsync(platformEvent.Guild, cancellationToken);
-
-        var guildId = await ids.ResolveGuildAsync(platformEvent.Guild, cancellationToken);
-        var ownerId = await ids.ResolveUserAsync(platformEvent.Owner, cancellationToken);
-        await ResolveRolesAsync(platformEvent.Guild, platformEvent.Roles.Select(r => r.Role), cancellationToken);
-        foreach (var channel in platformEvent.Channels)
+        // The lock is held per attempt only, so live events apply between the retries.
+        for (var attempt = 1; attempt <= MemberListAttempts; attempt++)
         {
-            await ResolveChannelAsync(platformEvent.Guild, channel, cancellationToken);
+            if (attempt > 1)
+            {
+                await Task.Delay(MemberListRetryDelays[attempt - 2], timeProvider, cancellationToken);
+            }
+
+            if (await TryApplyMembersAsync(platformEvent, guildId, attempt, cancellationToken))
+            {
+                await publisher.PublishAsync(new GuildStateSynchronized(guildId), cancellationToken);
+                return;
+            }
         }
 
-        foreach (var member in members)
-        {
-            await ResolveMemberAsync(platformEvent.Guild, member, cancellationToken);
-        }
-
-        var before = await LoadAccessStatesAsync(guildId, userIds: null, cancellationToken);
-        await using (var transaction = await db.Database.BeginTransactionAsync(cancellationToken))
-        {
-            var guild = await db.Guilds.SingleAsync(g => g.Id == guildId, cancellationToken);
-            guild.Name = platformEvent.Name;
-            guild.OwnerUserId = ownerId;
-
-            var roleIds = new HashSet<Guid>();
-            foreach (var role in platformEvent.Roles)
-            {
-                roleIds.Add(await ApplyRoleAsync(platformEvent.Guild, role, cancellationToken));
-            }
-
-            var deletedRoles = await db.Roles
-                .Where(r => r.GuildId == guildId && r.DeletedAt == null && !roleIds.Contains(r.Id))
-                .ToListAsync(cancellationToken);
-            await MarkRolesDeletedAsync(guildId, deletedRoles, platformEvent.OccurredAt, cancellationToken);
-
-            var channelIds = new HashSet<Guid>();
-            foreach (var channel in platformEvent.Channels)
-            {
-                channelIds.Add(await ApplyChannelAsync(platformEvent.Guild, channel, cancellationToken));
-            }
-
-            // A snapshot lists only active threads, and an archived thread still exists: only a delete event marks one.
-            var deletedChannels = await db.Channels
-                .Where(c => c.GuildId == guildId && c.DeletedAt == null && c.Type != PlatformChannelType.Thread && !channelIds.Contains(c.Id))
-                .ToListAsync(cancellationToken);
-            foreach (var channel in deletedChannels)
-            {
-                channel.DeletedAt = platformEvent.OccurredAt;
-            }
-
-            var userIds = new HashSet<Guid>();
-            foreach (var member in members)
-            {
-                userIds.Add(await ApplyMemberAsync(platformEvent.Guild, guildId, member, cancellationToken));
-            }
-
-            var departed = await db.GuildMembers
-                .Where(m => m.GuildId == guildId && m.LeftAt == null && !userIds.Contains(m.UserId))
-                .Select(m => m.UserId)
-                .ToListAsync(cancellationToken);
-            foreach (var userId in departed)
-            {
-                await MarkLeftAsync(guildId, userId, platformEvent.OccurredAt, cancellationToken);
-            }
-
-            await db.SaveChangesAsync(cancellationToken);
-            await RecomputeAdministratorsAsync(guildId, userIds: null, cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-
-            LogSynchronized(platformEvent.Guild, roleIds.Count, channelIds.Count, userIds.Count, departed.Count, deletedRoles.Count, deletedChannels.Count);
-        }
-
-        await PublishMemberChangesAsync(guildId, before, userIds: null, cancellationToken);
-        await publisher.PublishAsync(new GuildStateSynchronized(guildId), cancellationToken);
+        LogMembersNotSynchronized(platformEvent.Guild, MemberListAttempts);
     }
 
     public Task HandleAsync(PlatformMemberJoined platformEvent, CancellationToken cancellationToken) =>
-        ApplyMemberEventAsync(platformEvent.Guild, platformEvent.Member, cancellationToken);
+        ApplyMemberEventAsync(platformEvent.Guild, platformEvent.Member, revive: true, cancellationToken);
 
     public Task HandleAsync(PlatformMemberUpdated platformEvent, CancellationToken cancellationToken) =>
-        ApplyMemberEventAsync(platformEvent.Guild, platformEvent.Member, cancellationToken);
+        ApplyMemberEventAsync(platformEvent.Guild, platformEvent.Member, revive: false, cancellationToken);
 
     public async Task HandleAsync(PlatformMemberLeft platformEvent, CancellationToken cancellationToken)
     {
@@ -147,10 +110,10 @@ internal sealed partial class GuildStateSync(
     }
 
     public Task HandleAsync(PlatformRoleCreated platformEvent, CancellationToken cancellationToken) =>
-        ApplyRoleEventAsync(platformEvent.Guild, platformEvent.Role, cancellationToken);
+        ApplyRoleEventAsync(platformEvent.Guild, platformEvent.Role, revive: true, cancellationToken);
 
     public Task HandleAsync(PlatformRoleUpdated platformEvent, CancellationToken cancellationToken) =>
-        ApplyRoleEventAsync(platformEvent.Guild, platformEvent.Role, cancellationToken);
+        ApplyRoleEventAsync(platformEvent.Guild, platformEvent.Role, revive: false, cancellationToken);
 
     public async Task HandleAsync(PlatformRoleDeleted platformEvent, CancellationToken cancellationToken)
     {
@@ -175,10 +138,10 @@ internal sealed partial class GuildStateSync(
     }
 
     public Task HandleAsync(PlatformChannelCreated platformEvent, CancellationToken cancellationToken) =>
-        ApplyChannelEventAsync(platformEvent.Guild, platformEvent.Channel, cancellationToken);
+        ApplyChannelEventAsync(platformEvent.Guild, platformEvent.Channel, revive: true, cancellationToken);
 
     public Task HandleAsync(PlatformChannelUpdated platformEvent, CancellationToken cancellationToken) =>
-        ApplyChannelEventAsync(platformEvent.Guild, platformEvent.Channel, cancellationToken);
+        ApplyChannelEventAsync(platformEvent.Guild, platformEvent.Channel, revive: false, cancellationToken);
 
     public async Task HandleAsync(PlatformChannelDeleted platformEvent, CancellationToken cancellationToken)
     {
@@ -189,11 +152,129 @@ internal sealed partial class GuildStateSync(
         }
 
         var channel = await db.Channels.SingleAsync(c => c.Id == channelId, cancellationToken);
-        channel.DeletedAt ??= platformEvent.OccurredAt;
+        await MarkChannelsDeletedAsync([channel], platformEvent.OccurredAt, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task ApplyMemberEventAsync(PlatformRef guild, PlatformMember member, CancellationToken cancellationToken)
+    /// <summary>
+    /// The snapshot's guild, roles and channels; roles and channels it no longer lists are marked deleted.
+    /// </summary>
+    private async Task<Guid> ApplyStructureAsync(PlatformGuildAvailable snapshot, CancellationToken cancellationToken)
+    {
+        using var _ = await syncLock.AcquireAsync(cancellationToken);
+        var guildId = await ids.ResolveGuildAsync(snapshot.Guild, cancellationToken);
+        var ownerId = await ids.ResolveUserAsync(snapshot.Owner, cancellationToken);
+        await ResolveRolesAsync(snapshot.Guild, snapshot.Roles.Select(r => r.Role), cancellationToken);
+        foreach (var channel in snapshot.Channels)
+        {
+            await ResolveChannelAsync(snapshot.Guild, channel, cancellationToken);
+        }
+
+        var before = await LoadAccessStatesAsync(guildId, userIds: null, cancellationToken);
+        await using (var transaction = await db.Database.BeginTransactionAsync(cancellationToken))
+        {
+            var guild = await db.Guilds.SingleAsync(g => g.Id == guildId, cancellationToken);
+            guild.Name = snapshot.Name;
+            guild.OwnerUserId = ownerId;
+
+            var roleIds = new HashSet<Guid>();
+            foreach (var role in snapshot.Roles)
+            {
+                roleIds.Add(await ApplyRoleAsync(snapshot.Guild, role, revive: true, cancellationToken));
+            }
+
+            var deletedRoles = await db.Roles
+                .Where(r => r.GuildId == guildId && r.DeletedAt == null && !roleIds.Contains(r.Id))
+                .ToListAsync(cancellationToken);
+            await MarkRolesDeletedAsync(guildId, deletedRoles, snapshot.OccurredAt, cancellationToken);
+
+            var channelIds = new HashSet<Guid>();
+            foreach (var channel in snapshot.Channels)
+            {
+                channelIds.Add(await ApplyChannelAsync(snapshot.Guild, channel, revive: true, cancellationToken));
+            }
+
+            // A snapshot lists only active threads, and an archived thread still exists: a missing thread is marked
+            // deleted only together with its parent channel.
+            var deletedChannels = await db.Channels
+                .Where(c => c.GuildId == guildId && c.DeletedAt == null && c.Type != PlatformChannelType.Thread && !channelIds.Contains(c.Id))
+                .ToListAsync(cancellationToken);
+            await MarkChannelsDeletedAsync(deletedChannels, snapshot.OccurredAt, cancellationToken);
+
+            await db.SaveChangesAsync(cancellationToken);
+            await RecomputeAdministratorsAsync(guildId, userIds: null, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            LogStructureSynchronized(snapshot.Guild, roleIds.Count, channelIds.Count, deletedRoles.Count, deletedChannels.Count);
+        }
+
+        await PublishMemberChangesAsync(guildId, before, userIds: null, cancellationToken);
+        return guildId;
+    }
+
+    /// <summary>
+    /// The member pass of a snapshot. <see langword="false"/> when the full member list is unavailable (empty or failed);
+    /// nothing is changed then.
+    /// </summary>
+    private async Task<bool> TryApplyMembersAsync(PlatformGuildAvailable snapshot, Guid guildId, int attempt, CancellationToken cancellationToken)
+    {
+        using var _ = await syncLock.AcquireAsync(cancellationToken);
+
+        // The snapshot's own member list may be partial (large guilds, Fluxer): only the full list may mark members as
+        // left (docs/platform-parity.md).
+        IReadOnlyList<PlatformMember> members;
+        try
+        {
+            members = await platform.ListMembersAsync(snapshot.Guild, cancellationToken);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            LogMemberListFailed(exception, snapshot.Guild, attempt, MemberListAttempts);
+            return false;
+        }
+
+        // Every guild has at least the bot as a member, so an empty list means the platform did not deliver one.
+        if (members.Count == 0)
+        {
+            LogMemberListEmpty(snapshot.Guild, attempt, MemberListAttempts);
+            return false;
+        }
+
+        foreach (var member in members)
+        {
+            await ResolveMemberAsync(snapshot.Guild, member, cancellationToken);
+        }
+
+        var before = await LoadAccessStatesAsync(guildId, userIds: null, cancellationToken);
+        await using (var transaction = await db.Database.BeginTransactionAsync(cancellationToken))
+        {
+            var userIds = new HashSet<Guid>();
+            foreach (var member in members)
+            {
+                userIds.Add(await ApplyMemberAsync(snapshot.Guild, guildId, member, revive: true, cancellationToken));
+            }
+
+            var departed = await db.GuildMembers
+                .Where(m => m.GuildId == guildId && m.LeftAt == null && !userIds.Contains(m.UserId))
+                .Select(m => m.UserId)
+                .ToListAsync(cancellationToken);
+            foreach (var userId in departed)
+            {
+                await MarkLeftAsync(guildId, userId, snapshot.OccurredAt, cancellationToken);
+            }
+
+            await db.SaveChangesAsync(cancellationToken);
+            await RecomputeAdministratorsAsync(guildId, userIds: null, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            LogMembersSynchronized(snapshot.Guild, userIds.Count, departed.Count);
+        }
+
+        await PublishMemberChangesAsync(guildId, before, userIds: null, cancellationToken);
+        return true;
+    }
+
+    private async Task ApplyMemberEventAsync(PlatformRef guild, PlatformMember member, bool revive, CancellationToken cancellationToken)
     {
         using var _ = await syncLock.AcquireAsync(cancellationToken);
         var guildId = await ids.ResolveGuildAsync(guild, cancellationToken);
@@ -202,7 +283,7 @@ internal sealed partial class GuildStateSync(
         var before = await LoadAccessStatesAsync(guildId, [userId], cancellationToken);
         await using (var transaction = await db.Database.BeginTransactionAsync(cancellationToken))
         {
-            await ApplyMemberAsync(guild, guildId, member, cancellationToken);
+            await ApplyMemberAsync(guild, guildId, member, revive, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
             await RecomputeAdministratorsAsync(guildId, [userId], cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -211,7 +292,7 @@ internal sealed partial class GuildStateSync(
         await PublishMemberChangesAsync(guildId, before, [userId], cancellationToken);
     }
 
-    private async Task ApplyRoleEventAsync(PlatformRef guild, PlatformRole role, CancellationToken cancellationToken)
+    private async Task ApplyRoleEventAsync(PlatformRef guild, PlatformRole role, bool revive, CancellationToken cancellationToken)
     {
         using var _ = await syncLock.AcquireAsync(cancellationToken);
         var guildId = await ids.ResolveGuildAsync(guild, cancellationToken);
@@ -221,7 +302,7 @@ internal sealed partial class GuildStateSync(
         var before = await LoadAccessStatesAsync(guildId, holders, cancellationToken);
         await using (var transaction = await db.Database.BeginTransactionAsync(cancellationToken))
         {
-            await ApplyRoleAsync(guild, role, cancellationToken);
+            await ApplyRoleAsync(guild, role, revive, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
             await RecomputeAdministratorsAsync(guildId, holders, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -230,10 +311,10 @@ internal sealed partial class GuildStateSync(
         await PublishMemberChangesAsync(guildId, before, holders, cancellationToken);
     }
 
-    private async Task ApplyChannelEventAsync(PlatformRef guild, PlatformChannel channel, CancellationToken cancellationToken)
+    private async Task ApplyChannelEventAsync(PlatformRef guild, PlatformChannel channel, bool revive, CancellationToken cancellationToken)
     {
         using var _ = await syncLock.AcquireAsync(cancellationToken);
-        await ApplyChannelAsync(guild, channel, cancellationToken);
+        await ApplyChannelAsync(guild, channel, revive, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
     }
 
@@ -259,7 +340,8 @@ internal sealed partial class GuildStateSync(
         return await ids.ResolveUserAsync(member.User, cancellationToken);
     }
 
-    private async Task<Guid> ApplyRoleAsync(PlatformRef guild, PlatformRole snapshot, CancellationToken cancellationToken)
+    /// <remarks>With <c>revive</c> a deleted role comes back (create, snapshot); an update leaves it deleted.</remarks>
+    private async Task<Guid> ApplyRoleAsync(PlatformRef guild, PlatformRole snapshot, bool revive, CancellationToken cancellationToken)
     {
         var roleId = await ids.ResolveRoleAsync(guild, snapshot.Role, cancellationToken);
         var role = await db.Roles.SingleAsync(r => r.Id == roleId, cancellationToken);
@@ -267,11 +349,16 @@ internal sealed partial class GuildStateSync(
         role.Color = snapshot.Color;
         role.Position = snapshot.Position;
         role.IsAdministrator = snapshot.IsAdministrator;
-        role.DeletedAt = null;
+        if (revive)
+        {
+            role.DeletedAt = null;
+        }
+
         return roleId;
     }
 
-    private async Task<Guid> ApplyChannelAsync(PlatformRef guild, PlatformChannel snapshot, CancellationToken cancellationToken)
+    /// <remarks>With <c>revive</c> a deleted channel comes back (create, snapshot); an update leaves it deleted.</remarks>
+    private async Task<Guid> ApplyChannelAsync(PlatformRef guild, PlatformChannel snapshot, bool revive, CancellationToken cancellationToken)
     {
         var channelId = await ids.ResolveChannelAsync(guild, snapshot.Channel, cancellationToken);
         var categoryId = snapshot.Category is { } category ? await ids.ResolveChannelAsync(guild, category, cancellationToken) : (Guid?)null;
@@ -282,7 +369,11 @@ internal sealed partial class GuildStateSync(
         channel.Type = snapshot.Type;
         channel.CategoryId = categoryId;
         channel.ThreadParentId = threadParentId;
-        channel.DeletedAt = null;
+        if (revive)
+        {
+            channel.DeletedAt = null;
+        }
+
         return channelId;
     }
 
@@ -290,14 +381,23 @@ internal sealed partial class GuildStateSync(
     /// Stores the member's user columns, membership and exact role list. The Administrator flag follows from the saved
     /// roles in <see cref="RecomputeAdministratorsAsync"/>.
     /// </summary>
-    private async Task<Guid> ApplyMemberAsync(PlatformRef guild, Guid guildId, PlatformMember snapshot, CancellationToken cancellationToken)
+    /// <remarks>
+    /// With <c>revive</c> a member who left comes back (join, snapshot). Without it (an update), a member who left is
+    /// left alone: the update predates the leave.
+    /// </remarks>
+    private async Task<Guid> ApplyMemberAsync(PlatformRef guild, Guid guildId, PlatformMember snapshot, bool revive, CancellationToken cancellationToken)
     {
         var userId = await ids.ResolveUserAsync(snapshot.User, cancellationToken);
+        var member = await db.GuildMembers.SingleOrDefaultAsync(m => m.GuildId == guildId && m.UserId == userId, cancellationToken);
+        if (member is { LeftAt: not null } && !revive)
+        {
+            return userId;
+        }
+
         var user = await db.Users.SingleAsync(u => u.Id == userId, cancellationToken);
         user.DisplayName = snapshot.DisplayName;
         user.AvatarUrl = snapshot.AvatarUrl;
 
-        var member = await db.GuildMembers.SingleOrDefaultAsync(m => m.GuildId == guildId && m.UserId == userId, cancellationToken);
         if (member is null)
         {
             member = new GuildMember { GuildId = guildId, UserId = userId };
@@ -350,6 +450,26 @@ internal sealed partial class GuildStateSync(
         db.MemberRoles.RemoveRange(await db.MemberRoles
             .Where(r => r.GuildId == guildId && roleIds.Contains(r.RoleId))
             .ToListAsync(cancellationToken));
+    }
+
+    /// <summary>
+    /// Marks the channels deleted, and the threads under them: a thread cannot outlive its parent channel.
+    /// </summary>
+    private async Task MarkChannelsDeletedAsync(IReadOnlyCollection<Channel> channels, DateTimeOffset deletedAt, CancellationToken cancellationToken)
+    {
+        if (channels.Count == 0)
+        {
+            return;
+        }
+
+        var channelIds = channels.Select(c => c.Id).ToList();
+        var threads = await db.Channels
+            .Where(c => c.ThreadParentId != null && channelIds.Contains(c.ThreadParentId.Value) && c.DeletedAt == null)
+            .ToListAsync(cancellationToken);
+        foreach (var channel in channels.Concat(threads))
+        {
+            channel.DeletedAt ??= deletedAt;
+        }
     }
 
     private Task<List<Guid>> HoldersAsync(Guid roleId, CancellationToken cancellationToken) =>
@@ -415,8 +535,20 @@ internal sealed partial class GuildStateSync(
 
     [LoggerMessage(
         Level = LogLevel.Information,
-        Message = "Synchronized guild {Guild}: {RoleCount} roles, {ChannelCount} channels, {MemberCount} members; marked {LeftCount} members left, {DeletedRoleCount} roles and {DeletedChannelCount} channels deleted")]
-    private partial void LogSynchronized(PlatformRef guild, int roleCount, int channelCount, int memberCount, int leftCount, int deletedRoleCount, int deletedChannelCount);
+        Message = "Synchronized guild {Guild}: {RoleCount} roles, {ChannelCount} channels; marked {DeletedRoleCount} roles and {DeletedChannelCount} channels deleted")]
+    private partial void LogStructureSynchronized(PlatformRef guild, int roleCount, int channelCount, int deletedRoleCount, int deletedChannelCount);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Synchronized members of guild {Guild}: {MemberCount} members, marked {LeftCount} left")]
+    private partial void LogMembersSynchronized(PlatformRef guild, int memberCount, int leftCount);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Member list of guild {Guild} failed (attempt {Attempt} of {Attempts}); no member is marked left")]
+    private partial void LogMemberListFailed(Exception exception, PlatformRef guild, int attempt, int attempts);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Member list of guild {Guild} came back empty (attempt {Attempt} of {Attempts}); no member is marked left")]
+    private partial void LogMemberListEmpty(PlatformRef guild, int attempt, int attempts);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Members of guild {Guild} not synchronized after {Attempts} attempts; they stay as they were until the next snapshot")]
+    private partial void LogMembersNotSynchronized(PlatformRef guild, int attempts);
 
     private readonly record struct AccessState(bool IsMember, bool IsAdministrator, string Roles);
 }

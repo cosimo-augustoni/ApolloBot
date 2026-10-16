@@ -10,6 +10,7 @@ using Apollo.Testing.Platform;
 using CmdScale.EntityFrameworkCore.TimescaleDB;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Apollo.Bot.Tests.GuildState;
 
@@ -26,7 +27,7 @@ internal sealed class SyncHost : IAsyncDisposable
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddSingleton<TimeProvider>(TestTime.CreateProvider());
+        services.AddSingleton<TimeProvider>(Time);
         services.AddDbContext<ApolloDbContext>(options => options.UseNpgsql(fixture.ConnectionString).UseTimescaleDb());
         services.AddSingleton<PlatformIdCache>();
         services.AddScoped<IPlatformIdResolver, PlatformIdResolver>();
@@ -44,6 +45,11 @@ internal sealed class SyncHost : IAsyncDisposable
 
     public FakeChatPlatform Platform => _services.GetRequiredService<FakeChatPlatform>();
 
+    /// <summary>
+    /// The clock of the host; advance it to let the sync's retry delays elapse.
+    /// </summary>
+    public FakeTimeProvider Time { get; } = TestTime.CreateProvider();
+
     public NotificationLog Notifications { get; } = new();
 
     public Task RaiseAsync(PlatformEvent platformEvent) => Platform.RaiseAsync(platformEvent, TestContext.Current.CancellationToken);
@@ -60,6 +66,13 @@ internal sealed class SyncHost : IAsyncDisposable
 
         await RaiseAsync(snapshot);
     }
+
+    /// <summary>
+    /// Raises <paramref name="snapshot"/> as is (members come only from <see cref="Platform"/>) and advances the clock
+    /// until the sync, retries included, has finished.
+    /// </summary>
+    public Task RaiseAndWaitAsync(PlatformGuildAvailable snapshot) =>
+        Time.AdvanceUntilCompletedAsync(RaiseAsync(snapshot), TimeSpan.FromSeconds(10));
 
     /// <summary>
     /// Runs <paramref name="action"/> with a scoped context and resolver, e.g. to seed rows with the

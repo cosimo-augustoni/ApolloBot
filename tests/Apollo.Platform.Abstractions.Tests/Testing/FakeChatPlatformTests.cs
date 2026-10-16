@@ -78,6 +78,19 @@ public sealed class FakeChatPlatformTests
     }
 
     [Fact]
+    public async Task ListMembersAsync_WhenListingsAreSetToFail_ShouldThrowThatManyTimesThenReturnMembers()
+    {
+        var member = new PlatformMemberBuilder().Build();
+        _platform.WithMember(member).FailMemberListings(2);
+        var cancellationToken = TestContext.Current.CancellationToken;
+
+        await Should.ThrowAsync<TimeoutException>(() => _platform.ListMembersAsync(_guild, cancellationToken));
+        await Should.ThrowAsync<TimeoutException>(() => _platform.ListMembersAsync(_guild, cancellationToken));
+        (await _platform.ListMembersAsync(_guild, cancellationToken)).ShouldBe([member]);
+        _platform.MemberListings.ShouldBe(3);
+    }
+
+    [Fact]
     public async Task ListAsync_WhenStateIsSeeded_ShouldReturnSeededState()
     {
         var role = new PlatformRoleBuilder().Build();
