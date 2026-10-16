@@ -1,19 +1,23 @@
 using Apollo.Platform.Abstractions;
+using Apollo.Platform.Abstractions.Diagnostics;
 using Apollo.Platform.Abstractions.Events;
 using Apollo.Platform.Discord.Tests.Fakes;
+using Apollo.Testing.Diagnostics;
 using Apollo.Testing.Platform;
+using Microsoft.Extensions.Diagnostics.Metrics.Testing;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 using NetCord.Gateway;
 
 namespace Apollo.Platform.Discord.Tests;
 
-public sealed class DiscordEventMapperTests
+public sealed class DiscordEventMapperTests : IDisposable
 {
     private const ulong ForeignGuildId = 222222222222222222;
 
     private readonly RecordingEventDispatcher _dispatcher = new();
     private readonly FakeLogger<DiscordEventMapper> _logger = new();
+    private readonly TestMeterFactory _meterFactory = new();
 
     [Fact]
     public async Task ForwardAsync_WhenEventIsFromConfiguredGuild_ShouldDispatchMappedEvent()
@@ -77,9 +81,47 @@ public sealed class DiscordEventMapperTests
         _logger.Collector.GetSnapshot().ShouldHaveSingleItem().Level.ShouldBe(LogLevel.Debug);
     }
 
+    [Fact]
+    public async Task ForwardAsync_WhenEventIsFromAnotherGuild_ShouldCountItAsDroppedForOtherGuild()
+    {
+        using var dropped = CollectDropped();
+
+        await CreateMapper().ForwardAsync("GuildUserRemove", ForeignGuildId, guild =>
+            new PlatformMemberLeftBuilder().InGuild(guild).Build(), TestContext.Current.CancellationToken);
+
+        dropped.GetMeasurementSnapshot().ShouldHaveSingleItem().Tags["reason"].ShouldBe("other_guild");
+    }
+
+    [Fact]
+    public async Task ForwardAsync_WhenEventIsADirectMessage_ShouldCountItAsDroppedForOtherGuild()
+    {
+        using var dropped = CollectDropped();
+
+        await CreateMapper().ForwardAsync("MessageCreate", guildId: null, guild =>
+            new PlatformMemberLeftBuilder().InGuild(guild).Build(), TestContext.Current.CancellationToken);
+
+        dropped.GetMeasurementSnapshot().ShouldHaveSingleItem().Tags["reason"].ShouldBe("other_guild");
+    }
+
+    [Fact]
+    public async Task ForwardAsync_WhenEventIsFromConfiguredGuild_ShouldNotCountADrop()
+    {
+        using var dropped = CollectDropped();
+
+        await CreateMapper().ForwardAsync("GuildUserRemove", DiscordHost.GuildId, guild =>
+            new PlatformMemberLeftBuilder().InGuild(guild).Build(), TestContext.Current.CancellationToken);
+
+        dropped.GetMeasurementSnapshot().ShouldBeEmpty();
+    }
+
+    public void Dispose() => _meterFactory.Dispose();
+
+    private MetricCollector<long> CollectDropped() =>
+        new(_meterFactory, RecordedEventMetrics.MeterName, RecordedEventMetrics.DroppedCounter);
+
     private static Func<PlatformRef, PlatformEvent> MapUserRemove(GuildUserRemoveEventArgs payload) => guild =>
         new PlatformMemberLeftBuilder().InGuild(guild).ForUser(new PlatformRef(PlatformKind.Discord, payload.User.Id.ToString(System.Globalization.CultureInfo.InvariantCulture))).Build();
 
     private DiscordEventMapper CreateMapper() =>
-        new(Microsoft.Extensions.Options.Options.Create(new DiscordPlatformOptions { Token = DiscordHost.Token, GuildId = DiscordHost.GuildId }), _dispatcher, _logger);
+        new(Microsoft.Extensions.Options.Options.Create(new DiscordPlatformOptions { Token = DiscordHost.Token, GuildId = DiscordHost.GuildId }), _dispatcher, new(_meterFactory), _logger);
 }

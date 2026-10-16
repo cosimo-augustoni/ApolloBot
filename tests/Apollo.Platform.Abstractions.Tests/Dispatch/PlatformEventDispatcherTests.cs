@@ -1,16 +1,21 @@
+using Apollo.Platform.Abstractions.Diagnostics;
 using Apollo.Platform.Abstractions.Dispatch;
 using Apollo.Platform.Abstractions.Events;
+using Apollo.Testing;
 using Apollo.Testing.Platform;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Apollo.Platform.Abstractions.Tests.Dispatch;
 
 public sealed class PlatformEventDispatcherTests
 {
     private readonly HandlerLog _log = new();
+    private readonly FakeTimeProvider _time = TestTime.CreateProvider();
     private FakeLogCollector _logs = null!;
+    private IServiceProvider _provider = null!;
 
     [Fact]
     public async Task DispatchAsync_WhenTwoHandlersAreRegistered_ShouldDeliverToEachExactlyOnce()
@@ -99,14 +104,84 @@ public sealed class PlatformEventDispatcherTests
         _log.Scopes[0].IsDisposed.ShouldBeTrue();
     }
 
+    [Fact]
+    public void LastEventAt_WhenNothingWasDispatched_ShouldBeNull()
+    {
+        BuildDispatcher(_ => { });
+
+        _provider.GetRequiredService<IPlatformEventActivity>().LastEventAt.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task LastEventAt_WhenAnEventWasDispatchedAtTAndNoneSince_ShouldBeT()
+    {
+        var dispatcher = BuildDispatcher(_ => { });
+        var dispatchedAt = _time.GetUtcNow();
+
+        await dispatcher.DispatchAsync(new PlatformMessageCreatedBuilder().Build(), TestContext.Current.CancellationToken);
+        _time.Advance(TimeSpan.FromMinutes(5));
+
+        _provider.GetRequiredService<IPlatformEventActivity>().LastEventAt.ShouldBe(dispatchedAt);
+    }
+
+    [Fact]
+    public async Task LastEventAt_WhenEventsWereDispatchedAtDifferentTimes_ShouldBeTheLatest()
+    {
+        var dispatcher = BuildDispatcher(_ => { });
+
+        await dispatcher.DispatchAsync(new PlatformMessageCreatedBuilder().Build(), TestContext.Current.CancellationToken);
+        _time.Advance(TimeSpan.FromSeconds(10));
+        await dispatcher.DispatchAsync(new PlatformMessageDeletedBuilder().Build(), TestContext.Current.CancellationToken);
+
+        _provider.GetRequiredService<IPlatformEventActivity>().LastEventAt.ShouldBe(TestTime.Now.AddSeconds(10));
+    }
+
+    [Fact]
+    public async Task LastEventAt_WhenOnlyConnectionStateChangesFollow_ShouldStayAtTheLastGuildEvent()
+    {
+        var dispatcher = BuildDispatcher(_ => { });
+        await dispatcher.DispatchAsync(new PlatformMessageCreatedBuilder().Build(), TestContext.Current.CancellationToken);
+
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await dispatcher.DispatchAsync(new PlatformConnectionStateChangedBuilder().Build(), TestContext.Current.CancellationToken);
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await dispatcher.DispatchAsync(new PlatformGuildAvailableBuilder().Build(), TestContext.Current.CancellationToken);
+
+        _provider.GetRequiredService<IPlatformEventActivity>().LastEventAt.ShouldBe(TestTime.Now);
+    }
+
+    [Fact]
+    public async Task LastEventAt_WhenOnlyConnectionEventsWereDispatched_ShouldBeNull()
+    {
+        var dispatcher = BuildDispatcher(_ => { });
+
+        await dispatcher.DispatchAsync(new PlatformConnectionStateChangedBuilder().Build(), TestContext.Current.CancellationToken);
+        await dispatcher.DispatchAsync(new PlatformGuildAvailableBuilder().Build(), TestContext.Current.CancellationToken);
+
+        _provider.GetRequiredService<IPlatformEventActivity>().LastEventAt.ShouldBeNull();
+    }
+
+    [Fact]
+    public void AddPlatformEventDispatcher_WithoutAHost_ShouldRegisterEverythingItNeeds()
+    {
+        using var provider = new ServiceCollection()
+            .AddLogging()
+            .AddPlatformEventDispatcher()
+            .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+
+        provider.GetRequiredService<RecordedEventMetrics>().ShouldNotBeNull();
+    }
+
     private IPlatformEventDispatcher BuildDispatcher(Action<IServiceCollection> configure)
     {
         var services = new ServiceCollection()
             .AddFakeLogging()
             .AddSingleton(_log)
+            .AddSingleton<TimeProvider>(_time)
             .AddPlatformEventDispatcher();
         configure(services);
         var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        _provider = provider;
         _logs = provider.GetFakeLogCollector();
         return provider.GetRequiredService<IPlatformEventDispatcher>();
     }

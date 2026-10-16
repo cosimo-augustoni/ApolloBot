@@ -1,5 +1,6 @@
 using Apollo.Data.Guilds;
 using Apollo.Data.Identity;
+using Apollo.Data.Status;
 using CmdScale.EntityFrameworkCore.TimescaleDB;
 using Microsoft.EntityFrameworkCore;
 
@@ -36,6 +37,8 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
 
     public DbSet<RolePlatformId> RolePlatformIds => Set<RolePlatformId>();
 
+    public DbSet<BotStatus> BotStatuses => Set<BotStatus>();
+
     /// <summary>
     /// Options for a context outside dependency injection (design time, tests).
     /// </summary>
@@ -52,5 +55,6 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
 
         IdentityModel.Configure(modelBuilder);
         GuildStateModel.Configure(modelBuilder);
+        StatusModel.Configure(modelBuilder);
     }
 }

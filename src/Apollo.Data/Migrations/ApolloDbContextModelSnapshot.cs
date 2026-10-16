@@ -279,6 +279,51 @@ namespace Apollo.Data.Migrations
                     b.ToTable("user_platform_ids", (string)null);
                 });
 
+            modelBuilder.Entity("Apollo.Data.Status.BotStatus", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<bool>("Connected")
+                        .HasColumnType("boolean")
+                        .HasColumnName("connected");
+
+                    b.Property<int?>("GatewayLatencyMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("gateway_latency_ms");
+
+                    b.Property<Guid>("GuildId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("guild_id");
+
+                    b.Property<DateTimeOffset?>("LastEventAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_event_at");
+
+                    b.Property<int>("OpenVoiceSessions")
+                        .HasColumnType("integer")
+                        .HasColumnName("open_voice_sessions");
+
+                    b.HasKey("Id", "OccurredAt");
+
+                    b.HasIndex("GuildId");
+
+                    b.ToTable("bot_status", (string)null);
+
+                    b
+                        .HasAnnotation("TimescaleDB:ChunkTimeInterval", "30 days")
+                        .HasAnnotation("TimescaleDB:IsHypertable", true)
+                        .HasAnnotation("TimescaleDB:TimeColumnName", "OccurredAt");
+                });
+
             modelBuilder.Entity("Apollo.Data.Guilds.GuildMember", b =>
                 {
                     b.HasOne("Apollo.Data.Identity.Guild", null)
@@ -378,6 +423,15 @@ namespace Apollo.Data.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Apollo.Data.Status.BotStatus", b =>
+                {
+                    b.HasOne("Apollo.Data.Identity.Guild", null)
+                        .WithMany()
+                        .HasForeignKey("GuildId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 #pragma warning restore 612, 618

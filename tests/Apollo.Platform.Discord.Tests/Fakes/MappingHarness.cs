@@ -1,4 +1,5 @@
 using Apollo.Testing;
+using Apollo.Testing.Diagnostics;
 using Microsoft.Extensions.Logging.Testing;
 using Microsoft.Extensions.Options;
 
@@ -14,8 +15,14 @@ internal sealed class MappingHarness
 
     public TimeProvider Time { get; } = TestTime.CreateProvider();
 
+    /// <summary>
+    /// Scopes the mapper's drop counter to this harness (for <c>MetricCollector</c>); its meters live as long as the test.
+    /// </summary>
+    public TestMeterFactory Meters { get; } = new();
+
     public DiscordEventMapper Mapper => field ??= new(
         Options.Create(new DiscordPlatformOptions { Token = DiscordHost.Token, GuildId = DiscordHost.GuildId }),
         Dispatcher,
+        new(Meters),
         new FakeLogger<DiscordEventMapper>());
 }
