@@ -40,7 +40,28 @@ dotnet user-secrets set "Parameters:PgAdminPassword" "<value>" --project src/Apo
 
 Parameters that are still missing are prompted for by the Aspire CLI. **Aspire saves every parameter value, secrets included, in its deployment state** (`~/.aspire/deployments/<hash>/production.json`) and reuses those values on the next run, even over changed user-secrets or env vars. To change a value, delete that state file, or use `aspire deploy --clear-cache` (which `aspire do` does not offer in 13.6).
 
-Discord and OAuth values for the bot and web are added in #25.
+Discord and OAuth values for the bot and web are added as AppHost parameters in #25. Until then the published stack
+has no Discord settings, and `bot` fails its startup validation in production.
+
+Bot settings (`src/Apollo.Bot`, read by the Discord adapter, `src/Apollo.Platform.Discord/DiscordPlatformOptions.cs`).
+They are validated at startup, and a missing value stops the bot with an error that names the key:
+
+| Name | Kind | Default | What it is |
+|---|---|---|---|
+| `Apollo:Platform:Discord:Token` (`Apollo__Platform__Discord__Token`) | **secret** | none, required | The bot token from the Discord developer portal |
+| `Apollo:Platform:Discord:GuildId` (`Apollo__Platform__Discord__GuildId`) | config | none, required | The one guild the bot records. Events from any other guild and DMs are dropped |
+| `Apollo:Platform:Discord:Connect` (`Apollo__Platform__Discord__Connect`) | config | `true` | `false` starts the bot without connecting to Discord. Only the AppHost smoke tests use it |
+
+For local development, set them as user-secrets on the bot (the AppHost runs it in Development, so they are loaded):
+
+```bash
+dotnet user-secrets set "Apollo:Platform:Discord:Token" "<token>" --project src/Apollo.Bot
+dotnet user-secrets set "Apollo:Platform:Discord:GuildId" "<guild id>" --project src/Apollo.Bot
+```
+
+The bot connects with the intents `Guilds`, `GuildMessages`, `MessageContent`, `GuildMessageReactions`,
+`GuildVoiceStates`, `GuildPresences`, `GuildUsers` and `GuildModeration`. Message content, presences and members are
+privileged intents and must be switched on in the developer portal (#25).
 
 Service settings with a default (not AppHost parameters):
 
