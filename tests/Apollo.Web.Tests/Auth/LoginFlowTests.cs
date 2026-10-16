@@ -9,6 +9,8 @@ namespace Apollo.Web.Tests.Auth;
 /// <summary>The login against a real database: the callback side of the flow and the session across a restart.</summary>
 public sealed class LoginFlowTests(TimescaleFixture fixture) : TimescaleTest(fixture)
 {
+    private const string AvatarUrl = "https://cdn.discordapp.com/avatars/80351110224678912/abc.png";
+
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact]
@@ -16,7 +18,7 @@ public sealed class LoginFlowTests(TimescaleFixture fixture) : TimescaleTest(fix
     {
         await using var factory = CreateFactory();
         using var http = factory.CreateHttpsClient();
-        await GetAsync(http, $"{TestSignInEndpoints.ExternalSignInPath}?id=80351110224678912&name=Nelly");
+        await GetAsync(http, $"{TestSignInEndpoints.ExternalSignInPath}?id=80351110224678912&name=Nelly&avatar={Uri.EscapeDataString(AvatarUrl)}");
 
         using var response = await GetAsync(http, "/auth/complete?returnUrl=%2Fme");
 
@@ -30,7 +32,7 @@ public sealed class LoginFlowTests(TimescaleFixture fixture) : TimescaleTest(fix
         var mapping = await db.UserPlatformIds.AsNoTracking().SingleAsync(Ct);
         mapping.ExternalId.ShouldBe("80351110224678912");
         var me = await http.GetFromJsonAsync<CurrentUserDto>(new Uri("/auth/me", UriKind.Relative), Ct);
-        me.ShouldBe(new CurrentUserDto(mapping.UserId, "Discord", "Nelly"));
+        me.ShouldBe(new CurrentUserDto(mapping.UserId, "Discord", "Nelly", AvatarUrl));
     }
 
     [Fact]

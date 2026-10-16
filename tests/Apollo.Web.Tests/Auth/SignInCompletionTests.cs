@@ -26,11 +26,11 @@ public sealed class SignInCompletionTests(TimescaleFixture fixture) : TimescaleT
         mapping.Platform.ShouldBe(PlatformKind.Discord);
         mapping.ExternalId.ShouldBe(_discordUser.ExternalId);
         (await db.Users.AsNoTracking().Select(u => u.Id).ToListAsync(Ct)).ShouldBe([mapping.UserId]);
-        ApolloPrincipal.ToCurrentUser(principal).ShouldBe(new(mapping.UserId, "Discord", "Nelly"));
+        ApolloPrincipal.ToCurrentUser(principal).ShouldBe(new(mapping.UserId, "Discord", "Nelly", null));
     }
 
     [Fact]
-    public async Task CompleteSignIn_WhenUserKnown_ShouldReuseInternalUserAndUpdateProfile()
+    public async Task CompleteSignIn_WhenUserKnown_ShouldReuseInternalUserAndRefreshProfileInSession()
     {
         Guid existing;
         await using (var seed = Fixture.CreateDbContext())
@@ -45,7 +45,7 @@ public sealed class SignInCompletionTests(TimescaleFixture fixture) : TimescaleT
 
         (await db.Users.AsNoTracking().CountAsync(Ct)).ShouldBe(1);
         (await db.UserPlatformIds.AsNoTracking().CountAsync(Ct)).ShouldBe(1);
-        ApolloPrincipal.ToCurrentUser(principal).ShouldBe(new(existing, "Discord", "Nelly Renamed"));
+        ApolloPrincipal.ToCurrentUser(principal).ShouldBe(new(existing, "Discord", "Nelly Renamed", "https://cdn.discordapp.com/avatars/80351110224678912/abc.png"));
     }
 
     // A fresh cache per completion, as a new web process would have: Respawn deletes rows the cache would remember.

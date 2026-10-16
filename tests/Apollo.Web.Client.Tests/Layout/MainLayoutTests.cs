@@ -202,7 +202,7 @@ public sealed class MainLayoutTests : ApolloTestContext
 
     private static readonly AppInfoDto _appInfo = new("1.4.2", "Production");
 
-    private static readonly CurrentUserDto _user = new(Guid.Parse("0b6f3d4e-1a2b-4c3d-8e9f-a0b1c2d3e4f5"), "Discord", "Nelly");
+    private static readonly CurrentUserDto _user = new(Guid.Parse("0b6f3d4e-1a2b-4c3d-8e9f-a0b1c2d3e4f5"), "Discord", "Nelly", AvatarUrl: null);
 
     private IRenderedComponent<MainLayout> RenderLayout() =>
         Render<MainLayout>(p => p.Add(l => l.Body, (RenderFragment)(b => b.AddContent(0, "Inhalt"))));

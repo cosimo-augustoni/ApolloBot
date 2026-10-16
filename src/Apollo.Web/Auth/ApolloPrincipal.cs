@@ -6,21 +6,26 @@ using Apollo.Web.Client.Contracts;
 namespace Apollo.Web.Auth;
 
 /// <summary>
-/// The session principal (scope §6.1): internal user ID, login platform and display name. No platform ID as the
-/// identity and no token of any kind.
+/// The session principal (scope §6.1): internal user ID, login platform, display name and avatar URL as the platform
+/// reported them at login. No platform ID as the identity and no token of any kind. The <c>users</c> snapshot columns
+/// are the bot's (#13); the login does not write them.
 /// </summary>
 public static class ApolloPrincipal
 {
-    public static ClaimsPrincipal Create(Guid userId, PlatformKind platform, string displayName)
+    public static ClaimsPrincipal Create(Guid userId, PlatformKind platform, string displayName, string? avatarUrl)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
 
-        Claim[] claims =
+        List<Claim> claims =
         [
             new(ApolloClaimTypes.UserId, userId.ToString()),
             new(ApolloClaimTypes.Platform, platform.ToString()),
             new(ApolloClaimTypes.DisplayName, displayName),
         ];
+        if (avatarUrl is not null)
+        {
+            claims.Add(new Claim(ApolloClaimTypes.AvatarUrl, avatarUrl));
+        }
 
         return new ClaimsPrincipal(new ClaimsIdentity(claims, AuthSchemes.Session, ApolloClaimTypes.DisplayName, ClaimTypes.Role));
     }
@@ -33,7 +38,8 @@ public static class ApolloPrincipal
         return new CurrentUserDto(
             Guid.Parse(Required(principal, ApolloClaimTypes.UserId), CultureInfo.InvariantCulture),
             Required(principal, ApolloClaimTypes.Platform),
-            Required(principal, ApolloClaimTypes.DisplayName));
+            Required(principal, ApolloClaimTypes.DisplayName),
+            principal.FindFirst(ApolloClaimTypes.AvatarUrl)?.Value);
     }
 
     private static string Required(ClaimsPrincipal principal, string claimType) =>
