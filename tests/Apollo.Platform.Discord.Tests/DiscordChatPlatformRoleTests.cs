@@ -15,7 +15,7 @@ public sealed class DiscordChatPlatformRoleTests : IDisposable
 
     public DiscordChatPlatformRoleTests()
     {
-        _platform = new DiscordChatPlatform(_gateway.Client, Options.Create(new DiscordPlatformOptions { Token = DiscordHost.Token, GuildId = DiscordHost.GuildId }));
+        _platform = new DiscordChatPlatform(_gateway.Client, new DiscordMemberDownloader(new FakeGatewayCommands(), TimeProvider.System), Options.Create(new DiscordPlatformOptions { Token = DiscordHost.Token, GuildId = DiscordHost.GuildId }));
     }
 
     [Fact]

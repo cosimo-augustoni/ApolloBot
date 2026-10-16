@@ -4,8 +4,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Apollo.Data.Identity;
 
 /// <summary>
-/// The internal identity tables (<c>guilds</c>, <c>users</c>, <c>channels</c>, <c>roles</c>) and one platform ID
-/// mapping table per entity (scope §4.2, §5.1.2 "No ID clashes").
+/// The internal identity tables (<c>guilds</c>, <c>users</c>, <c>channels</c>, <c>roles</c>) with their snapshot
+/// columns (#13), and one platform ID mapping table per entity (scope §4.2, §5.1.2 "No ID clashes").
 /// </summary>
 internal static class IdentityModel
 {
@@ -15,12 +15,17 @@ internal static class IdentityModel
         {
             entity.ToTable("guilds");
             entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+            entity.Property(x => x.Name).HasColumnName("name");
+            entity.Property(x => x.OwnerUserId).HasColumnName("owner_user_id");
+            entity.HasOne<User>().WithMany().HasForeignKey(x => x.OwnerUserId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<User>(entity =>
         {
             entity.ToTable("users");
             entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+            entity.Property(x => x.DisplayName).HasColumnName("display_name");
+            entity.Property(x => x.AvatarUrl).HasColumnName("avatar_url");
         });
 
         modelBuilder.Entity<Channel>(entity =>
@@ -28,7 +33,14 @@ internal static class IdentityModel
             entity.ToTable("channels");
             entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
             entity.Property(x => x.GuildId).HasColumnName("guild_id");
+            entity.Property(x => x.Name).HasColumnName("name");
+            entity.Property(x => x.Type).HasColumnName("type").HasConversion<string>();
+            entity.Property(x => x.CategoryId).HasColumnName("category_id");
+            entity.Property(x => x.ThreadParentId).HasColumnName("thread_parent_id");
+            entity.Property(x => x.DeletedAt).HasColumnName("deleted_at");
             entity.HasOne<Guild>().WithMany().HasForeignKey(x => x.GuildId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<Channel>().WithMany().HasForeignKey(x => x.CategoryId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<Channel>().WithMany().HasForeignKey(x => x.ThreadParentId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Role>(entity =>
@@ -36,6 +48,11 @@ internal static class IdentityModel
             entity.ToTable("roles");
             entity.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
             entity.Property(x => x.GuildId).HasColumnName("guild_id");
+            entity.Property(x => x.Name).HasColumnName("name");
+            entity.Property(x => x.Color).HasColumnName("color");
+            entity.Property(x => x.Position).HasColumnName("position");
+            entity.Property(x => x.IsAdministrator).HasColumnName("is_administrator");
+            entity.Property(x => x.DeletedAt).HasColumnName("deleted_at");
             entity.HasOne<Guild>().WithMany().HasForeignKey(x => x.GuildId).OnDelete(DeleteBehavior.Restrict);
         });
 

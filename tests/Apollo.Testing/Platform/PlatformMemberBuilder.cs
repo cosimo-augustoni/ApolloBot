@@ -9,6 +9,10 @@ public sealed class PlatformMemberBuilder : TestDataBuilder<PlatformMemberBuilde
 
     public PlatformMemberBuilder Named(string displayName) => With(m => m with { DisplayName = displayName });
 
+    public PlatformMemberBuilder WithAvatar(string? avatarUrl) => With(m => m with { AvatarUrl = avatarUrl });
+
+    public PlatformMemberBuilder JoinedAt(DateTimeOffset? joinedAt) => With(m => m with { JoinedAt = joinedAt });
+
     public PlatformMemberBuilder WithRoles(params PlatformRef[] roles) => With(m => m with { Roles = roles });
 
     public PlatformMemberBuilder AsAdministrator() => With(m => m with { IsAdministrator = true });

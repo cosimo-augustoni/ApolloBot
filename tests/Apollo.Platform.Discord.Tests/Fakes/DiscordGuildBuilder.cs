@@ -23,9 +23,9 @@ internal sealed class DiscordGuildBuilder(ulong guildId = DiscordHost.GuildId)
         return this;
     }
 
-    public DiscordGuildBuilder WithRole(ulong id, string name, int position = 1, Permissions permissions = default, bool managed = false)
+    public DiscordGuildBuilder WithRole(ulong id, string name, int position = 1, Permissions permissions = default, bool managed = false, int color = 0)
     {
-        _roles.Add(new JsonRole { Id = id, Name = name, Position = position, Permissions = permissions, Managed = managed, Colors = new() });
+        _roles.Add(NetCordPayloads.JsonRole(id, name, position, permissions, managed, color));
         return this;
     }
 
@@ -39,19 +39,13 @@ internal sealed class DiscordGuildBuilder(ulong guildId = DiscordHost.GuildId)
         DateTimeOffset? joinedAt = null,
         string? avatarHash = null)
     {
-        _members.Add(new JsonGuildUser
-        {
-            User = new JsonUser { Id = userId, Username = username, GlobalName = globalName, IsBot = bot, AvatarHash = avatarHash },
-            Nickname = nickname,
-            RoleIds = roles ?? [],
-            JoinedAt = joinedAt,
-        });
+        _members.Add(NetCordPayloads.JsonMember(userId, username, globalName, nickname, roles, bot, joinedAt, avatarHash));
         return this;
     }
 
     public DiscordGuildBuilder WithChannel(ulong id, string name, ChannelType type, ulong? parentId = null)
     {
-        var channel = new JsonChannel { Id = id, Name = name, Type = type, GuildId = guildId, ParentId = parentId, PermissionOverwrites = [] };
+        var channel = NetCordPayloads.JsonChannel(guildId, id, name, type, parentId);
         if (type is ChannelType.PublicGuildThread or ChannelType.PrivateGuildThread or ChannelType.AnnouncementGuildThread)
         {
             _threads.Add(channel);

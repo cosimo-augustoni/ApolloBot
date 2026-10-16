@@ -7,7 +7,10 @@ using NetCord.Gateway;
 
 namespace Apollo.Platform.Discord;
 
-internal sealed class DiscordChatPlatform(GatewayClient gateway, IOptions<DiscordPlatformOptions> options) : IChatPlatform
+internal sealed class DiscordChatPlatform(
+    GatewayClient gateway,
+    DiscordMemberDownloader memberDownloader,
+    IOptions<DiscordPlatformOptions> options) : IChatPlatform
 {
     private readonly ulong _guildId = options.Value.GuildId
         ?? throw new InvalidOperationException($"{DiscordPlatformOptions.SectionName}:GuildId is not configured.");
@@ -34,7 +37,7 @@ internal sealed class DiscordChatPlatform(GatewayClient gateway, IOptions<Discor
     /// Every role except @everyone, which every member holds implicitly (like <see cref="PlatformMember.Roles"/>).
     /// </summary>
     public Task<IReadOnlyList<PlatformRole>> ListRolesAsync(PlatformRef guild, CancellationToken cancellationToken) =>
-        FromCache(guild, cached => cached.Roles.Values.Where(role => role.Id != cached.Id).Select(DiscordSnapshots.ToRole));
+        FromCache(guild, cached => DiscordSnapshots.RolesWithoutEveryone(cached).Select(DiscordSnapshots.ToRole));
 
     public Task<IReadOnlyList<PlatformChannel>> ListChannelsAsync(PlatformRef guild, CancellationToken cancellationToken) =>
         FromCache(guild, cached => cached.Channels.Values
@@ -42,11 +45,23 @@ internal sealed class DiscordChatPlatform(GatewayClient gateway, IOptions<Discor
             .Select(DiscordSnapshots.ToChannel));
 
     /// <summary>
-    /// The members in the gateway cache. With the <c>GuildUsers</c> intent GUILD_CREATE includes them all for small
-    /// guilds; #13 decides whether to request the rest for large ones.
+    /// Requests the full member list over the gateway, because GUILD_CREATE lists only part of the members of a large
+    /// guild. Takes a gateway round trip per call; empty until the guild's GUILD_CREATE arrived.
     /// </summary>
-    public Task<IReadOnlyList<PlatformMember>> ListMembersAsync(PlatformRef guild, CancellationToken cancellationToken) =>
-        FromCache(guild, cached => cached.Users.Values.Select(user => DiscordSnapshots.ToMember(user, cached)));
+    /// <exception cref="TimeoutException">The member list did not arrive in time (<see cref="DiscordMemberDownloader.Timeout"/>).</exception>
+    public async Task<IReadOnlyList<PlatformMember>> ListMembersAsync(PlatformRef guild, CancellationToken cancellationToken)
+    {
+        if (CachedGuild(guild) is null)
+        {
+            return [];
+        }
+
+        var users = await memberDownloader.DownloadAsync(_guildId, cancellationToken);
+
+        // Read the guild again: its roles (for the permissions) may have changed during the download.
+        var cached = CachedGuild(guild);
+        return [.. users.Select(user => DiscordSnapshots.ToMember(user, cached))];
+    }
 
     public Task<IReadOnlyList<PlatformVoiceState>> ListVoiceStatesAsync(PlatformRef guild, CancellationToken cancellationToken) =>
         FromCache(guild, cached => cached.VoiceStates.Values.Select(DiscordSnapshots.ToVoiceState));

@@ -10,12 +10,14 @@ namespace Apollo.Platform.Discord;
 /// </summary>
 internal static class DiscordSnapshots
 {
-    public static PlatformMember ToMember(GuildUser user, Guild guild) => new(
+    /// <param name="user">The member.</param>
+    /// <param name="guild">The cached guild, for the member's permissions; without it the member is not flagged as administrator.</param>
+    public static PlatformMember ToMember(GuildUser user, Guild? guild) => new(
         User: DiscordIds.ToRef(user.Id),
         DisplayName: user.Nickname ?? user.GlobalName ?? user.Username,
         AvatarUrl: AvatarUrl(user),
         IsBot: user.IsBot,
-        IsAdministrator: user.GetPermissions(guild).HasFlag(Permissions.Administrator),
+        IsAdministrator: guild is not null && user.GetPermissions(guild).HasFlag(Permissions.Administrator),
         JoinedAt: user.JoinedAt,
         Roles: [.. user.RoleIds.Select(DiscordIds.ToRef)]);
 
@@ -24,7 +26,15 @@ internal static class DiscordSnapshots
         Name: role.Name,
         Position: role.RawPosition,
         IsAdministrator: role.Permissions.HasFlag(Permissions.Administrator),
-        IsManaged: role.Managed);
+        IsManaged: role.Managed,
+        Color: role.Colors.PrimaryColor.RawValue is var color and not 0 ? color : null);
+
+    /// <summary>
+    /// @everyone shares the guild's ID and is held by every member implicitly, so the adapter never reports it.
+    /// </summary>
+    public static bool IsEveryone(Role role) => role.Id == role.GuildId;
+
+    public static IEnumerable<Role> RolesWithoutEveryone(Guild guild) => guild.Roles.Values.Where(role => !IsEveryone(role));
 
     public static PlatformChannel ToChannel(IGuildChannel channel) => new(
         Channel: DiscordIds.ToRef(channel.Id),

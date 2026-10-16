@@ -9,12 +9,17 @@ public sealed class PlatformRoleBuilder : TestDataBuilder<PlatformRoleBuilder, P
 
     public PlatformRoleBuilder Named(string name) => With(r => r with { Name = name });
 
-    public PlatformRoleBuilder AsAdministrator() => With(r => r with { IsAdministrator = true });
+    public PlatformRoleBuilder AsAdministrator(bool isAdministrator = true) => With(r => r with { IsAdministrator = isAdministrator });
+
+    public PlatformRoleBuilder AtPosition(int position) => With(r => r with { Position = position });
+
+    public PlatformRoleBuilder WithColor(int? color) => With(r => r with { Color = color });
 
     protected override PlatformRole CreateDefault() => new(
         Role: TestPlatform.Role("member"),
         Name: "Member",
         Position: 1,
         IsAdministrator: false,
-        IsManaged: false);
+        IsManaged: false,
+        Color: null);
 }

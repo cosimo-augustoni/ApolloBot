@@ -1,3 +1,4 @@
+using Apollo.Data.Guilds;
 using Apollo.Data.Identity;
 using CmdScale.EntityFrameworkCore.TimescaleDB;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,10 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
 
     public DbSet<Role> Roles => Set<Role>();
 
+    public DbSet<GuildMember> GuildMembers => Set<GuildMember>();
+
+    public DbSet<MemberRole> MemberRoles => Set<MemberRole>();
+
     public DbSet<GuildPlatformId> GuildPlatformIds => Set<GuildPlatformId>();
 
     public DbSet<UserPlatformId> UserPlatformIds => Set<UserPlatformId>();
@@ -46,5 +51,6 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
         modelBuilder.HasPostgresExtension("timescaledb");
 
         IdentityModel.Configure(modelBuilder);
+        GuildStateModel.Configure(modelBuilder);
     }
 }
