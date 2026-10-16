@@ -200,6 +200,25 @@ public sealed class MainLayoutTests : ApolloTestContext
         entry.Options.ForceLoad.ShouldBeTrue();
     }
 
+    [Theory]
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    public void Logout_WhenRequestFails_ShouldShowErrorAndStayLoggedIn(HttpStatusCode status)
+    {
+        UseApiClients(useMockData: false, _appInfo, _user)
+            .Respond("/auth/antiforgery", HttpStatusCode.OK, new AntiforgeryTokenDto("X-XSRF-TOKEN", "token"))
+            .Respond("/auth/logout", status);
+        var navigation = Services.GetRequiredService<BunitNavigationManager>();
+        var layout = RenderLayout();
+
+        layout.WaitForElement(".apollo-logout").Click();
+
+        layout.WaitForAssertion(() =>
+            layout.Find(".mud-snackbar").TextContent.ShouldContain("Abmelden hat nicht geklappt. Versuch es bitte nochmal."));
+        navigation.History.ShouldBeEmpty();
+        layout.Find(".apollo-user-name").TextContent.Trim().ShouldBe("Nelly");
+    }
+
     private static readonly AppInfoDto _appInfo = new("1.4.2", "Production");
 
     private static readonly CurrentUserDto _user = new(Guid.Parse("0b6f3d4e-1a2b-4c3d-8e9f-a0b1c2d3e4f5"), "Discord", "Nelly", AvatarUrl: null);

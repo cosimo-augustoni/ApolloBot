@@ -4,6 +4,7 @@ using Apollo.Platform.Discord.Identity;
 using Apollo.Web.Api;
 using Apollo.Web.Auth;
 using Apollo.Web.Components;
+using Microsoft.AspNetCore.Diagnostics;
 using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -46,6 +47,17 @@ else
     app.UseHsts();
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+// The not-found page is for browsers; API callers (the WASM client) get bare status codes.
+app.Use((context, next) =>
+{
+    if (AuthServiceCollectionExtensions.IsApiRequest(context.Request)
+        && context.Features.Get<IStatusCodePagesFeature>() is { } statusCodePages)
+    {
+        statusCodePages.Enabled = false;
+    }
+
+    return next(context);
+});
 app.UseHttpsRedirection();
 
 app.UseAuthentication();

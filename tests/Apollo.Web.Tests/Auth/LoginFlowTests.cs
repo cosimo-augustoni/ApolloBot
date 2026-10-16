@@ -36,6 +36,43 @@ public sealed class LoginFlowTests(TimescaleFixture fixture) : TimescaleTest(fix
     }
 
     [Fact]
+    public async Task SessionCookie_FromLogin_ShouldBeHttpOnlySecureLaxAndPersistent()
+    {
+        await using var factory = CreateFactory();
+        using var http = factory.CreateHttpsClient();
+        await GetAsync(http, $"{TestSignInEndpoints.ExternalSignInPath}?id=1&name=Nelly");
+
+        using var response = await GetAsync(http, "/auth/complete");
+
+        var cookie = response.Headers.GetValues("Set-Cookie").Where(c => c.StartsWith(".Apollo.Session=", StringComparison.Ordinal)).ShouldHaveSingleItem();
+        cookie.ShouldContain("httponly", Case.Insensitive);
+        cookie.ShouldContain("secure", Case.Insensitive);
+        cookie.ShouldContain("samesite=lax", Case.Insensitive);
+        cookie.ShouldContain("path=/", Case.Insensitive);
+        cookie.ShouldContain("expires=", Case.Insensitive);
+    }
+
+    [Fact]
+    public async Task Logout_AfterLogin_ShouldClearSessionCookie()
+    {
+        await using var factory = CreateFactory();
+        using var http = factory.CreateHttpsClient();
+        await GetAsync(http, $"{TestSignInEndpoints.ExternalSignInPath}?id=1&name=Nelly");
+        (await GetAsync(http, "/auth/complete")).StatusCode.ShouldBe(HttpStatusCode.Redirect);
+        (await GetAsync(http, "/auth/me")).StatusCode.ShouldBe(HttpStatusCode.OK);
+        var antiforgery = await http.GetFromJsonAsync<AntiforgeryTokenDto>(new Uri("/auth/antiforgery", UriKind.Relative), Ct);
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/auth/logout");
+        request.Headers.Add(antiforgery!.HeaderName, antiforgery.RequestToken);
+
+        using var response = await http.SendAsync(request, Ct);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        response.Headers.GetValues("Set-Cookie").ShouldContain(c =>
+            c.StartsWith(".Apollo.Session=;", StringComparison.Ordinal) && c.Contains("expires=Thu, 01 Jan 1970", StringComparison.OrdinalIgnoreCase));
+        (await GetAsync(http, "/auth/me")).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
     public async Task Complete_WhenReturnUrlExternal_ShouldRedirectToRoot()
     {
         await using var factory = CreateFactory();

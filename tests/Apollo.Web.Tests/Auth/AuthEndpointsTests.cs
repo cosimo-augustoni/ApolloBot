@@ -83,6 +83,31 @@ public sealed class AuthEndpointsTests(ApolloWebApplicationFactory factory) : IC
 
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
         response.Headers.Location.ShouldBeNull();
+        await ShouldHaveNoBodyAsync(response);
+    }
+
+    [Theory]
+    [InlineData("/api/does-not-exist")]
+    [InlineData("/api")]
+    public async Task ApiRequest_WhenRouteUnknown_ShouldReturnBare404WithoutNotFoundPage(string path)
+    {
+        using var http = factory.CreateHttpsClient();
+
+        using var response = await http.GetAsync(new Uri(path, UriKind.Relative), Ct);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        await ShouldHaveNoBodyAsync(response);
+    }
+
+    [Fact]
+    public async Task PageRequest_WhenRouteUnknown_ShouldStillShowNotFoundPage()
+    {
+        using var http = factory.CreateHttpsClient();
+
+        using var response = await http.GetAsync(new Uri("/does-not-exist", UriKind.Relative), Ct);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        response.Content.Headers.ContentType!.MediaType.ShouldBe("text/html");
     }
 
     [Fact]
@@ -97,39 +122,6 @@ public sealed class AuthEndpointsTests(ApolloWebApplicationFactory factory) : IC
     }
 
     [Fact]
-    public async Task SessionCookie_ShouldBeHttpOnlySecureLax()
-    {
-        using var http = factory.CreateHttpsClient();
-
-        using var response = await http.GetAsync(new Uri(TestSignInEndpoints.SessionSignInPath, UriKind.Relative), Ct);
-
-        var cookie = response.Headers.GetValues("Set-Cookie").ShouldHaveSingleItem();
-        cookie.ShouldStartWith(".Apollo.Session=");
-        cookie.ShouldContain("httponly", Case.Insensitive);
-        cookie.ShouldContain("secure", Case.Insensitive);
-        cookie.ShouldContain("samesite=lax", Case.Insensitive);
-        cookie.ShouldContain("path=/", Case.Insensitive);
-    }
-
-    [Fact]
-    public async Task Logout_ShouldClearCookie()
-    {
-        using var http = factory.CreateHttpsClient();
-        await SignInAsync(http);
-        var antiforgery = await http.GetFromJsonAsync<AntiforgeryTokenDto>(new Uri("/auth/antiforgery", UriKind.Relative), Ct);
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/auth/logout");
-        request.Headers.Add(antiforgery!.HeaderName, antiforgery.RequestToken);
-
-        using var response = await http.SendAsync(request, Ct);
-
-        response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
-        response.Headers.GetValues("Set-Cookie").ShouldContain(c =>
-            c.StartsWith(".Apollo.Session=;", StringComparison.Ordinal) && c.Contains("expires=Thu, 01 Jan 1970", StringComparison.OrdinalIgnoreCase));
-        using var me = await http.GetAsync(new Uri("/auth/me", UriKind.Relative), Ct);
-        me.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
     public async Task Logout_WhenAntiforgeryTokenMissing_ShouldReturn400AndKeepSession()
     {
         using var http = factory.CreateHttpsClient();
@@ -138,6 +130,7 @@ public sealed class AuthEndpointsTests(ApolloWebApplicationFactory factory) : IC
         using var response = await http.PostAsync(new Uri("/auth/logout", UriKind.Relative), content: null, Ct);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        await ShouldHaveNoBodyAsync(response);
         using var me = await http.GetAsync(new Uri("/auth/me", UriKind.Relative), Ct);
         me.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
@@ -175,6 +168,13 @@ public sealed class AuthEndpointsTests(ApolloWebApplicationFactory factory) : IC
 
         response.StatusCode.ShouldBe(HttpStatusCode.Redirect);
         response.Headers.Location!.PathAndQuery.ShouldBe($"/auth/login?returnUrl={Uri.EscapeDataString(TestSignInEndpoints.ProtectedPagePath)}");
+    }
+
+    // Status code pages would otherwise re-execute /not-found and send the HTML app shell to API callers.
+    private static async Task ShouldHaveNoBodyAsync(HttpResponseMessage response)
+    {
+        response.Content.Headers.ContentType.ShouldBeNull();
+        (await response.Content.ReadAsStringAsync(Ct)).ShouldBeEmpty();
     }
 
     private static async Task SignInAsync(HttpClient http)
