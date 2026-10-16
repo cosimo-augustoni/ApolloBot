@@ -79,6 +79,8 @@ internal sealed partial class CommandRouter(
         }
     }
 
+    public CommandReply CreateErrorReply() => WithFooter(Error());
+
     private static bool IsCancellation(Exception exception, CancellationToken cancellationToken) =>
         exception is OperationCanceledException && cancellationToken.IsCancellationRequested;
 

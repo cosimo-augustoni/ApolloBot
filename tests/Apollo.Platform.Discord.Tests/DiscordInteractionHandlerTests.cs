@@ -1,7 +1,6 @@
 using Apollo.Platform.Abstractions;
 using Apollo.Platform.Abstractions.Commands;
 using Apollo.Platform.Discord.Tests.Fakes;
-using Apollo.Testing;
 using Microsoft.Extensions.Logging.Testing;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
@@ -19,11 +18,13 @@ public sealed class DiscordInteractionHandlerTests : IDisposable
 
     private readonly NetCordInteractions _interactions = new();
     private readonly StubCommandRouter _router = new();
-    private readonly FakeTimeProvider _time = TestTime.CreateProvider();
+    private readonly FakeTimeProvider _time;
     private readonly DiscordInteractionHandler _handler;
 
     public DiscordInteractionHandlerTests()
     {
+        // Discord's deadline counts from the interaction's creation (its snowflake), so the clock starts there.
+        _time = new FakeTimeProvider(TrackingStatus(DiscordHost.GuildId).CreatedAt);
         var mapper = new DiscordEventMapper(
             Options.Create(new DiscordPlatformOptions { Token = DiscordHost.Token, GuildId = DiscordHost.GuildId }),
             new RecordingEventDispatcher(),
@@ -138,6 +139,83 @@ public sealed class DiscordInteractionHandlerTests : IDisposable
 
         _interactions.Responses.ShouldHaveSingleItem().Type.ShouldBe(InteractionCallbackType.Message);
         _interactions.Rest.Requests.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenTheInteractionArrivesLate_ShouldDeferTwoSecondsAfterItWasCreated()
+    {
+        _router.Hold = true;
+        _interactions.Rest.Respond = _ => NetCordInteractions.ResponseMessageJson;
+        _time.Advance(TimeSpan.FromSeconds(1.5));
+
+        var handling = _handler.HandleAsync(TrackingStatus(DiscordHost.GuildId)).AsTask();
+        await _router.Called.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+        _interactions.Responses.ShouldBeEmpty();
+        _time.Advance(TimeSpan.FromSeconds(0.5));
+        await WaitUntilAsync(() => _interactions.Responses.Count == 1);
+        _router.Release();
+        await handling;
+
+        _interactions.Responses.ShouldHaveSingleItem().Type.ShouldBe(InteractionCallbackType.DeferredMessage);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenTheInteractionIsAlreadyPastTheDeferralLimit_ShouldDeferAtOnce()
+    {
+        _router.Hold = true;
+        _interactions.Rest.Respond = _ => NetCordInteractions.ResponseMessageJson;
+        _time.Advance(TimeSpan.FromSeconds(3));
+
+        var handling = _handler.HandleAsync(TrackingStatus(DiscordHost.GuildId)).AsTask();
+        await WaitUntilAsync(() => _interactions.Responses.Count == 1);
+        _router.Release();
+        await handling;
+
+        _interactions.Responses.ShouldHaveSingleItem().Type.ShouldBe(InteractionCallbackType.DeferredMessage);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenTheInvocationCannotBeMapped_ShouldReplyWithTheErrorReplyEphemerally()
+    {
+        var interaction = _interactions.SlashCommand(DiscordHost.GuildId, userId: 42, "apollo", """
+            [ { "name": "stats", "type": 1, "options": [ { "name": "days", "type": 4, "value": "not a number" } ] } ]
+            """);
+
+        await _handler.HandleAsync(interaction);
+
+        _router.Commands.ShouldBeEmpty();
+        var message = MessageResponse(_interactions.Responses.ShouldHaveSingleItem());
+        message.Content.ShouldBe(StubCommandRouter.ErrorText);
+        message.Flags.ShouldNotBeNull().HasFlag(MessageFlags.Ephemeral).ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenTheRouterFailsInTime_ShouldReplyWithTheErrorReply()
+    {
+        _router.Failure = new InvalidOperationException("The router failed.");
+
+        await _handler.HandleAsync(TrackingStatus(DiscordHost.GuildId));
+
+        MessageResponse(_interactions.Responses.ShouldHaveSingleItem()).Content.ShouldBe(StubCommandRouter.ErrorText);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenTheRouterFailsAfterDeferral_ShouldEditTheResponseWithTheErrorReply()
+    {
+        _router.Hold = true;
+        _router.Failure = new InvalidOperationException("The router failed.");
+        _interactions.Rest.Respond = _ => NetCordInteractions.ResponseMessageJson;
+
+        var handling = _handler.HandleAsync(TrackingStatus(DiscordHost.GuildId)).AsTask();
+        await _router.Called.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+        _time.Advance(DiscordInteractionHandler.DeferAfter);
+        await WaitUntilAsync(() => _interactions.Responses.Count == 1);
+        _router.Release();
+        await handling;
+
+        _interactions.Responses.ShouldHaveSingleItem().Type.ShouldBe(InteractionCallbackType.DeferredMessage);
+        _interactions.Rest.Requests.ShouldHaveSingleItem().Method.ShouldBe(HttpMethod.Patch);
+        _interactions.Rest.Bodies.ShouldHaveSingleItem().ShouldNotBeNull().ShouldContain(StubCommandRouter.ErrorText);
     }
 
     public void Dispose() => _interactions.Dispose();

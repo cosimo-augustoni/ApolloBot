@@ -152,7 +152,9 @@ Neutral model in `Apollo.Platform.Abstractions/Commands` (#20); handlers never s
    `IButtonHandler` with that `IdPrefix` (`services.AddButtonHandler<THandler>()`). Only the member the button was
    issued to reaches the handler.
 4. Reply text goes in `Apollo.Bot/Resources/Strings.resx` (`IStringLocalizer<Strings>`) and must read well as a DM too.
-5. Test against `FakeChatPlatform`: `.WithCommandRouter(router)`, then `InvokeCommandAsync` / `ClickButtonAsync`, and
+5. The bot refuses to start on duplicate paths or button prefixes and on a handler path that no definition declares.
+   The Discord adapter defers on its own and answers mapping or routing failures with `ICommandRouter.CreateErrorReply()`.
+6. Test against `FakeChatPlatform`: `.WithCommandRouter(router)`, then `InvokeCommandAsync` / `ClickButtonAsync`, and
    assert on the returned reply or `Replies`.
 
 ## How to add a typed API client (web)

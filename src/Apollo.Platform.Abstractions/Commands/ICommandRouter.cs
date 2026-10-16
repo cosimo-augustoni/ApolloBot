@@ -12,4 +12,10 @@ public interface ICommandRouter
     Task<CommandReply> HandleCommandAsync(CommandInvocation invocation, CancellationToken cancellationToken);
 
     Task<CommandReply> HandleButtonAsync(ButtonInvocation invocation, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The generic error reply (private, with the privacy footer), for adapters that fail before or after routing, e.g.
+    /// when an invocation cannot be mapped. The member always gets an answer.
+    /// </summary>
+    CommandReply CreateErrorReply();
 }

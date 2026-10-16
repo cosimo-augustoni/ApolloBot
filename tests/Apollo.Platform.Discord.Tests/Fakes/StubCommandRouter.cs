@@ -4,16 +4,21 @@ namespace Apollo.Platform.Discord.Tests.Fakes;
 
 /// <summary>
 /// Stands in for the bot's command router: records what the adapter delivers and answers with <see cref="Reply"/>,
-/// or waits for <see cref="Release"/> when <see cref="Hold"/> is set (a slow handler).
+/// or waits for <see cref="Release"/> when <see cref="Hold"/> is set (a slow handler). With <see cref="Failure"/> set
+/// it throws instead of answering, as a broken router would.
 /// </summary>
 internal sealed class StubCommandRouter : ICommandRouter
 {
+    public const string ErrorText = "Fehler (Test)";
+
     private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly TaskCompletionSource _called = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public CommandReply Reply { get; set; } = CommandReply.Private("Antwort");
 
     public bool Hold { get; set; }
+
+    public Exception? Failure { get; set; }
 
     public List<CommandInvocation> Commands { get; } = [];
 
@@ -38,6 +43,8 @@ internal sealed class StubCommandRouter : ICommandRouter
         return AnswerAsync();
     }
 
+    public CommandReply CreateErrorReply() => CommandReply.Private(ErrorText);
+
     private async Task<CommandReply> AnswerAsync()
     {
         _called.TrySetResult();
@@ -46,6 +53,6 @@ internal sealed class StubCommandRouter : ICommandRouter
             await _release.Task;
         }
 
-        return Reply;
+        return Failure is null ? Reply : throw Failure;
     }
 }
