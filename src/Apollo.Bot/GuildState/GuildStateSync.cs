@@ -23,6 +23,7 @@ namespace Apollo.Bot.GuildState;
 /// pass applies the full member list from <see cref="IChatPlatform.ListMembersAsync"/>; members missing from it are
 /// marked left. An empty or failed list is never taken as "everyone left": the member pass is retried
 /// (<see cref="MemberListAttempts"/>, <see cref="MemberListRetryDelays"/>) and otherwise skipped until the next snapshot.
+/// A newer snapshot or the bot stopping ends the retries (<see cref="GuildSnapshotRuns"/>).
 /// </para>
 /// <para>
 /// Live events are serialised but not ordered, so an update may arrive after the delete or leave it predates. Updates
@@ -42,6 +43,7 @@ internal sealed partial class GuildStateSync(
     IPlatformIdResolver ids,
     IChatPlatform platform,
     GuildStateSyncLock syncLock,
+    GuildSnapshotRuns snapshotRuns,
     GuildStateNotificationPublisher publisher,
     TimeProvider timeProvider,
     ILogger<GuildStateSync> logger)
@@ -68,24 +70,34 @@ internal sealed partial class GuildStateSync(
 
     public async Task HandleAsync(PlatformGuildAvailable platformEvent, CancellationToken cancellationToken)
     {
-        var guildId = await ApplyStructureAsync(platformEvent, cancellationToken);
-
-        // The lock is held per attempt only, so live events apply between the retries.
-        for (var attempt = 1; attempt <= MemberListAttempts; attempt++)
+        var (guildId, run) = await ApplyStructureAsync(platformEvent, cancellationToken);
+        using (run)
         {
-            if (attempt > 1)
+            try
             {
-                await Task.Delay(MemberListRetryDelays[attempt - 2], timeProvider, cancellationToken);
-            }
+                // The lock is held per attempt only, so live events apply between the retries.
+                for (var attempt = 1; attempt <= MemberListAttempts; attempt++)
+                {
+                    if (attempt > 1)
+                    {
+                        await Task.Delay(MemberListRetryDelays[attempt - 2], timeProvider, run.Token);
+                    }
 
-            if (await TryApplyMembersAsync(platformEvent, guildId, attempt, cancellationToken))
+                    if (await TryApplyMembersAsync(platformEvent, guildId, attempt, run.Token))
+                    {
+                        await publisher.PublishAsync(new GuildStateSynchronized(guildId), cancellationToken);
+                        return;
+                    }
+                }
+
+                LogMembersNotSynchronized(platformEvent.Guild, MemberListAttempts);
+            }
+            catch (OperationCanceledException) when (run.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
             {
-                await publisher.PublishAsync(new GuildStateSynchronized(guildId), cancellationToken);
-                return;
+                // A newer snapshot took over, or the bot is stopping.
+                LogMemberPassStopped(platformEvent.Guild);
             }
         }
-
-        LogMembersNotSynchronized(platformEvent.Guild, MemberListAttempts);
     }
 
     public Task HandleAsync(PlatformMemberJoined platformEvent, CancellationToken cancellationToken) =>
@@ -157,9 +169,11 @@ internal sealed partial class GuildStateSync(
     }
 
     /// <summary>
-    /// The snapshot's guild, roles and channels; roles and channels it no longer lists are marked deleted.
+    /// The snapshot's guild, roles and channels; roles and channels it no longer lists are marked deleted. Also starts
+    /// the snapshot's run (under the lock, so runs start in the order the snapshots are applied), which cancels the
+    /// member retries of an older snapshot.
     /// </summary>
-    private async Task<Guid> ApplyStructureAsync(PlatformGuildAvailable snapshot, CancellationToken cancellationToken)
+    private async Task<(Guid GuildId, CancellationTokenSource Run)> ApplyStructureAsync(PlatformGuildAvailable snapshot, CancellationToken cancellationToken)
     {
         using var _ = await syncLock.AcquireAsync(cancellationToken);
         var guildId = await ids.ResolveGuildAsync(snapshot.Guild, cancellationToken);
@@ -209,7 +223,7 @@ internal sealed partial class GuildStateSync(
         }
 
         await PublishMemberChangesAsync(guildId, before, userIds: null, cancellationToken);
-        return guildId;
+        return (guildId, snapshotRuns.Start(cancellationToken));
     }
 
     /// <summary>
@@ -414,6 +428,12 @@ internal sealed partial class GuildStateSync(
             roleIds.Add(await ids.ResolveRoleAsync(guild, role, cancellationToken));
         }
 
+        // A member update from before a role was deleted may still list that role; a deleted role is held by nobody.
+        roleIds.ExceptWith(await db.Roles
+            .Where(r => roleIds.Contains(r.Id) && r.DeletedAt != null)
+            .Select(r => r.Id)
+            .ToListAsync(cancellationToken));
+
         var current = await db.MemberRoles.Where(r => r.GuildId == guildId && r.UserId == userId).ToListAsync(cancellationToken);
         db.MemberRoles.RemoveRange(current.Where(r => !roleIds.Contains(r.RoleId)));
         db.MemberRoles.AddRange(roleIds
@@ -487,7 +507,7 @@ internal sealed partial class GuildStateSync(
             .ToListAsync(cancellationToken);
         var heldRoles = (await db.MemberRoles
                 .Where(r => r.GuildId == guildId && (userIds == null || userIds.Contains(r.UserId)))
-                .Join(db.Roles, memberRole => memberRole.RoleId, role => role.Id, (memberRole, role) => new { memberRole.UserId, role.IsAdministrator })
+                .Join(db.Roles.Where(role => role.DeletedAt == null), memberRole => memberRole.RoleId, role => role.Id, (memberRole, role) => new { memberRole.UserId, role.IsAdministrator })
                 .ToListAsync(cancellationToken))
             .ToLookup(r => r.UserId, r => r.IsAdministrator);
 
@@ -546,6 +566,9 @@ internal sealed partial class GuildStateSync(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Member list of guild {Guild} came back empty (attempt {Attempt} of {Attempts}); no member is marked left")]
     private partial void LogMemberListEmpty(PlatformRef guild, int attempt, int attempts);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Stopped the member pass of guild {Guild}: a newer snapshot took over or the bot is stopping")]
+    private partial void LogMemberPassStopped(PlatformRef guild);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Members of guild {Guild} not synchronized after {Attempts} attempts; they stay as they were until the next snapshot")]
     private partial void LogMembersNotSynchronized(PlatformRef guild, int attempts);

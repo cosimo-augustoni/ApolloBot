@@ -83,6 +83,35 @@ public sealed class GuildStateSyncMemberListTests(TimescaleFixture fixture) : Ti
         host.Notifications.All[^1].ShouldBeOfType<GuildStateSynchronized>();
     }
 
+    [Fact]
+    public async Task GuildAvailable_WhenANewerSnapshotArrivesDuringTheBackoff_ShouldStopTheRetriesOfTheOlderOne()
+    {
+        await using var host = new SyncHost(Fixture);
+        host.Platform.WithMember(Member(_alice, _statistik)).FailMemberListings(1);
+        var older = host.RaiseAsync(Snapshot());
+        await host.WaitForMemberListingsAsync(1);
+
+        await host.RaiseAsync(Snapshot());
+        await host.Time.AdvanceUntilCompletedAsync(older, TimeSpan.FromSeconds(10));
+
+        host.Platform.MemberListings.ShouldBe(2);
+        host.Notifications.All.OfType<GuildStateSynchronized>().Count().ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task GuildAvailable_WhenTheBotStopsDuringTheBackoff_ShouldEndWithoutAnotherAttempt()
+    {
+        await using var host = new SyncHost(Fixture);
+        host.Platform.FailMemberListings(int.MaxValue);
+        var sync = host.RaiseAsync(Snapshot());
+        await host.WaitForMemberListingsAsync(1);
+
+        host.Lifetime.StopApplication();
+
+        await sync.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        host.Platform.MemberListings.ShouldBe(1);
+    }
+
     private static PlatformGuildAvailable Snapshot() => new PlatformGuildAvailableBuilder()
         .WithRoles(
             new PlatformRoleBuilder().WithRef(_statistik).Named("Statistik").Build(),
