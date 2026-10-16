@@ -9,6 +9,8 @@ namespace Apollo.Web.Auth;
 public static class AuthEndpoints
 {
     public const string MePath = "/auth/me";
+    public const string LogoutPath = "/auth/logout";
+    public const string AntiforgeryPath = "/auth/antiforgery";
 
     /// <summary>
     /// Maps the BFF login endpoints (scope §6.1):
@@ -81,7 +83,8 @@ public static class AuthEndpoints
         }
 
         var principal = await completion.CompleteAsync(identity, cancellationToken);
-        await http.SignInAsync(AuthSchemes.Session, principal);
+        // Persistent: the cookie outlives the browser session and slides with use (14 days, AddApolloAuthentication).
+        await http.SignInAsync(AuthSchemes.Session, principal, new AuthenticationProperties { IsPersistent = true });
         logger.LogInformation("User {UserId} logged in with {Platform}", ApolloPrincipal.ToCurrentUser(principal).UserId, identity.User.Platform);
 
         return TypedResults.LocalRedirect(ReturnUrl.LocalOrRoot(returnUrl));

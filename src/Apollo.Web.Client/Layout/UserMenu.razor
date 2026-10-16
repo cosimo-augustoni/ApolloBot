@@ -3,6 +3,7 @@
 @inject IStringLocalizer<Strings> L
 @inject NavigationManager Navigation
 @inject ApolloAuthenticationStateProvider AuthState
+@inject ISnackbar Snackbar
 
 @* Login and logout are full page loads: the host sets and deletes the HttpOnly session cookie (BFF, #29). *@
 <div class="d-flex align-center apollo-user-menu">
@@ -30,7 +31,17 @@
 
     private async Task LogoutAsync()
     {
-        await AuthState.LogoutAsync(_disposed.Token);
+        try
+        {
+            await AuthState.LogoutAsync(_disposed.Token);
+        }
+        catch (HttpRequestException)
+        {
+            // The session is still there (host unreachable or the request was rejected): say so and stay logged in.
+            Snackbar.Add(L["Auth_LogoutFailed"], Severity.Error);
+            return;
+        }
+
         Navigation.NavigateTo("/", forceLoad: true);
     }
 

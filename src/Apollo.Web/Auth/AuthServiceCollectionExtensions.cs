@@ -85,7 +85,14 @@ public static class AuthServiceCollectionExtensions
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Requests from code rather than a browser page (<c>/api/**</c> and the client's <c>/auth/me</c>,
+    /// <c>/auth/logout</c>, <c>/auth/antiforgery</c>): they get 401/403 instead of a login redirect and no HTML error
+    /// page.
+    /// </summary>
     internal static bool IsApiRequest(HttpRequest request) =>
         request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase)
-        || request.Path.StartsWithSegments(AuthEndpoints.MePath, StringComparison.OrdinalIgnoreCase);
+        || request.Path.StartsWithSegments(AuthEndpoints.MePath, StringComparison.OrdinalIgnoreCase)
+        || request.Path.StartsWithSegments(AuthEndpoints.LogoutPath, StringComparison.OrdinalIgnoreCase)
+        || request.Path.StartsWithSegments(AuthEndpoints.AntiforgeryPath, StringComparison.OrdinalIgnoreCase);
 }
