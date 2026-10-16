@@ -1,5 +1,7 @@
+using Apollo.Data.Identity;
 using Apollo.Testing.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Apollo.IntegrationTests.Data;
 
@@ -49,6 +51,21 @@ public sealed class TimescaleFixtureTests(TimescaleFixture fixture) : TimescaleT
         (await db.Database.SqlQueryRaw<string>("SELECT extname AS \"Value\" FROM pg_extension")
                 .ToListAsync(TestContext.Current.CancellationToken))
             .ShouldContain("timescaledb");
+    }
+
+    [Fact]
+    public async Task ResetAsync_WhenRoleSettingsExist_ShouldLeaveNoAuditEntriesBehind()
+    {
+        await using (var db = Fixture.CreateDbContext())
+        {
+            var ids = new PlatformIdResolver(db, new PlatformIdCache(), NullLogger<PlatformIdResolver>.Instance);
+            await new RoleSettingBuilder().SeedAsync(db, ids, TestContext.Current.CancellationToken);
+        }
+
+        await Fixture.ResetAsync(TestContext.Current.CancellationToken);
+
+        await using var read = Fixture.CreateDbContext();
+        (await read.RoleSettingChanges.CountAsync(TestContext.Current.CancellationToken)).ShouldBe(0);
     }
 
     /// <summary>
