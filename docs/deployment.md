@@ -73,10 +73,10 @@ pwsh deploy/Render-Stack.ps1
 This replaces every `${NAME}` / `${NAME:-default}` in `docker-compose.yaml` with the value from `.env.Production` (or `.env` if there is no environment-specific file) and writes `src/Apollo.AppHost/aspire-output/apollo.stack.yaml`. If any placeholder has no value, it names the variables, writes nothing and exits with 1. It never prints values. `-Environment <name>` picks `.env.<name>` and `-OutputPath <dir>` picks another output directory.
 
 ```bash
-docker stack deploy -c src/Apollo.AppHost/aspire-output/apollo.stack.yaml apollo
+docker stack deploy --with-registry-auth -c src/Apollo.AppHost/aspire-output/apollo.stack.yaml apollo
 ```
 
-Run it against the Swarm manager, for example through a Docker context. To check the file first: `docker stack config -c src/Apollo.AppHost/aspire-output/apollo.stack.yaml`.
+Run it against the Swarm manager, for example through a Docker context. `--with-registry-auth` passes your `docker login` credentials to the nodes. Without it, a node other than the one you logged in on cannot pull the private `registry.kallisto.li` images, and Swarm rejects the task with "No such image". The public images (`timescale/timescaledb`, `dpage/pgadmin4`) come from Docker Hub: if a task is rejected with "No such image" for one of them, run `docker pull <image>` on that node to see the real error. Anonymous Docker Hub pulls are rate-limited (`toomanyrequests`); `docker login` with a Docker Hub account on the manager plus `--with-registry-auth` avoids that. To check the file first: `docker stack config -c src/Apollo.AppHost/aspire-output/apollo.stack.yaml`.
 
 `aspire-output/` folders are git-ignored wherever they are. `.env.Production` and `apollo.stack.yaml` contain secrets, so never commit or share them.
 
