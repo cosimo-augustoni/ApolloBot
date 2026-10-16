@@ -6,7 +6,7 @@ namespace Apollo.Web.Client.Tests.Api;
 
 public sealed class HttpAuthClientTests
 {
-    private static readonly CurrentUserDto _user = new(Guid.Parse("0b6f3d4e-1a2b-4c3d-8e9f-a0b1c2d3e4f5"), "Discord", "Nelly");
+    private static readonly CurrentUserDto _user = new(Guid.Parse("0b6f3d4e-1a2b-4c3d-8e9f-a0b1c2d3e4f5"), "Discord", "Nelly", "https://cdn.discordapp.com/avatars/42/abc.png");
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 

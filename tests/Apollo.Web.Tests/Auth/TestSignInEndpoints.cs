@@ -23,6 +23,7 @@ public sealed class TestSignInEndpoints : IStartupFilter
 
     public static readonly Guid UserId = Guid.Parse("6f9619ff-8b86-d011-b42d-00c04fc964ff");
     public const string DisplayName = "Nelly";
+    public const string AvatarUrl = "https://cdn.discordapp.com/avatars/42/abc.png";
 
     public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
     {
@@ -30,7 +31,7 @@ public sealed class TestSignInEndpoints : IStartupFilter
         {
             if (context.Request.Path == SessionSignInPath)
             {
-                await context.SignInAsync(AuthSchemes.Session, ApolloPrincipal.Create(UserId, PlatformKind.Discord, DisplayName));
+                await context.SignInAsync(AuthSchemes.Session, ApolloPrincipal.Create(UserId, PlatformKind.Discord, DisplayName, AvatarUrl));
                 return;
             }
 

@@ -93,7 +93,7 @@ public sealed class AuthEndpointsTests(ApolloWebApplicationFactory factory) : IC
 
         var me = await http.GetFromJsonAsync<CurrentUserDto>(new Uri("/auth/me", UriKind.Relative), Ct);
 
-        me.ShouldBe(new CurrentUserDto(TestSignInEndpoints.UserId, "Discord", TestSignInEndpoints.DisplayName));
+        me.ShouldBe(new CurrentUserDto(TestSignInEndpoints.UserId, "Discord", TestSignInEndpoints.DisplayName, TestSignInEndpoints.AvatarUrl));
     }
 
     [Fact]

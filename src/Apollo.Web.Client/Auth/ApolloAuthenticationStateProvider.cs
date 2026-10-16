@@ -42,14 +42,19 @@ public sealed class ApolloAuthenticationStateProvider(IAuthClient authClient) : 
         }
     }
 
-    private static ClaimsPrincipal ToPrincipal(CurrentUserDto user) =>
-        new(new ClaimsIdentity(
-            [
-                new Claim(ApolloClaimTypes.UserId, user.UserId.ToString("D", CultureInfo.InvariantCulture)),
-                new Claim(ApolloClaimTypes.Platform, user.Platform),
-                new Claim(ApolloClaimTypes.DisplayName, user.DisplayName),
-            ],
-            AuthenticationType,
-            ApolloClaimTypes.DisplayName,
-            ClaimTypes.Role));
+    private static ClaimsPrincipal ToPrincipal(CurrentUserDto user)
+    {
+        List<Claim> claims =
+        [
+            new(ApolloClaimTypes.UserId, user.UserId.ToString("D", CultureInfo.InvariantCulture)),
+            new(ApolloClaimTypes.Platform, user.Platform),
+            new(ApolloClaimTypes.DisplayName, user.DisplayName),
+        ];
+        if (user.AvatarUrl is not null)
+        {
+            claims.Add(new Claim(ApolloClaimTypes.AvatarUrl, user.AvatarUrl));
+        }
+
+        return new ClaimsPrincipal(new ClaimsIdentity(claims, AuthenticationType, ApolloClaimTypes.DisplayName, ClaimTypes.Role));
+    }
 }

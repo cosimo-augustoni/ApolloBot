@@ -8,7 +8,7 @@ namespace Apollo.Web.Client.Api.Mock;
 /// </summary>
 public sealed class MockAuthClient : IAuthClient
 {
-    public static CurrentUserDto User { get; } = new(Guid.Parse("00000000-0000-0000-0000-00000000a001"), "Discord", "Mock-Nutzer");
+    public static CurrentUserDto User { get; } = new(Guid.Parse("00000000-0000-0000-0000-00000000a001"), "Discord", "Mock-Nutzer", AvatarUrl: null);
 
     private bool _loggedIn = true;
 

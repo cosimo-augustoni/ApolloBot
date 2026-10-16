@@ -1,6 +1,7 @@
 using Apollo.Platform.Abstractions.Identity;
 using Apollo.Web.Tests.Auth;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -43,7 +44,10 @@ public sealed class ApolloWebApplicationFactory : WebApplicationFactory<Program>
         {
             if (!PersistDataProtectionKeys)
             {
+                // Replaces the database key store too: the data protection hosted service loads the key ring at
+                // startup and would otherwise retry the dummy connection string for a minute and a half.
                 services.AddDataProtection().UseEphemeralDataProtectionProvider();
+                services.Configure<KeyManagementOptions>(options => options.XmlRepository = new InMemoryXmlRepository());
             }
 
             services.AddSingleton<IPlatformIdentityProvider, FakeIdentityProvider>();

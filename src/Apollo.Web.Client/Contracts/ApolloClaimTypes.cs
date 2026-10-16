@@ -13,4 +13,7 @@ public static class ApolloClaimTypes
 
     /// <summary>The display name; the standard name claim, so <c>Identity.Name</c> returns it.</summary>
     public const string DisplayName = ClaimTypes.Name;
+
+    /// <summary>The avatar image URL from the platform; absent when the user has none.</summary>
+    public const string AvatarUrl = "apollo:avatar_url";
 }
