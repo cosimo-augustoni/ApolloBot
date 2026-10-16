@@ -8,7 +8,7 @@ namespace Apollo.IntegrationTests;
 /// Starts the AppHost once for all smoke tests in a class.
 /// The <c>db</c> container is switched to a session lifetime without volumes, so tests never reuse
 /// (or leave behind) the persistent dev container and its data. The bot gets placeholder Discord settings and does not
-/// connect to Discord.
+/// connect to Discord; the web host gets a placeholder OAuth client.
 /// </summary>
 public sealed class AppHostFixture : IAsyncLifetime
 {
@@ -25,6 +25,7 @@ public sealed class AppHostFixture : IAsyncLifetime
         var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Apollo_AppHost>(cts.Token);
         UseThrowawayDatabase(builder);
         UseOfflineBot(builder);
+        UsePlaceholderOAuthClient(builder);
 
         _app = await builder.BuildAsync(cts.Token);
         await _app.StartAsync(cts.Token);
@@ -44,6 +45,12 @@ public sealed class AppHostFixture : IAsyncLifetime
             .WithEnvironment("Apollo__Platform__Discord__Token", "MTIzNDU2Nzg5MDEyMzQ1Njc4.placeholder.token")
             .WithEnvironment("Apollo__Platform__Discord__GuildId", "111111111111111111")
             .WithEnvironment("Apollo__Platform__Discord__Connect", "false");
+
+    // The login is never exercised here; web only needs settings that pass its startup validation.
+    private static void UsePlaceholderOAuthClient(IDistributedApplicationTestingBuilder builder) =>
+        builder.CreateResourceBuilder<ProjectResource>("apollo-web")
+            .WithEnvironment("Apollo__Platform__Discord__OAuth__ClientId", "123456789012345678")
+            .WithEnvironment("Apollo__Platform__Discord__OAuth__ClientSecret", "placeholder-secret");
 
     private static void UseThrowawayDatabase(IDistributedApplicationTestingBuilder builder)
     {

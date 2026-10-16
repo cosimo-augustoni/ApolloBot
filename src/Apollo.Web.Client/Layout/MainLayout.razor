@@ -13,6 +13,8 @@
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
                        Class="apollo-menu-button" aria-label="@L["Layout_ToggleMenu"]" OnClick="ToggleDrawer" />
         <MudLink Href="/" Typo="Typo.h6" Color="Color.Inherit" Underline="Underline.None" Class="apollo-brand ml-2">@L["App_Name"]</MudLink>
+        <MudSpacer />
+        <UserMenu />
     </MudAppBar>
 
     @* Responsive: persistent from md up, temporary overlay below md that closes when a nav link is clicked. *@

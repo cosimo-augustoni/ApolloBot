@@ -1,9 +1,11 @@
+using System.Net;
 using Apollo.Web.Client.Api.Mock;
 using Apollo.Web.Client.Contracts;
 using Apollo.Web.Client.Formatting;
 using Apollo.Web.Client.Layout;
 using Apollo.Web.Client.Tests.Api;
 using Bunit;
+using Bunit.TestDoubles;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using MudBlazor;
@@ -117,7 +119,7 @@ public sealed class MainLayoutTests : ApolloTestContext
         var layout = RenderLayout();
 
         layout.WaitForAssertion(() => layout.Find(".apollo-app-version").TextContent.Trim().ShouldBe("Version 1.4.2"));
-        api.Requests.ShouldHaveSingleItem().AbsolutePath.ShouldBe("/api/app-info");
+        api.Requests.Where(r => r.AbsolutePath.StartsWith("/api/", StringComparison.Ordinal)).ShouldHaveSingleItem().AbsolutePath.ShouldBe("/api/app-info");
     }
 
     [Fact]
@@ -129,7 +131,78 @@ public sealed class MainLayoutTests : ApolloTestContext
         var layout = RenderLayout();
 
         layout.WaitForAssertion(() => layout.Find(".apollo-app-version").TextContent.Trim().ShouldBe($"Version {UiCulture.Placeholder}"));
+        layout.WaitForAssertion(() => layout.Find(".apollo-login").TextContent.Trim().ShouldBe("Anmelden"));
     }
+
+    [Fact]
+    public void AppBar_WhenAnonymous_ShouldShowAnmelden()
+    {
+        UseApiClients(useMockData: false, _appInfo);
+
+        var layout = RenderLayout();
+
+        layout.WaitForAssertion(() => layout.Find(".mud-appbar .apollo-login").TextContent.Trim().ShouldBe("Anmelden"));
+        layout.FindAll(".apollo-logout").ShouldBeEmpty();
+        layout.FindAll(".apollo-user-name").ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void AppBar_WhenAuthenticated_ShouldShowNameAndAbmelden()
+    {
+        UseApiClients(useMockData: false, _appInfo, _user);
+
+        var layout = RenderLayout();
+
+        layout.WaitForAssertion(() => layout.Find(".mud-appbar .apollo-user-name").TextContent.Trim().ShouldBe("Nelly"));
+        layout.Find(".mud-appbar .apollo-logout").TextContent.Trim().ShouldBe("Abmelden");
+        layout.FindAll(".apollo-login").ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void AppBar_WhenUsingMockClient_ShouldShowMockUser()
+    {
+        var layout = RenderLayout();
+
+        layout.WaitForAssertion(() =>
+            layout.Find(".apollo-user-name").TextContent.Trim().ShouldBe(MockAuthClient.User.DisplayName));
+    }
+
+    [Fact]
+    public void Login_WhenClicked_ShouldReloadIntoLoginWithCurrentPageAsReturnUrl()
+    {
+        UseApiClients(useMockData: false, _appInfo);
+        var navigation = Services.GetRequiredService<BunitNavigationManager>();
+        navigation.NavigateTo("/me/recaps?jahr=2026");
+        var layout = RenderLayout();
+
+        layout.WaitForElement(".apollo-login").Click();
+
+        var entry = navigation.History.First();
+        entry.Uri.ShouldBe("/auth/login?returnUrl=%2Fme%2Frecaps%3Fjahr%3D2026");
+        entry.Options.ForceLoad.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Logout_WhenClicked_ShouldLogOutAndReloadHome()
+    {
+        var api = UseApiClients(useMockData: false, _appInfo, _user)
+            .Respond("/auth/antiforgery", HttpStatusCode.OK, new AntiforgeryTokenDto("X-XSRF-TOKEN", "token"))
+            .Respond("/auth/logout", HttpStatusCode.NoContent);
+        var navigation = Services.GetRequiredService<BunitNavigationManager>();
+        var layout = RenderLayout();
+
+        layout.WaitForElement(".apollo-logout").Click();
+
+        layout.WaitForAssertion(() => navigation.History.ShouldNotBeEmpty());
+        api.Messages.ShouldContain(m => m.Method == HttpMethod.Post && m.RequestUri!.AbsolutePath == "/auth/logout");
+        var entry = navigation.History.First();
+        entry.Uri.ShouldBe("/");
+        entry.Options.ForceLoad.ShouldBeTrue();
+    }
+
+    private static readonly AppInfoDto _appInfo = new("1.4.2", "Production");
+
+    private static readonly CurrentUserDto _user = new(Guid.Parse("0b6f3d4e-1a2b-4c3d-8e9f-a0b1c2d3e4f5"), "Discord", "Nelly");
 
     private IRenderedComponent<MainLayout> RenderLayout() =>
         Render<MainLayout>(p => p.Add(l => l.Body, (RenderFragment)(b => b.AddContent(0, "Inhalt"))));

@@ -1,7 +1,9 @@
+using Apollo.Data.DataProtection;
 using Apollo.Data.Guilds;
 using Apollo.Data.Identity;
 using Apollo.Data.Status;
 using CmdScale.EntityFrameworkCore.TimescaleDB;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Apollo.Data;
@@ -10,7 +12,7 @@ namespace Apollo.Data;
 /// The one database all Apollo processes share (scope §5.2). Schema changes are migrations in this project,
 /// applied by Apollo.MigrationService.
 /// </summary>
-public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) : DbContext(options)
+public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) : DbContext(options), IDataProtectionKeyContext
 {
     /// <summary>
     /// The Aspire resource name, and so the key under <c>ConnectionStrings</c>.
@@ -38,6 +40,8 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
     public DbSet<RolePlatformId> RolePlatformIds => Set<RolePlatformId>();
 
     public DbSet<BotStatus> BotStatuses => Set<BotStatus>();
+    /// <summary>The web host's data protection keys (<c>PersistKeysToDbContext</c>).</summary>
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
     /// <summary>
     /// Options for a context outside dependency injection (design time, tests).
@@ -56,5 +60,6 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
         IdentityModel.Configure(modelBuilder);
         GuildStateModel.Configure(modelBuilder);
         StatusModel.Configure(modelBuilder);
+        DataProtectionModel.Configure(modelBuilder);
     }
 }
