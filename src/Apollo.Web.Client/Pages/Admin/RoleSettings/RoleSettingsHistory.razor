@@ -1,0 +1,39 @@
+@using Apollo.Web.Client.Contracts
+@inject IStringLocalizer<Strings> L
+
+@* The newest role setting changes (#33): who changed what and when, in Zurich time. Stacks into cards on phones. *@
+<SectionCard Title="@L["Settings_History_Title"]">
+    @if (Entries.Count == 0)
+    {
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">@L["Settings_History_Empty"]</MudText>
+    }
+    else
+    {
+        <MudTable Items="Entries" Dense="true" Elevation="0" Breakpoint="Breakpoint.Sm" RowClass="apollo-history-row">
+            <HeaderContent>
+                <MudTh>@L["Settings_History_When"]</MudTh>
+                <MudTh>@L["Settings_History_Who"]</MudTh>
+                <MudTh>@L["Settings_History_What"]</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="@L["Settings_History_When"]">@UiTime.FormatDateTime(context.ChangedAt)</MudTd>
+                <MudTd DataLabel="@L["Settings_History_Who"]">@(context.ChangedBy ?? UiCulture.Placeholder)</MudTd>
+                <MudTd DataLabel="@L["Settings_History_What"]">@Describe(context)</MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+</SectionCard>
+
+@code {
+    /// <summary>The changes, newest first.</summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyList<RoleSettingChangeDto> Entries { get; set; } = [];
+
+    private string Describe(RoleSettingChangeDto change) => (change.Setting, change.Action) switch
+    {
+        (RoleSettingKind.Tracking, RoleSettingChangeAction.Added) => L["Settings_History_TrackingAdded", change.RoleName],
+        (RoleSettingKind.Tracking, _) => L["Settings_History_TrackingRemoved", change.RoleName],
+        (_, RoleSettingChangeAction.Added) => L["Settings_History_AccessAdded", change.RoleName],
+        _ => L["Settings_History_AccessRemoved", change.RoleName],
+    };
+}

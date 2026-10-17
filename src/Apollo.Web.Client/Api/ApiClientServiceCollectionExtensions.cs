@@ -1,4 +1,5 @@
 using Apollo.Web.Client.Api.Mock;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Apollo.Web.Client.Api;
 
@@ -12,16 +13,19 @@ public static class ApiClientServiceCollectionExtensions
     {
         var section = configuration.GetSection(ApiClientOptions.SectionName);
         services.AddOptions<ApiClientOptions>().Bind(section);
+        services.TryAddSingleton(TimeProvider.System);
 
         if (section.Get<ApiClientOptions>()?.UseMockData == true)
         {
             services.AddScoped<IAppInfoClient, MockAppInfoClient>();
             services.AddScoped<IAuthClient, MockAuthClient>();
+            services.AddScoped<IRoleSettingsClient, MockRoleSettingsClient>();
         }
         else
         {
             services.AddScoped<IAppInfoClient, HttpAppInfoClient>();
             services.AddScoped<IAuthClient, HttpAuthClient>();
+            services.AddScoped<IRoleSettingsClient, HttpRoleSettingsClient>();
         }
 
         return services;

@@ -14,7 +14,9 @@ public sealed partial class StringsTests : ApolloTestContext
     /// <summary>Files whose visible text must come from <c>Strings.resx</c> (issue #28).</summary>
     private static readonly string[] _localizedFiles =
         ["Layout/MainLayout.razor", "Layout/NavMenu.razor", "Layout/UserMenu.razor", "Pages/Home.razor", "Pages/NotFound.razor", "Pages/NoAccess.razor",
-         "Pages/Placeholder.razor", "Pages/Admin/AdminPlaceholder.razor", "Components/AreaPlaceholder.razor"];
+         "Pages/Placeholder.razor", "Pages/Admin/AdminPlaceholder.razor", "Components/AreaPlaceholder.razor", "Pages/Admin/Settings.razor",
+         "Pages/Admin/RoleSettings/RoleSettingsPanel.razor", "Pages/Admin/RoleSettings/TrackingRoleCard.razor", "Pages/Admin/RoleSettings/MemberAccessCard.razor",
+         "Pages/Admin/RoleSettings/RoleSettingsHistory.razor", "Pages/Admin/RoleSettings/RoleLabel.razor"];
 
     [Fact]
     public void Strings_ShouldContainAllKeysUsedInRazorFiles()
@@ -88,8 +90,8 @@ public sealed partial class StringsTests : ApolloTestContext
     [GeneratedRegex("""L\["(?<key>[^"]+)"\]""")]
     private static partial Regex LocalizerKey();
 
-    /// <summary>Razor comments, the <c>@code</c> block, directives, control flow and inline expressions like <c>@L["Key"]</c>.</summary>
-    [GeneratedRegex("""@\*[\s\S]*?\*@|@code\s*\{[\s\S]*|^\s*@(page|layout|inherits|inject|implements|using|attribute|rendermode)\b[^\n]*|@(foreach|if|for|while|switch|else)\b[^\n]*|^\s*[{}]\s*$|@\([^)]*\)|@[\w.]+(\[([^\[\]]|\[[^\]]*\])*\])*(\([^)]*\))?""", RegexOptions.Multiline)]
+    /// <summary>Razor comments, the <c>@code</c> block, directives, control flow (also <c>else</c> and <c>case</c> lines inside it) and inline expressions like <c>@L["Key"]</c>.</summary>
+    [GeneratedRegex("""@\*[\s\S]*?\*@|@code\s*\{[\s\S]*|^\s*@(page|layout|inherits|inject|implements|using|attribute|rendermode)\b[^\n]*|@(foreach|if|for|while|switch|else)\b[^\n]*|^\s*(else|case|break|default)\b[^\n]*|^\s*[{}]\s*$|@\([^)]*\)|@[\w.]+(\[([^\[\]]|\[[^\]]*\])*\])*(\([^)]*\))?""", RegexOptions.Multiline)]
     private static partial Regex RazorCode();
 
     [GeneratedRegex("""(?<=>)[^<>]+(?=<)""")]

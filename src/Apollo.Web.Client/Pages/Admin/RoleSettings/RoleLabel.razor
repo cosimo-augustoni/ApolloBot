@@ -1,0 +1,19 @@
+@using Apollo.Web.Client.Contracts
+@inject IStringLocalizer<Strings> L
+
+@* A role as the settings selects offer it: colour dot, name and member count (#33). *@
+<span class="apollo-role-label">
+    <span class="apollo-role-dot" style="@DotStyle"></span>
+    <span>@Role.Name</span>
+    <span class="mud-text-secondary">@L.Count(Role.MemberCount, "Settings_RoleMembersOne", "Settings_RoleMembers")</span>
+</span>
+
+@code {
+    [Parameter, EditorRequired]
+    public SettingsRoleDto Role { get; set; } = default!;
+
+    // A role without a colour shows the theme's neutral colour, as the platform does.
+    private string DotStyle => Role.Color is { } color
+        ? $"background-color: #{color:X6}"
+        : "background-color: var(--mud-palette-text-disabled)";
+}
