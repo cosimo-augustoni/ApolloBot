@@ -80,10 +80,11 @@ internal sealed partial class VoiceSessionRecorder(
             return;
         }
 
-        var states = await platform.ListVoiceStatesAsync(guild, cancellationToken);
-        var connections = await ToConnectionsAsync(guild, states.Where(s => s.User == user.User), cancellationToken);
+        // The voice states are read under the lock, so an event applied in the meantime is not overwritten by older ones.
         using (await store.EnterAsync(cancellationToken))
         {
+            var states = await platform.ListVoiceStatesAsync(guild, cancellationToken);
+            var connections = await ToConnectionsAsync(guild, states.Where(s => s.User == user.User), cancellationToken);
             var now = timeProvider.GetUtcNow();
             await ApplyAsync(user.GuildId, machine => machine.Reconcile(user.UserId, connections, now, VoiceSessionEndReason.BotRestart), cancellationToken);
         }
@@ -111,17 +112,17 @@ internal sealed partial class VoiceSessionRecorder(
             return;
         }
 
-        var current = new Dictionary<Guid, IReadOnlyList<VoiceConnection>>();
-        foreach (var userStates in (await platform.ListVoiceStatesAsync(guild, cancellationToken)).GroupBy(s => s.User))
-        {
-            if (gate.TryGetTrackedUserId(userStates.Key) is { } userId)
-            {
-                current[userId] = await ToConnectionsAsync(guild, userStates, cancellationToken);
-            }
-        }
-
         using (await store.EnterAsync(cancellationToken))
         {
+            var current = new Dictionary<Guid, IReadOnlyList<VoiceConnection>>();
+            foreach (var userStates in (await platform.ListVoiceStatesAsync(guild, cancellationToken)).GroupBy(s => s.User))
+            {
+                if (gate.TryGetTrackedUserId(userStates.Key) is { } userId)
+                {
+                    current[userId] = await ToConnectionsAsync(guild, userStates, cancellationToken);
+                }
+            }
+
             var now = timeProvider.GetUtcNow();
             await ApplyAsync(notification.GuildId, machine =>
             {
@@ -150,35 +151,52 @@ internal sealed partial class VoiceSessionRecorder(
     }
 
     /// <summary>
-    /// Closes every open session as <see cref="VoiceSessionEndReason.BotRestart"/> (graceful shutdown).
+    /// Closes every open session as <see cref="VoiceSessionEndReason.BotRestart"/> (graceful shutdown). Afterwards the
+    /// recorder opens nothing more, also when the close failed: hosted services stop in reverse order, so the gateway
+    /// still delivers events after this.
     /// </summary>
     public async Task CloseAllAsync(CancellationToken cancellationToken)
     {
         using (await store.EnterAsync(cancellationToken))
         {
-            var now = timeProvider.GetUtcNow();
-            await ApplyAsync(guildId: null, machine => machine.StopAll(now, VoiceSessionEndReason.BotRestart), cancellationToken);
+            try
+            {
+                var now = timeProvider.GetUtcNow();
+                await ApplyAsync(guildId: null, machine => machine.StopAll(now, VoiceSessionEndReason.BotRestart), cancellationToken);
+            }
+            finally
+            {
+                store.Stopped = true;
+            }
         }
     }
 
     /// <summary>
-    /// Runs <paramref name="decide"/> on the state machine and stores its changes in one transaction. Call under the
-    /// store's lock. <paramref name="guildId"/> may be <see langword="null"/> only when nothing can open.
+    /// Runs <paramref name="decide"/> on a copy of the state machine and stores its changes in one transaction. The copy
+    /// and the new row keys replace the store's only after the commit, so a failed save changes nothing. Call under the
+    /// store's lock. <paramref name="guildId"/> may be <see langword="null"/> only when nothing can open. After the
+    /// shutdown close nothing is applied.
     /// </summary>
     private async Task<IReadOnlyList<VoiceChange>> ApplyAsync(
         Guid? guildId,
         Func<VoiceSessionStateMachine, IReadOnlyList<VoiceChange>> decide,
         CancellationToken cancellationToken)
     {
+        if (store.Stopped)
+        {
+            return [];
+        }
+
         await EnsureLeftOpenSessionsClosedAsync(cancellationToken);
 
-        var changes = decide(store.Machine);
+        var machine = store.Machine.Clone();
+        var changes = decide(machine);
         if (changes.Count == 0)
         {
+            store.Machine = machine;
             return changes;
         }
 
-        // Row keys change only once the transaction committed, so a failed save leaves them as they were.
         var rows = new Dictionary<Guid, OpenVoiceRows?>();
         await using (var transaction = await db.Database.BeginTransactionAsync(cancellationToken))
         {
@@ -197,6 +215,7 @@ internal sealed partial class VoiceSessionRecorder(
             await transaction.CommitAsync(cancellationToken);
         }
 
+        store.Machine = machine;
         foreach (var (userId, open) in rows)
         {
             if (open is null)
@@ -361,7 +380,7 @@ internal sealed partial class VoiceSessionRecorder(
     [LoggerMessage(Level = LogLevel.Debug, Message = "Dropped voice state update of {User}: untracked")]
     private partial void LogDropped(PlatformRef user);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Closed {SessionCount} voice sessions left open by the previous run as bot_restart")]
+    [LoggerMessage(Level = LogLevel.Information, Message = "Closed {SessionCount} voice sessions left open by the previous run as BotRestart")]
     private partial void LogClosedLeftOpen(int sessionCount);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "No open voice session rows for {UserId}, probably after a failed save; skipping the change")]

@@ -87,9 +87,10 @@ namespace Apollo.Data.Migrations
                 column: "channel_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_voice_sessions_guild_id",
+                name: "IX_voice_sessions_open",
                 table: "voice_sessions",
-                column: "guild_id");
+                column: "guild_id",
+                filter: "ended_at IS NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_voice_sessions_user_id",
@@ -97,9 +98,10 @@ namespace Apollo.Data.Migrations
                 column: "user_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_voice_state_segments_guild_id",
+                name: "IX_voice_state_segments_open",
                 table: "voice_state_segments",
-                column: "guild_id");
+                column: "guild_id",
+                filter: "ended_at IS NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_voice_state_segments_session_id",

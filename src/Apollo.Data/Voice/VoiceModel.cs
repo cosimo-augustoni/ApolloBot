@@ -26,6 +26,9 @@ internal static class VoiceModel
             entity.HasKey(x => new { x.Id, x.OccurredAt });
             entity.IsHypertable(x => x.OccurredAt);
 
+            // The open rows, for the startup close of what a previous run left open.
+            entity.HasIndex(x => x.GuildId, "IX_voice_sessions_open").HasFilter("ended_at IS NULL");
+
             entity.HasOne<Guild>().WithMany().HasForeignKey(x => x.GuildId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<Channel>().WithMany().HasForeignKey(x => x.ChannelId).OnDelete(DeleteBehavior.Restrict);
@@ -51,6 +54,7 @@ internal static class VoiceModel
             // No foreign key to voice_sessions: its primary key is (id, occurred_at), so a reference would have to carry
             // the session's start as well. session_id is indexed for the join instead.
             entity.HasIndex(x => x.SessionId);
+            entity.HasIndex(x => x.GuildId, "IX_voice_state_segments_open").HasFilter("ended_at IS NULL");
 
             entity.HasOne<Guild>().WithMany().HasForeignKey(x => x.GuildId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);

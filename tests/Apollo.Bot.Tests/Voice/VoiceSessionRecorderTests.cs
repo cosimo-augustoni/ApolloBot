@@ -13,6 +13,7 @@ using Apollo.Testing.Data;
 using Apollo.Testing.Diagnostics;
 using Apollo.Testing.Platform;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.Metrics.Testing;
 using Microsoft.Extensions.Hosting;
@@ -252,6 +253,36 @@ public sealed class VoiceSessionRecorderTests(TimescaleFixture fixture) : Timesc
     }
 
     [Fact]
+    public async Task Leave_WhenClosingFailsAndTheUserJoinsAgain_ShouldLeaveNoStaleOpenSession()
+    {
+        var interceptor = new FailingVoiceCloseInterceptor();
+        await using var host = await HostAsync(interceptor);
+        await ChangeAsync(host, Voice(_alice, _lounge));
+        interceptor.Arm();
+        await ChangeAsync(host, Voice(_alice, channel: null));
+        host.Time.Advance(_stay);
+
+        await ChangeAsync(host, Voice(_alice, _gaming));
+
+        var gamingId = await ChannelIdAsync(host, _gaming);
+        var open = (await SessionsAsync(host)).Where(s => s.EndedAt is null).ToList();
+        open.ShouldHaveSingleItem().ChannelId.ShouldBe(gamingId);
+        (await SegmentsAsync(host)).Count(s => s.EndedAt is null).ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task Join_AfterShutdown_ShouldOpenNothing()
+    {
+        await using var host = await HostAsync();
+        await Lifecycle(host).StopAsync(TestContext.Current.CancellationToken);
+
+        await ChangeAsync(host, Voice(_alice, _lounge));
+
+        (await SessionsAsync(host)).ShouldBeEmpty();
+        Counter(host).CountOpenSessions().ShouldBe(0);
+    }
+
+    [Fact]
     public async Task Resync_WhenAUserLeftWhileTheBotWasDisconnected_ShouldCloseTheirSessionAsBotRestart()
     {
         await using var host = await HostAsync();
@@ -332,19 +363,22 @@ public sealed class VoiceSessionRecorderTests(TimescaleFixture fixture) : Timesc
     private static PlatformMember Member(PlatformRef user, params PlatformRef[] roles) =>
         new PlatformMemberBuilder().ForUser(user).WithRoles(roles).Build();
 
-    private TrackingHost Host(Action<IServiceCollection>? configure = null) => new(Fixture, services =>
-    {
-        services.AddSingleton<IMeterFactory>(_meters);
-        services.AddVoiceRecording();
-        configure?.Invoke(services);
-    });
+    private TrackingHost Host(Action<IServiceCollection>? configure = null, IInterceptor? interceptor = null) => new(
+        Fixture,
+        services =>
+        {
+            services.AddSingleton<IMeterFactory>(_meters);
+            services.AddVoiceRecording();
+            configure?.Invoke(services);
+        },
+        interceptor);
 
     /// <summary>
     /// The bot after startup: the voice lifecycle service started, then the first full guild sync.
     /// </summary>
-    private async Task<TrackingHost> HostAsync()
+    private async Task<TrackingHost> HostAsync(IInterceptor? interceptor = null)
     {
-        var host = Host();
+        var host = Host(interceptor: interceptor);
         await StartAsync(host);
         await SeedAndSyncAsync(host);
         return host;

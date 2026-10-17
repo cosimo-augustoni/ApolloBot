@@ -232,6 +232,21 @@ public sealed class VoiceSessionStateMachineTests
         _machine.OpenSessionCount.ShouldBe(0);
     }
 
+    [Fact]
+    public void Clone_ShouldCopyTheStateWithoutSharingIt()
+    {
+        _machine.Update(_alice, In(_lounge, connectionId: "a"), _joinedAt);
+
+        var copy = _machine.Clone();
+        var copyChanges = copy.Update(_alice, Out(connectionId: "a"), _later);
+        copy.Update(_bob, In(_gaming), _later);
+
+        copyChanges.ShouldBe([new VoiceSessionClosed(_alice, _later, VoiceSessionEndReason.Left)]);
+        copy.UsersInVoice.ShouldBe([_bob]);
+        _machine.UsersInVoice.ShouldBe([_alice]);
+        _machine.Update(_alice, In(_lounge, connectionId: "a"), _later).ShouldBeEmpty();
+    }
+
     private static VoiceConnection In(Guid channelId, VoiceFlags? flags = null, string? connectionId = null) =>
         new(connectionId, channelId, flags ?? VoiceFlags.None);
 

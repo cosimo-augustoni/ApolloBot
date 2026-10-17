@@ -82,6 +82,20 @@ public sealed class VoiceSessionStateMachine
         return changes;
     }
 
+    /// <summary>
+    /// An independent copy, so a caller can apply changes to it and keep the original until they are stored.
+    /// </summary>
+    public VoiceSessionStateMachine Clone()
+    {
+        var copy = new VoiceSessionStateMachine();
+        foreach (var (userId, connections) in _connections)
+        {
+            copy._connections[userId] = [.. connections];
+        }
+
+        return copy;
+    }
+
     private VoiceConnection? Current(Guid userId) =>
         _connections.TryGetValue(userId, out var connections) ? connections[0] : null;
 
