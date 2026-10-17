@@ -171,6 +171,22 @@ public sealed partial class AppHostModelTests
         environment["Apollo__Links__PublicWebUrl"].ShouldBeOfType<ParameterResource>().Name.ShouldBe("PublicWebUrl");
     }
 
+    [Theory]
+    [InlineData("Apollo__Platform__Discord__Token", "DiscordBotToken", true)]
+    [InlineData("Apollo__Platform__Discord__GuildId", "DiscordGuildId", false)]
+    public async Task AppHost_WhenPublishing_ShouldPassTheDiscordParametersToTheBot(string variable, string parameter, bool secret)
+    {
+        await using var builder = await CreateBuilderAsync(Environments.Production, "--operation", "publish");
+        var bot = builder.Resources.OfType<ProjectResource>().Single(r => r.Name == "bot");
+
+        var environment = await GetEnvironmentAsync(bot, DistributedApplicationOperation.Publish);
+
+        environment.ShouldContainKey(variable);
+        var resource = environment[variable].ShouldBeOfType<ParameterResource>();
+        resource.Name.ShouldBe(parameter);
+        resource.Secret.ShouldBe(secret);
+    }
+
     private static async Task<Dictionary<string, object>> GetEnvironmentAsync(IResource resource, DistributedApplicationOperation operation)
     {
         var context = new EnvironmentCallbackContext(

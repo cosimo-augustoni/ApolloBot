@@ -41,6 +41,8 @@ public sealed class ComposePublishFixture : IAsyncLifetime
             "Parameters:PgAdminPassword=placeholder-password",
             "Parameters:db-password=placeholder-password",
             "Parameters:PublicWebUrl=https://apollo.example.test",
+            "Parameters:DiscordBotToken=placeholder-token",
+            "Parameters:DiscordGuildId=111111111111111111",
             "Parameters:DiscordOAuthClientId=123456789012345678",
             "Parameters:DiscordOAuthClientSecret=placeholder-secret",
         ];
