@@ -289,6 +289,10 @@
     <value>Eine Rolle gibt es nicht mehr. Die Einstellungen wurden neu geladen, es wurde nichts geändert.</value>
     <comment>Settings page: snackbar when the host rejects a role (deleted meanwhile)</comment>
   </data>
+  <data name="Settings_PreviewFailed" xml:space="preserve">
+    <value>Die Vorschau konnte nicht geladen werden. Wähle die Rollen erneut aus oder lade die Seite neu.</value>
+    <comment>Settings page: the preview request failed; saving stays disabled until a preview loads</comment>
+  </data>
   <data name="Settings_Conflict" xml:space="preserve">
     <value>Die Einstellungen wurden inzwischen geändert. Sie wurden neu geladen.</value>
     <comment>Settings page: snackbar when another admin saved at the same time (409); nothing of this save was kept</comment>
