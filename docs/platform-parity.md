@@ -62,7 +62,7 @@ Shorthand in the Source column: **NC** = NetCord source, **FN** = Fluxer.Net sou
 
 | Capability | Discord (NetCord) | Fluxer (Fluxer.Net) | Source | Notes |
 |---|---|---|---|---|
-| Add role to member | [✅][nc-rest-role] | [✅][fn-rest-role] | NC [`AddGuildUserRoleAsync`][nc-rest-role] · FN [`AddMemberRoleAsync`][fn-rest-role] · FX [Add guild member role][fx-add-role] | Needs *Manage Roles* and role hierarchy on both. |
+| Add role to member | [✅][nc-rest-role] | [✅][fn-rest-role] | NC [`AddGuildUserRoleAsync`][nc-rest-role] · FN [`AddMemberRoleAsync`][fn-rest-role] · FX [Add guild member role][fx-add-role] | Needs *Manage Roles* and role hierarchy on both. Used by `/apollo tracking on\|off` (#21): a refused change is logged and answered with a German error reply; the bot never retries. |
 | Remove role from member | [✅][nc-rest-role] | [✅][fn-rest-role] | NC [`RemoveGuildUserRoleAsync`][nc-rest-role] · FN [`RemoveMemberRoleAsync`][fn-rest-role] · FX [Remove guild member role][fx-remove-role] | |
 | List roles | [✅][nc-rest-roles] | [⚠️][fx-list-roles] | NC [`GetGuildRolesAsync`][nc-rest-roles] · FN [`ApiClient`, no roles list][fn-rest-guild] · FX [List guild roles][fx-list-roles] | The server has `GET /guilds/{id}/roles`, but Fluxer.Net has no method for it (searched `ApiClient.cs` for `Roles`; only create/update/delete/positions exist). **Fallback:** take roles from the gateway cache (`SocketGuild.Roles`, complete on every `GUILD_CREATE`) or `GetGuildAsync`, or call the route with a plain `HttpClient`. |
 | List channels | [✅][nc-rest-channels] | [✅][fn-rest-channels] | NC [`GetGuildChannelsAsync`][nc-rest-channels] · FN [`GetChannelsAsync`][fn-rest-channels] · FX [List guild channels][fx-list-channels] | |
@@ -128,7 +128,9 @@ What the findings mean for the platform abstraction and the recorders. Each item
   "deferred" concept.
 - **#20: registration is Discord-only.** `CommandDefinition` is still useful on Fluxer for help text and parsing, but
   there is nothing to register.
-- **#21, #23:** reply texts (German) must read well in a DM as well as in an ephemeral reply.
+- **#21, #23:** reply texts (German) must read well in a DM as well as in an ephemeral reply. #21's texts are whole
+  sentences that never refer to "this message" or the command; the tracking role comes from the gate
+  (`ITrackingGate.TrackingRole`, the role on the bot's own platform), so a Fluxer bot switches its own tracking role.
 - **Built in #20** (`Apollo.Platform.Abstractions/Commands`): `CommandInvocation`, `ButtonInvocation`, `CommandReply`
   with `ReplyVisibility`, `ReplyButton`, `CommandDefinition` (merged by name with `CommandDefinition.Combine`), and the
   contracts `ICommandHandler`, `IButtonHandler`, `ICommandRouter`. Button ids are `ButtonId` (`prefix:owner[:argument]`,
