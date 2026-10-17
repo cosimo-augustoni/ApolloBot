@@ -12,6 +12,7 @@ using Apollo.Testing.Data;
 using Apollo.Testing.Platform;
 using CmdScale.EntityFrameworkCore.TimescaleDB;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Testing;
@@ -21,22 +22,29 @@ namespace Apollo.Bot.Tests.Tracking;
 
 /// <summary>
 /// The guild state sync and the tracking gate as the bot wires them, on the shared Timescale database and behind a
-/// <see cref="FakeChatPlatform"/>, with a <see cref="RecordingLifecycleHandler"/> (registered after any <c>configure</c> registrations) and fake
-/// logging. The reloader runs only
-/// after <see cref="StartReloaderAsync"/>.
+/// <see cref="FakeChatPlatform"/>, with a <see cref="RecordingLifecycleHandler"/> (registered after any <c>configure</c>
+/// registrations) and fake logging. An optional <c>interceptor</c> joins every context. The reloader runs only after
+/// <see cref="StartReloaderAsync"/>.
 /// </summary>
 internal sealed class TrackingHost : IAsyncDisposable
 {
     private readonly ServiceProvider _services;
     private IHostedService? _reloader;
 
-    public TrackingHost(TimescaleFixture fixture, Action<IServiceCollection>? configure = null)
+    public TrackingHost(TimescaleFixture fixture, Action<IServiceCollection>? configure = null, IInterceptor? interceptor = null)
     {
         var services = new ServiceCollection();
         services.AddFakeLogging();
         services.AddSingleton<TimeProvider>(Time);
         services.AddSingleton<IHostApplicationLifetime>(Lifetime);
-        services.AddDbContext<ApolloDbContext>(options => options.UseNpgsql(fixture.ConnectionString).UseTimescaleDb());
+        services.AddDbContext<ApolloDbContext>(options =>
+        {
+            options.UseNpgsql(fixture.ConnectionString).UseTimescaleDb();
+            if (interceptor is not null)
+            {
+                options.AddInterceptors(interceptor);
+            }
+        });
         services.AddSingleton<PlatformIdCache>();
         services.AddScoped<IPlatformIdResolver, PlatformIdResolver>();
         services.AddPlatformEventDispatcher();

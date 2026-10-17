@@ -36,6 +36,10 @@ internal sealed partial class TrackingGate(
     private readonly SemaphoreSlim _rebuild = new(1, 1);
     private volatile TrackingSnapshot? _snapshot;
 
+    // The guild of the latest full sync, remembered before its reload runs, so the 30 s reloader retries a startup
+    // reload that failed. Read and written only under _rebuild.
+    private Guid? _guildId;
+
     public TrackingMode? Mode => _snapshot?.Mode;
 
     public bool IsTracked(Guid userId) => _snapshot?.Tracked.ContainsKey(userId) == true;
@@ -44,10 +48,24 @@ internal sealed partial class TrackingGate(
         _snapshot is { } snapshot && snapshot.ByUser.TryGetValue(user, out var userId) ? userId : null;
 
     /// <summary>
-    /// Rebuilds the snapshot of the guild the gate already knows; does nothing before the first guild sync.
+    /// Rebuilds the snapshot of the guild of the latest full sync, also when its reload failed so far; does nothing
+    /// before the first guild sync.
     /// </summary>
-    public Task ReloadAsync(CancellationToken cancellationToken) =>
-        _snapshot is { } snapshot ? ReloadAsync(snapshot.GuildId, cancellationToken) : Task.CompletedTask;
+    public async Task ReloadAsync(CancellationToken cancellationToken)
+    {
+        await _rebuild.WaitAsync(cancellationToken);
+        try
+        {
+            if (_guildId is { } guildId)
+            {
+                await RebuildAsync(guildId, cancellationToken);
+            }
+        }
+        finally
+        {
+            _rebuild.Release();
+        }
+    }
 
     /// <summary>
     /// Rebuilds the snapshot from the role setting and every current member of <paramref name="guildId"/>.
@@ -57,11 +75,8 @@ internal sealed partial class TrackingGate(
         await _rebuild.WaitAsync(cancellationToken);
         try
         {
-            await using var scope = scopeFactory.CreateAsyncScope();
-            var loader = scope.ServiceProvider.GetRequiredService<TrackingStateLoader>();
-            var (settings, roleName) = await loader.LoadSettingsAsync(guildId, platform.Platform, cancellationToken);
-            var tracked = await loader.LoadTrackedAsync(guildId, platform.Platform, settings, userId: null, cancellationToken);
-            await ApplyAsync(scope.ServiceProvider, new TrackingSnapshot(guildId, settings, roleName, tracked), userId: null, cancellationToken);
+            _guildId = guildId;
+            await RebuildAsync(guildId, cancellationToken);
         }
         finally
         {
@@ -108,6 +123,16 @@ internal sealed partial class TrackingGate(
 
     public void Dispose() => _rebuild.Dispose();
 
+    /// <remarks>Call under <c>_rebuild</c>.</remarks>
+    private async Task RebuildAsync(Guid guildId, CancellationToken cancellationToken)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var loader = scope.ServiceProvider.GetRequiredService<TrackingStateLoader>();
+        var (settings, roleName) = await loader.LoadSettingsAsync(guildId, platform.Platform, cancellationToken);
+        var tracked = await loader.LoadTrackedAsync(guildId, platform.Platform, settings, userId: null, cancellationToken);
+        await ApplyAsync(scope.ServiceProvider, new TrackingSnapshot(guildId, settings, roleName, tracked), userId: null, cancellationToken);
+    }
+
     /// <summary>
     /// Stores the periods, swaps in <paramref name="next"/>, logs a mode change and calls the hooks for every user whose
     /// tracking changed (only <paramref name="userId"/> when given).
@@ -128,31 +153,44 @@ internal sealed partial class TrackingGate(
             LogMode(next);
         }
 
-        var handlers = services.GetServices<ITrackingLifecycleHandler>().ToList();
         foreach (var (id, user) in stopped)
         {
-            await CallHooksAsync(handlers, "TrackingStopped", new TrackedUser(next.GuildId, id, user), (h, u) => h.TrackingStoppedAsync(u, cancellationToken));
+            await CallHooksAsync("TrackingStopped", new TrackedUser(next.GuildId, id, user), (h, u) => h.TrackingStoppedAsync(u, cancellationToken), cancellationToken);
         }
 
         foreach (var (id, user) in started)
         {
-            await CallHooksAsync(handlers, "TrackingStarted", new TrackedUser(next.GuildId, id, user), (h, u) => h.TrackingStartedAsync(u, cancellationToken));
+            await CallHooksAsync("TrackingStarted", new TrackedUser(next.GuildId, id, user), (h, u) => h.TrackingStartedAsync(u, cancellationToken), cancellationToken);
         }
     }
 
+    /// <summary>
+    /// Calls every handler for <paramref name="user"/>, each in a scope of its own, so a handler that leaves its scope
+    /// broken (e.g. a <c>DbContext</c> after a failed save) affects neither the rebuild nor the next call. A failure is
+    /// logged, including a handler's own cancellation; only the gate's <paramref name="cancellationToken"/> stops the
+    /// remaining calls.
+    /// </summary>
     private async Task CallHooksAsync(
-        IReadOnlyList<ITrackingLifecycleHandler> handlers,
         string hook,
         TrackedUser user,
-        Func<ITrackingLifecycleHandler, TrackedUser, Task> call)
+        Func<ITrackingLifecycleHandler, TrackedUser, Task> call,
+        CancellationToken cancellationToken)
     {
-        foreach (var handler in handlers)
+        int count;
+        await using (var countScope = scopeFactory.CreateAsyncScope())
         {
+            count = countScope.ServiceProvider.GetServices<ITrackingLifecycleHandler>().Count();
+        }
+
+        for (var index = 0; index < count; index++)
+        {
+            await using var scope = scopeFactory.CreateAsyncScope();
+            var handler = scope.ServiceProvider.GetServices<ITrackingLifecycleHandler>().ElementAt(index);
             try
             {
                 await call(handler, user);
             }
-            catch (Exception exception) when (exception is not OperationCanceledException)
+            catch (Exception exception) when (!(exception is OperationCanceledException && cancellationToken.IsCancellationRequested))
             {
                 LogHookFailed(exception, hook, handler.GetType().Name, user.UserId);
             }

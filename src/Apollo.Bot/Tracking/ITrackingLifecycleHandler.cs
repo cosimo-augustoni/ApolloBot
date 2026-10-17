@@ -7,7 +7,8 @@ namespace Apollo.Bot.Tracking;
 /// <remarks>
 /// Called after the gate's snapshot and <c>tracking_periods</c> reflect the change, one user at a time and never
 /// concurrently. <see cref="TrackingStartedAsync"/> also runs for every tracked user after the first sync on startup, so
-/// session recorders can reconcile. A failing handler is logged and does not stop the others.
+/// session recorders can reconcile. Every call runs in a DI scope of its own. A failing handler (also one that throws an
+/// <see cref="OperationCanceledException"/> of its own) is logged and does not stop the others.
 /// </remarks>
 public interface ITrackingLifecycleHandler
 {

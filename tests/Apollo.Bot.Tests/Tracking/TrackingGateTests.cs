@@ -8,6 +8,7 @@ using Apollo.Testing;
 using Apollo.Testing.Data;
 using Apollo.Testing.Platform;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Apollo.Bot.Tests.Tracking;
@@ -158,6 +159,63 @@ public sealed class TrackingGateTests(TimescaleFixture fixture) : TimescaleTest(
         host.Lifecycle.Started.ShouldBe([carol]);
         host.Gate.IsTracked(carol).ShouldBeTrue();
         host.Logs.GetSnapshot().ShouldContain(r => r.Level == LogLevel.Error && r.Message.Contains(nameof(ThrowingLifecycleHandler)));
+    }
+
+    [Fact]
+    public async Task MemberChange_WhenALifecycleHandlerFailsWithItsOwnCancellation_ShouldStillCallTheOtherHandlers()
+    {
+        await using var host = new TrackingHost(Fixture, services => services.AddTrackingLifecycleHandler<CancellingLifecycleHandler>());
+        await host.SeedRoleSettingAsync(new RoleSettingBuilder().ForRole(_statistik));
+        await host.SyncAsync(Snapshot());
+        host.Lifecycle.Clear();
+        var carol = await host.UserIdAsync(_carol);
+
+        await host.RaiseAsync(Updated(_carol, _statistik));
+
+        host.Lifecycle.Started.ShouldBe([carol]);
+        host.Logs.GetSnapshot().ShouldContain(r => r.Level == LogLevel.Error && r.Message.Contains(nameof(CancellingLifecycleHandler)));
+    }
+
+    [Fact]
+    public async Task Hooks_WhenAHandlerFailsAndLeavesStateInItsScope_ShouldGiveTheNextCallAFreshScope()
+    {
+        var scopeChecks = new ScopeCheckLog();
+        await using var host = new TrackingHost(Fixture, services =>
+        {
+            services.AddScoped<ScopeProbe>();
+            services.AddSingleton(scopeChecks);
+            services.AddTrackingLifecycleHandler<ScopeCheckingLifecycleHandler>();
+        });
+        await host.SeedRoleSettingAsync(new RoleSettingBuilder().ForRole(_statistik));
+
+        // The startup rebuild starts alice and dave together.
+        await host.SyncAsync(Snapshot(extraMembers: new PlatformMemberBuilder().ForUser(TestPlatform.User("dave")).WithRoles(_statistik).Build()));
+
+        scopeChecks.Calls.Count.ShouldBe(2);
+        scopeChecks.Calls.ShouldAllBe(c => !c.SawDirtyScope);
+        host.Lifecycle.Started.Count.ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task Reload_WhenTheStartupReloadFailed_ShouldBuildTheSnapshotOnTheNextTick()
+    {
+        await using var host = new TrackingHost(Fixture, interceptor: new FailingPeriodSaveInterceptor(failures: 1));
+        await host.SeedRoleSettingAsync(new RoleSettingBuilder().ForRole(_statistik));
+        await host.StartReloaderAsync();
+
+        await host.SyncAsync(Snapshot());
+        host.Gate.Mode.ShouldBeNull();
+
+        host.Time.Advance(TimeSpan.FromSeconds(30));
+        await TrackingHost.WaitUntilAsync(() => host.Lifecycle.Started.Count == 1, "the reload after the failed one ran");
+
+        var alice = await host.UserIdAsync(_alice);
+        host.Gate.Mode.ShouldBe(TrackingMode.TrackingRole);
+        host.Gate.IsTracked(alice).ShouldBeTrue();
+        host.Lifecycle.Started.ShouldBe([alice]);
+        var period = (await host.PeriodsAsync()).ShouldHaveSingleItem();
+        period.UserId.ShouldBe(alice);
+        period.From.ShouldBe(TestTime.Now + TimeSpan.FromSeconds(30));
     }
 
     [Fact]
