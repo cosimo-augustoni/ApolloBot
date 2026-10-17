@@ -24,10 +24,10 @@ public sealed class MainLayoutTests : ApolloTestContext
         layout.FindAll(".mud-nav-link").Select(l => l.TextContent.Trim()).ShouldBe(
         [
             "Bot-Status", "Übersicht", "Mitglieder", "Rückblicke", "Daten", "Einstellungen",
-            "Übersicht", "Rückblicke", "Privatsphäre",
+            "Meine Statistik",
             "Datenschutz",
         ]);
-        layout.FindAll(".apollo-nav-section").Select(s => s.TextContent.Trim()).ShouldBe(["Server", "Meine Statistik", "Info"]);
+        layout.FindAll(".apollo-nav-section").Select(s => s.TextContent.Trim()).ShouldBe(["Server", "Mitgliederbereich", "Info"]);
         layout.Find(".apollo-brand").GetAttribute("href").ShouldBe("/");
         layout.Find(".apollo-body").TextContent.Trim().ShouldBe("Inhalt");
     }
@@ -172,13 +172,13 @@ public sealed class MainLayoutTests : ApolloTestContext
     {
         UseApiClients(useMockData: false, _appInfo);
         var navigation = Services.GetRequiredService<BunitNavigationManager>();
-        navigation.NavigateTo("/me/recaps?jahr=2026");
+        navigation.NavigateTo("/me?jahr=2026");
         var layout = RenderLayout();
 
         layout.WaitForElement(".apollo-login").Click();
 
         var entry = navigation.History.First();
-        entry.Uri.ShouldBe("/auth/login?returnUrl=%2Fme%2Frecaps%3Fjahr%3D2026");
+        entry.Uri.ShouldBe("/auth/login?returnUrl=%2Fme%3Fjahr%3D2026");
         entry.Options.ForceLoad.ShouldBeTrue();
     }
 

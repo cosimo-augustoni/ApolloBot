@@ -82,28 +82,16 @@
     <comment>Navigation and page heading, /admin/settings</comment>
   </data>
   <data name="Nav_SectionMember" xml:space="preserve">
-    <value>Meine Statistik</value>
+    <value>Mitgliederbereich</value>
     <comment>Navigation section heading: member area</comment>
   </data>
   <data name="Nav_MemberOverview" xml:space="preserve">
-    <value>Übersicht</value>
+    <value>Meine Statistik</value>
     <comment>Navigation, /me</comment>
   </data>
   <data name="Page_MemberOverview" xml:space="preserve">
     <value>Meine Statistik</value>
     <comment>Page heading, /me</comment>
-  </data>
-  <data name="Nav_MemberRecaps" xml:space="preserve">
-    <value>Rückblicke</value>
-    <comment>Navigation, /me/recaps</comment>
-  </data>
-  <data name="Page_MemberRecaps" xml:space="preserve">
-    <value>Meine Rückblicke</value>
-    <comment>Page heading, /me/recaps</comment>
-  </data>
-  <data name="Nav_MemberPrivacy" xml:space="preserve">
-    <value>Privatsphäre</value>
-    <comment>Navigation and page heading, /me/privacy</comment>
   </data>
   <data name="Nav_SectionInfo" xml:space="preserve">
     <value>Info</value>
@@ -396,5 +384,97 @@
   <data name="Time_DaysAgo" xml:space="preserve">
     <value>vor {0} Tagen</value>
     <comment>Relative time; {0} is a number of days (2 or more)</comment>
+  </data>
+  <data name="BotStatus_CheckedAt" xml:space="preserve">
+    <value>Aktualisiert um {0}</value>
+    <comment>Bot status page: under the heading; {0} is a time with seconds</comment>
+  </data>
+  <data name="BotStatus_Refresh" xml:space="preserve">
+    <value>Aktualisieren</value>
+    <comment>Bot status page: button that reloads the status</comment>
+  </data>
+  <data name="BotStatus_LoadFailed" xml:space="preserve">
+    <value>Der Bot-Status konnte nicht geladen werden. Versuche es später noch einmal.</value>
+    <comment>Bot status page: loading failed</comment>
+  </data>
+  <data name="BotStatus_NoHeartbeat_Title" xml:space="preserve">
+    <value>Noch kein Heartbeat empfangen</value>
+    <comment>Bot status page: empty state title, the bot never reported</comment>
+  </data>
+  <data name="BotStatus_NoHeartbeat_Text" xml:space="preserve">
+    <value>Sobald der Bot läuft, meldet er sich alle 30 Sekunden. Diese Seite aktualisiert sich von selbst.</value>
+    <comment>Bot status page: empty state explanation</comment>
+  </data>
+  <data name="BotStatus_Stale_Title" xml:space="preserve">
+    <value>Kein Lebenszeichen vom Bot seit {0} ({1}).</value>
+    <comment>Bot status page: stale warning; {0} is the time of the last heartbeat, {1} a relative time like vor 28 min</comment>
+  </data>
+  <data name="BotStatus_Stale_Text" xml:space="preserve">
+    <value>Der Bot läuft möglicherweise nicht mehr richtig. Daten werden eventuell nicht erfasst. Prüfe die Logs und starte den Bot neu.</value>
+    <comment>Bot status page: stale warning text</comment>
+  </data>
+  <data name="BotStatus_Offline_Title" xml:space="preserve">
+    <value>Der Bot ist nicht verbunden.</value>
+    <comment>Bot status page: the bot runs but its gateway is disconnected</comment>
+  </data>
+  <data name="BotStatus_Offline_Text" xml:space="preserve">
+    <value>Er läuft, erreicht die Plattform aber nicht und versucht, sich neu zu verbinden. Bis dahin wird nichts erfasst.</value>
+    <comment>Bot status page: disconnected text</comment>
+  </data>
+  <data name="BotStatus_Connection" xml:space="preserve">
+    <value>Verbindung</value>
+    <comment>Bot status page: tile label</comment>
+  </data>
+  <data name="BotStatus_Connected" xml:space="preserve">
+    <value>Verbunden</value>
+    <comment>Bot status page: connection state</comment>
+  </data>
+  <data name="BotStatus_Disconnected" xml:space="preserve">
+    <value>Getrennt</value>
+    <comment>Bot status page: connection state</comment>
+  </data>
+  <data name="BotStatus_ConnectedUnsure" xml:space="preserve">
+    <value>Verbunden?</value>
+    <comment>Bot status page: last known connection state while the heartbeat is stale</comment>
+  </data>
+  <data name="BotStatus_DisconnectedUnsure" xml:space="preserve">
+    <value>Getrennt?</value>
+    <comment>Bot status page: last known connection state while the heartbeat is stale</comment>
+  </data>
+  <data name="BotStatus_LastHeartbeat" xml:space="preserve">
+    <value>Letztes Lebenszeichen: {0}</value>
+    <comment>Bot status page: connection tile subtext; {0} is a time with seconds</comment>
+  </data>
+  <data name="BotStatus_Latency" xml:space="preserve">
+    <value>Gateway-Latenz</value>
+    <comment>Bot status page: tile label</comment>
+  </data>
+  <data name="BotStatus_LatencyUnit" xml:space="preserve">
+    <value>ms</value>
+    <comment>Bot status page: unit of the gateway latency (milliseconds)</comment>
+  </data>
+  <data name="BotStatus_LastEvent" xml:space="preserve">
+    <value>Letztes Ereignis</value>
+    <comment>Bot status page: tile label</comment>
+  </data>
+  <data name="BotStatus_NoEventYet" xml:space="preserve">
+    <value>Seit dem Start des Bots noch keines</value>
+    <comment>Bot status page: last event tile when the bot received none since it started</comment>
+  </data>
+  <data name="BotStatus_OpenVoiceSessions" xml:space="preserve">
+    <value>Offene Voice-Sessions</value>
+    <comment>Bot status page: tile label</comment>
+  </data>
+  <data name="BotStatus_EventsPerHour" xml:space="preserve">
+    <value>Ereignisse pro Stunde</value>
+    <comment>Bot status page: chart title</comment>
+  </data>
+  <data name="BotStatus_Last24Hours" xml:space="preserve">
+    <value>Letzte 24 h</value>
+    <comment>Bot status page: chart range</comment>
+  </data>
+  <data name="BotStatus_EventsSeries" xml:space="preserve">
+    <value>Ereignisse</value>
+    <comment>Bot status page: chart series name</comment>
   </data>
 </root>
