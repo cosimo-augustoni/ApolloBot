@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Apollo.Data.Migrations
 {
     [DbContext(typeof(ApolloDbContext))]
-    [Migration("20261017104535_AddVoiceSessions")]
+    [Migration("20261017111102_AddVoiceSessions")]
     partial class AddVoiceSessions
     {
         /// <inheritdoc />
@@ -643,9 +643,10 @@ namespace Apollo.Data.Migrations
 
                     b.HasIndex("ChannelId");
 
-                    b.HasIndex("GuildId");
-
                     b.HasIndex("UserId");
+
+                    b.HasIndex(new[] { "GuildId" }, "IX_voice_sessions_open")
+                        .HasFilter("ended_at IS NULL");
 
                     b.ToTable("voice_sessions", (string)null);
 
@@ -701,11 +702,12 @@ namespace Apollo.Data.Migrations
 
                     b.HasKey("Id", "OccurredAt");
 
-                    b.HasIndex("GuildId");
-
                     b.HasIndex("SessionId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex(new[] { "GuildId" }, "IX_voice_state_segments_open")
+                        .HasFilter("ended_at IS NULL");
 
                     b.ToTable("voice_state_segments", (string)null);
 

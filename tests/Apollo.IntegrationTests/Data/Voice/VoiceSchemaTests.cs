@@ -47,4 +47,24 @@ public sealed class VoiceSchemaTests(TimescaleFixture fixture) : TimescaleTest(f
 
         primaryKey.ShouldBe(["id,occurred_at"]);
     }
+
+    /// <summary>
+    /// The startup close finds the rows a previous run left open through a partial index, not a scan of every chunk.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(VoiceTables))]
+    public async Task Table_WhenMigrated_ShouldHaveAPartialIndexOnOpenRows(string table)
+    {
+        await using var db = Fixture.CreateDbContext();
+
+        var definitions = await db.Database.SqlQuery<string>(
+                $"""
+                SELECT indexdef AS "Value"
+                FROM pg_indexes
+                WHERE schemaname = 'public' AND tablename = {table}
+                """)
+            .ToListAsync(TestContext.Current.CancellationToken);
+
+        definitions.ShouldContain(d => d.EndsWith("WHERE (ended_at IS NULL)", StringComparison.Ordinal));
+    }
 }
