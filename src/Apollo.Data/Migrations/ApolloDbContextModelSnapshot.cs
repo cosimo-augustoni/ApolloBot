@@ -279,6 +279,159 @@ namespace Apollo.Data.Migrations
                     b.ToTable("user_platform_ids", (string)null);
                 });
 
+            modelBuilder.Entity("Apollo.Data.Messages.MessageEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<int?>("AttachmentCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("attachment_count");
+
+                    b.Property<Guid>("ChannelId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("channel_id");
+
+                    b.Property<short?>("ContentParts")
+                        .HasColumnType("smallint")
+                        .HasColumnName("content_parts");
+
+                    b.Property<int?>("EmbedCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("embed_count");
+
+                    b.Property<int?>("EmojiCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("emoji_count");
+
+                    b.Property<Guid>("GuildId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("guild_id");
+
+                    b.Property<bool>("IsBot")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_bot");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("kind");
+
+                    b.Property<int?>("Length")
+                        .HasColumnType("integer")
+                        .HasColumnName("length");
+
+                    b.Property<bool?>("MentionsEveryone")
+                        .HasColumnType("boolean")
+                        .HasColumnName("mentions_everyone");
+
+                    b.Property<string>("MessageExtId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("message_ext_id");
+
+                    b.Property<Guid?>("ReplyToUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reply_to_user_id");
+
+                    b.Property<int?>("RoleMentionCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("role_mention_count");
+
+                    b.Property<Guid?>("ThreadParentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("thread_parent_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<int?>("UserMentionCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_mention_count");
+
+                    b.Property<int?>("WordCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("word_count");
+
+                    b.HasKey("Id", "OccurredAt");
+
+                    b.HasIndex("ChannelId");
+
+                    b.HasIndex("ReplyToUserId");
+
+                    b.HasIndex("ThreadParentId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("GuildId", "MessageExtId");
+
+                    b.ToTable("message_events", (string)null);
+
+                    b
+                        .HasAnnotation("TimescaleDB:IsHypertable", true)
+                        .HasAnnotation("TimescaleDB:TimeColumnName", "OccurredAt");
+                });
+
+            modelBuilder.Entity("Apollo.Data.Messages.MessageMention", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<Guid>("ChannelId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("channel_id");
+
+                    b.Property<Guid>("GuildId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("guild_id");
+
+                    b.Property<Guid?>("MentionedUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("mentioned_user_id");
+
+                    b.Property<string>("MessageExtId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("message_ext_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id", "OccurredAt");
+
+                    b.HasIndex("ChannelId");
+
+                    b.HasIndex("GuildId");
+
+                    b.HasIndex("MentionedUserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("message_mentions", (string)null);
+
+                    b
+                        .HasAnnotation("TimescaleDB:IsHypertable", true)
+                        .HasAnnotation("TimescaleDB:TimeColumnName", "OccurredAt");
+                });
+
             modelBuilder.Entity("Apollo.Data.Status.BotStatus", b =>
                 {
                     b.Property<long>("Id")
@@ -571,6 +724,63 @@ namespace Apollo.Data.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Apollo.Data.Messages.MessageEvent", b =>
+                {
+                    b.HasOne("Apollo.Data.Identity.Channel", null)
+                        .WithMany()
+                        .HasForeignKey("ChannelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Apollo.Data.Identity.Guild", null)
+                        .WithMany()
+                        .HasForeignKey("GuildId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Apollo.Data.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("ReplyToUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Apollo.Data.Identity.Channel", null)
+                        .WithMany()
+                        .HasForeignKey("ThreadParentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Apollo.Data.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Apollo.Data.Messages.MessageMention", b =>
+                {
+                    b.HasOne("Apollo.Data.Identity.Channel", null)
+                        .WithMany()
+                        .HasForeignKey("ChannelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Apollo.Data.Identity.Guild", null)
+                        .WithMany()
+                        .HasForeignKey("GuildId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Apollo.Data.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("MentionedUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Apollo.Data.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

@@ -85,6 +85,7 @@ public sealed class PlatformEventContractTests
     [InlineData(typeof(PlatformMessageDeleted), nameof(PlatformMessageDeleted.Author))]
     [InlineData(typeof(PlatformMessageCreated), nameof(PlatformMessageCreated.ReplyToMessage))]
     [InlineData(typeof(PlatformMessageCreated), nameof(PlatformMessageCreated.ReplyToAuthor))]
+    [InlineData(typeof(PlatformMessageUpdated), nameof(PlatformMessageUpdated.Author))]
     [InlineData(typeof(PlatformReactionAdded), nameof(PlatformReactionAdded.MessageAuthor))]
     [InlineData(typeof(PlatformReactionRemoved), nameof(PlatformReactionRemoved.MessageAuthor))]
     [InlineData(typeof(PlatformVoiceState), nameof(PlatformVoiceState.ConnectionId))]

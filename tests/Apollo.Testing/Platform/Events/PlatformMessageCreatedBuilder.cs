@@ -15,6 +15,8 @@ public sealed class PlatformMessageCreatedBuilder : PlatformEventBuilder<Platfor
     public PlatformMessageCreatedBuilder ReplyingTo(PlatformRef message, PlatformRef? author = null) =>
         With(e => e with { ReplyToMessage = message, ReplyToAuthor = author });
 
+    public PlatformMessageCreatedBuilder Mentioning(params PlatformRef[] users) => With(e => e with { MentionedUsers = users });
+
     public PlatformMessageCreatedBuilder WithMetadata(MessageMetadata metadata) => With(e => e with { Metadata = metadata });
 
     protected override PlatformMessageCreated CreateDefault() => new(
@@ -26,5 +28,6 @@ public sealed class PlatformMessageCreatedBuilder : PlatformEventBuilder<Platfor
         AuthorIsBot: false,
         ReplyToMessage: null,
         ReplyToAuthor: null,
+        MentionedUsers: [],
         Metadata: MessageMetadata.Empty);
 }
