@@ -149,6 +149,31 @@ public sealed class ReactionRecorderTests(TimescaleFixture fixture) : TimescaleT
     }
 
     [Fact]
+    public async Task Remove_WithoutAuthor_ShouldTakeItFromTheMatchingUnicodeAddRow()
+    {
+        await using var host = await HostAsync();
+        await host.RaiseAsync(Added(_alice).OnMessage(_message, _bob).WithEmoji(_thumbsUp).Build());
+
+        await host.RaiseAsync(Removed(_alice).WithEmoji(_thumbsUp).Build());
+
+        var remove = (await EventsAsync(host)).Single(e => e.Kind == ReactionEventKind.Remove);
+        remove.MessageAuthorId.ShouldBe(await host.UserIdAsync(_bob));
+    }
+
+    [Fact]
+    public async Task Remove_WithoutAuthor_WhenSeveralAddRowsMatch_ShouldTakeTheLatestOnesAuthor()
+    {
+        await using var host = await HostAsync();
+        await host.RaiseAsync(Added(_alice).OnMessage(_message, _bob).At(TestTime.Now.AddMinutes(-1)).Build());
+        await host.RaiseAsync(Added(_alice).OnMessage(_message, _alice).At(TestTime.Now.AddMinutes(-2)).Build());
+
+        await host.RaiseAsync(Removed(_alice).Build());
+
+        var remove = (await EventsAsync(host)).Single(e => e.Kind == ReactionEventKind.Remove);
+        remove.MessageAuthorId.ShouldBe(await host.UserIdAsync(_bob));
+    }
+
+    [Fact]
     public async Task Remove_WithoutAuthor_WhenTheOnlyAddRowIsForAnotherEmoji_ShouldNotTakeItsAuthor()
     {
         await using var host = await HostAsync();
