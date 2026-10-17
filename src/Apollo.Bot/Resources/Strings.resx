@@ -101,4 +101,12 @@
     <value>Deine Statistiken findest du hier: {0}</value>
     <comment>/apollo stats: {0} is the /me page URL. No stats values in Discord (scope §3, §7.2)</comment>
   </data>
+  <data name="Privacy_DeletePrompt" xml:space="preserve">
+    <value>Damit werden alle über dich erfassten Daten endgültig gelöscht. Das kann nicht rückgängig gemacht werden.</value>
+    <comment>/apollo privacy delete: the warning above the confirm button (scope §5.4)</comment>
+  </data>
+  <data name="Privacy_DeleteButton" xml:space="preserve">
+    <value>Endgültig löschen</value>
+    <comment>/apollo privacy delete: the confirm button</comment>
+  </data>
 </root>
