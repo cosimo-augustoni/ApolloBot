@@ -9,7 +9,7 @@ namespace Apollo.Bot.Tracking;
 /// Gives or takes the invoking member's tracking role for <c>/apollo tracking on|off</c> (scope §5.4, D15). Only the
 /// role changes here: the platform echoes the member update, the guild state sync stores it and the gate starts or
 /// stops tracking (#13, #14), exactly as for a role change by hand. Nothing changes while the gate has no tracking role
-/// (bootstrap, a deleted or cleared role, or before the first guild sync).
+/// (none set, a deleted role, or before the first guild sync).
 /// </summary>
 internal sealed partial class TrackingRoleSwitch(
     ITrackingGate gate,

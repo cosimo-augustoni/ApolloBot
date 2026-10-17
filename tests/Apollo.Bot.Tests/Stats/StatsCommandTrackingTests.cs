@@ -36,14 +36,14 @@ public sealed class StatsCommandTrackingTests(TimescaleFixture fixture) : Timesc
     }
 
     [Fact]
-    public async Task Stats_WhenInBootstrapMode_ShouldReplyTheSameToAdministratorsAndOtherMembers()
+    public async Task Stats_WhenNoTrackingRoleIsSet_ShouldReplyTheSameToAdministratorsAndOtherMembers()
     {
         await using var host = CreateHost();
         await host.SyncAsync(Snapshot(withTrackingRole: false));
 
         var replies = await RunForAsync(host, Bob, Carol, _stranger);
 
-        host.Gate.IsTracked(await host.UserIdAsync(Bob)).ShouldBeTrue();
+        host.Gate.IsTracked(await host.UserIdAsync(Bob)).ShouldBeFalse();
         host.Gate.IsTracked(await host.UserIdAsync(Carol)).ShouldBeFalse();
         replies.ShouldAllBe(reply => reply.Visibility == ReplyVisibility.Private && reply.Body() == Expected);
     }

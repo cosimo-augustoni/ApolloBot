@@ -86,7 +86,7 @@ public sealed class RoleSettingsEndpointsTests(TimescaleFixture fixture) : Times
     }
 
     [Fact]
-    public async Task GetSettings_WhenNoTrackingRoleIsSet_ShouldReportBootstrapWithRolesAndBotCheck()
+    public async Task GetSettings_WhenNoTrackingRoleIsSet_ShouldReportNoTrackingRoleWithRolesAndBotCheck()
     {
         var seed = await SeedAsync();
         await using var factory = CreateFactory();
@@ -96,7 +96,7 @@ public sealed class RoleSettingsEndpointsTests(TimescaleFixture fixture) : Times
         using var response = await SendAsync(http, "GET", SettingsPath);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await response.Content.ReadAsStringAsync(Ct)).ShouldContain("\"mode\":\"bootstrap\"");
+        (await response.Content.ReadAsStringAsync(Ct)).ShouldContain("\"mode\":\"noTrackingRole\"");
         var settings = (await response.Content.ReadFromJsonAsync<RoleSettingsDto>(Ct)).ShouldNotBeNull();
         settings.Platform.ShouldBe("Discord");
         settings.Roles.ShouldBe(
@@ -107,7 +107,7 @@ public sealed class RoleSettingsEndpointsTests(TimescaleFixture fixture) : Times
         ]);
         settings.TrackingRoleId.ShouldBeNull();
         settings.MemberAccessRoleIds.ShouldBeEmpty();
-        settings.Mode.ShouldBe(RoleSettingsMode.Bootstrap);
+        settings.Mode.ShouldBe(RoleSettingsMode.NoTrackingRole);
         settings.BotPermissions.ShouldBe(new BotPermissionCheckDto(CanManageRoles: false, IsAboveTrackingRole: null));
     }
 
@@ -158,7 +158,8 @@ public sealed class RoleSettingsEndpointsTests(TimescaleFixture fixture) : Times
         var preview = await http.GetFromJsonAsync<RolePreviewDto>(
             new Uri($"{SettingsPath}/preview?roleIds={seed.Statistik}&roleIds={seed.Mitglied}", UriKind.Relative), Ct);
 
-        preview.ShouldBe(new RolePreviewDto(Members: 2, NewlyTracked: 2, NoLongerTracked: 1));
+        // Without a tracking role nobody is tracked, the Administrator included, so nobody stops being tracked.
+        preview.ShouldBe(new RolePreviewDto(Members: 2, NewlyTracked: 2, NoLongerTracked: 0));
     }
 
     [Fact]
@@ -194,7 +195,7 @@ public sealed class RoleSettingsEndpointsTests(TimescaleFixture fixture) : Times
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
         var settings = await http.GetFromJsonAsync<RoleSettingsDto>(new Uri(SettingsPath, UriKind.Relative), Ct);
-        settings.ShouldNotBeNull().Mode.ShouldBe(RoleSettingsMode.TrackingRoleCleared);
+        settings.ShouldNotBeNull().Mode.ShouldBe(RoleSettingsMode.NoTrackingRole);
     }
 
     [Theory]

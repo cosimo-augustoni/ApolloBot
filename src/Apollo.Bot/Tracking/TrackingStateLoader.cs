@@ -7,8 +7,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Apollo.Bot.Tracking;
 
 /// <summary>
-/// Reads what the tracking gate decides on from <c>role_settings</c>, <c>role_setting_changes</c>, <c>guild_members</c>
-/// and <c>member_roles</c> (synced by #13), and applies <see cref="TrackingRule"/>.
+/// Reads what the tracking gate decides on from <c>role_settings</c>, <c>guild_members</c> and <c>member_roles</c>
+/// (synced by #13), and applies <see cref="TrackingRule"/>.
 /// </summary>
 internal sealed class TrackingStateLoader(ApolloDbContext db)
 {
@@ -33,12 +33,8 @@ internal sealed class TrackingStateLoader(ApolloDbContext db)
             })
             .SingleOrDefaultAsync(cancellationToken);
 
-        // TEMPORARY: removed by #62. Only keeps the Administrator bootstrap from coming back once it ended.
-        var everConfigured = await db.RoleSettingChanges.AsNoTracking()
-            .AnyAsync(c => c.GuildId == guildId && c.Platform == platform && c.Purpose == RoleSettingPurpose.Tracking && c.Action == RoleSettingAction.Added, cancellationToken);
-
         return (
-            new TrackingSettings(trackingRole?.Id, trackingRole?.DeletedAt is not null, everConfigured),
+            new TrackingSettings(trackingRole?.Id, trackingRole?.DeletedAt is not null),
             trackingRole?.Name,
             trackingRole?.ExternalId is { } externalId ? new PlatformRef(platform, externalId) : null);
     }
@@ -57,7 +53,7 @@ internal sealed class TrackingStateLoader(ApolloDbContext db)
         // Members who left are never tracked, so only current members are loaded.
         var members = await db.GuildMembers.AsNoTracking()
             .Where(m => m.GuildId == guildId && m.LeftAt == null && (userId == null || m.UserId == userId))
-            .Select(m => new { m.UserId, m.IsAdministrator })
+            .Select(m => m.UserId)
             .ToListAsync(cancellationToken);
         var roles = (await db.MemberRoles.AsNoTracking()
                 .Where(r => r.GuildId == guildId && (userId == null || r.UserId == userId))
@@ -66,8 +62,7 @@ internal sealed class TrackingStateLoader(ApolloDbContext db)
             .ToLookup(r => r.UserId, r => r.RoleId);
 
         var tracked = members
-            .Where(m => TrackingRule.IsTracked(settings, new TrackingMember(IsCurrentMember: true, m.IsAdministrator, roles[m.UserId].ToHashSet())))
-            .Select(m => m.UserId)
+            .Where(userId => TrackingRule.IsTracked(settings, new TrackingMember(IsCurrentMember: true, roles[userId].ToHashSet())))
             .ToList();
 
         return await db.UserPlatformIds.AsNoTracking()

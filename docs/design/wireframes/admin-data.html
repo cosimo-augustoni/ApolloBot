@@ -111,7 +111,7 @@
         <ul>
           <li>Debugging page for admins. Table names are shown in code font next to the German label on purpose.</li>
           <li>Counts per table and day (Europe/Zurich days). The chart covers the last 30 days; the table shows today, yesterday, 7 days and total.</li>
-          <li>Tracked vs. untracked = members with / without the tracking role on this platform (from member_roles). In bootstrap mode, "erfasst" means members with the Administrator permission.</li>
+          <li>Tracked vs. untracked = members with / without the tracking role on this platform (from member_roles). Without a tracking role nobody counts as "erfasst", Administrators included.</li>
           <li>Raw event browser: filters Typ, Mitglied, Kanal, Von/Bis (default: last 24 h); newest first, 50 per page, keyset paging. Times shown in Europe/Zurich.</li>
           <li>No message content anywhere (it is never stored). References to untracked users show "Nicht erfasst" (stored as NULL).</li>
           <li>No auto refresh; the "Filtern" button reloads.</li>

@@ -45,7 +45,7 @@ Surfaces get lighter as they come forward: `Drawer` < `Background` < `AppBar` < 
 | `Secondary` | `#2FB8A6` | Secondary actions |
 | `Tertiary` | `#D96FB4` | Highlights in recaps |
 | `Success` | `#3DB86E` | "Erfasst", positive trend |
-| `Warning` | `#F0B23E` | Bootstrap mode, attention |
+| `Warning` | `#F0B23E` | No tracking role set, attention |
 | `Error` | `#F26B70` | Errors, negative trend |
 | `Info` | `#4BA3F0` | Hints |
 | `OnPrimary` | `#FFFFFF` | Text on `Primary` |
@@ -210,7 +210,7 @@ UI text is German (Swiss conventions where they differ), everything else is Engl
 | Aktivität | | Activity over time |
 | Zeitraum | Range | Selected date range |
 | Server | Guild, Gilde | The Discord/Fluxer server |
-| Bootstrap-Modus | | No tracking role set yet |
+| Keine Tracking-Rolle festgelegt | Bootstrap-Modus | No tracking role set: nobody is tracked, Administrators included |
 
 Platform names stay as they are: Discord, Fluxer. Slash commands stay in code font: `/apollo tracking`.
 

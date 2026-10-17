@@ -204,10 +204,9 @@ public static class RoleSettingsEndpoints
 
     private static RoleSettingsMode ToMode(TrackingMode mode) => mode switch
     {
-        TrackingMode.Bootstrap => RoleSettingsMode.Bootstrap, // TEMPORARY: removed by #62
+        TrackingMode.NoTrackingRole => RoleSettingsMode.NoTrackingRole,
         TrackingMode.TrackingRole => RoleSettingsMode.Active,
         TrackingMode.TrackingRoleDeleted => RoleSettingsMode.TrackingRoleDeleted,
-        TrackingMode.TrackingRoleCleared => RoleSettingsMode.TrackingRoleCleared,
         _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, "Unknown tracking mode."),
     };
 }

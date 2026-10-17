@@ -48,7 +48,7 @@ public sealed class RoleSettingsQuery(ApolloDbContext db)
             roles,
             trackingRoleId,
             [.. settings.Where(s => s.Purpose == RoleSettingPurpose.MemberAccess).Select(s => s.RoleId)],
-            TrackingRule.ModeOf(await LoadTrackingSettingsAsync(guildId, platform, trackingRoleId, cancellationToken)),
+            TrackingRule.ModeOf(await LoadTrackingSettingsAsync(trackingRoleId, cancellationToken)),
             await LoadBotFactsAsync(guildId, platform, cancellationToken));
     }
 
@@ -72,7 +72,7 @@ public sealed class RoleSettingsQuery(ApolloDbContext db)
             .Where(s => s.GuildId == guildId && s.Platform == platform && s.Purpose == RoleSettingPurpose.Tracking)
             .Select(s => (Guid?)s.RoleId)
             .SingleOrDefaultAsync(cancellationToken);
-        var trackingSettings = await LoadTrackingSettingsAsync(guildId, platform, trackingRoleId, cancellationToken);
+        var trackingSettings = await LoadTrackingSettingsAsync(trackingRoleId, cancellationToken);
         var tracked = await LoadTrackedAsync(guildId, trackingSettings, cancellationToken);
 
         return new RolePreview(holders.Count, holders.Count(id => !tracked.Contains(id)), tracked.Count(id => !holders.Contains(id)));
@@ -100,17 +100,12 @@ public sealed class RoleSettingsQuery(ApolloDbContext db)
             .Where(r => r.GuildId == guildId
                 && db.GuildMembers.Any(m => m.GuildId == guildId && m.UserId == r.UserId && m.LeftAt == null && !m.IsBot));
 
-    private async Task<TrackingSettings> LoadTrackingSettingsAsync(Guid guildId, PlatformKind platform, Guid? trackingRoleId, CancellationToken cancellationToken)
+    private async Task<TrackingSettings> LoadTrackingSettingsAsync(Guid? trackingRoleId, CancellationToken cancellationToken)
     {
         var deleted = trackingRoleId is { } roleId
             && await db.Roles.AnyAsync(r => r.Id == roleId && r.DeletedAt != null, cancellationToken);
 
-        // TEMPORARY: removed by #62, like the same check in the bot's TrackingStateLoader.
-        var everConfigured = await db.RoleSettingChanges.AsNoTracking().AnyAsync(
-            c => c.GuildId == guildId && c.Platform == platform && c.Purpose == RoleSettingPurpose.Tracking && c.Action == RoleSettingAction.Added,
-            cancellationToken);
-
-        return new TrackingSettings(trackingRoleId, deleted, everConfigured);
+        return new TrackingSettings(trackingRoleId, deleted);
     }
 
     /// <summary>The current, non-bot members <see cref="TrackingRule"/> tracks with <paramref name="settings"/>.</summary>
@@ -118,14 +113,13 @@ public sealed class RoleSettingsQuery(ApolloDbContext db)
     {
         var members = await db.GuildMembers.AsNoTracking()
             .Where(m => m.GuildId == guildId && m.LeftAt == null && !m.IsBot)
-            .Select(m => new { m.UserId, m.IsAdministrator })
+            .Select(m => m.UserId)
             .ToListAsync(cancellationToken);
         var roles = (await CurrentHumanMemberRoles(guildId).Select(r => new { r.UserId, r.RoleId }).ToListAsync(cancellationToken))
             .ToLookup(r => r.UserId, r => r.RoleId);
 
         return members
-            .Where(m => TrackingRule.IsTracked(settings, new TrackingMember(IsCurrentMember: true, m.IsAdministrator, roles[m.UserId].ToHashSet())))
-            .Select(m => m.UserId)
+            .Where(userId => TrackingRule.IsTracked(settings, new TrackingMember(IsCurrentMember: true, roles[userId].ToHashSet())))
             .ToHashSet();
     }
 

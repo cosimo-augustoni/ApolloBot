@@ -108,9 +108,7 @@
     private Task ResetAsync() => SelectAsync(Settings.TrackingRoleId);
 
     private string PreviewText(RolePreviewDto preview) =>
-        _selected is null && Settings.Mode == RoleSettingsMode.Bootstrap
-            ? L["Settings_Tracking_PreviewBootstrap", preview.NoLongerTracked.ToString("N0", UiCulture.Culture)]
-            : L.Count(preview.Members, "Settings_Tracking_PreviewOne", "Settings_Tracking_Preview");
+        L.Count(preview.Members, "Settings_Tracking_PreviewOne", "Settings_Tracking_Preview");
 
     private string Display(Guid? roleId)
     {
@@ -173,7 +171,6 @@
             L["Settings_Confirm_Set", Display(roleId)].Value,
             preview.NewlyTracked > 0 ? L.Count(preview.NewlyTracked, "Settings_Confirm_StartingOne", "Settings_Confirm_Starting") : null,
             preview.NoLongerTracked > 0 ? L.Count(preview.NoLongerTracked, "Settings_Confirm_StoppingOne", "Settings_Confirm_Stopping") : null,
-            Settings.Mode == RoleSettingsMode.Bootstrap ? L["Settings_Confirm_Bootstrap"].Value : null, // TEMPORARY: removed by #62
         ];
         return DialogService.ShowMessageBoxAsync(
             L["Settings_Confirm_Title"], string.Join(' ', sentences.OfType<string>()), yesText: L["Settings_Confirm_Yes"], cancelText: L["Settings_Cancel"]);

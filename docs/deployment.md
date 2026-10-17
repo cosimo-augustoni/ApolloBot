@@ -11,6 +11,9 @@ The flow has three commands, and the stack file needs no hand editing:
 For a first deployment, work through the sections in order: [Prerequisites](#prerequisites),
 [Discord application](#discord-application), [Values to provide](#values-to-provide),
 [Prepare the storage](#prepare-the-storage), [Steps](#steps), [Verify the deployment](#verify-the-deployment).
+**Nobody is tracked until you set the tracking role** in the admin UI, Administrators included
+([scope §5.1.1](scope.md#511-who-is-tracked-the-tracking-role)), so set it right after the first deploy (check 7 of
+[Verify the deployment](#verify-the-deployment)).
 Later deploys need only [Steps](#steps) and the checks in [Verify the deployment](#verify-the-deployment).
 
 ## Prerequisites
@@ -330,13 +333,15 @@ there: host `db`, port `5432`, user `postgres`, password `db-password`, database
    `Database migrated, <n> migrations applied` (`0` on a redeploy without new migrations). The newest row of
    `SELECT "MigrationId" FROM "__EFMigrationsHistory" ORDER BY "MigrationId" DESC LIMIT 1;` is the newest file in
    `src/Apollo.Data/Migrations/`.
-3. **The bot is connected, has registered its commands and is in bootstrap mode.** `docker service logs apollo_bot`
-   shows, after `Database is up to date`:
+3. **The bot is connected and has registered its commands.** `docker service logs apollo_bot` shows, after
+   `Database is up to date`:
    - `Discord gateway Connected, recording guild <guild id>`;
    - `Registered 1 slash commands for guild <guild id>` (every feature adds its part to the one `apollo` command, so
      the count is 1);
-   - the warning `Bootstrap mode: tracking Administrators on Discord until a tracking role is set (temporary, #62)`
-     while no tracking role is configured ([scope §5.1.1](scope.md#511-who-is-tracked-the-tracking-role)).
+   - the tracking mode ([scope §5.1.1](scope.md#511-who-is-tracked-the-tracking-role)): on a first deploy the warning
+     `No tracking role on Discord: nobody is tracked, Administrators included, until a tracking role is set`; once the
+     role is set (check 7), the line `Tracking role <name> on Discord: tracking its holders`. A warning
+     `Tracking role <name> on Discord was deleted` means the role is gone on Discord: set a new one.
 
    No `fail:` or `crit:` lines. A `Discord gateway Disconnected` warning with close status 4014 means a privileged
    intent is off, 4004 a wrong token ([Discord application](#discord-application)).
@@ -349,16 +354,35 @@ there: host `db`, port `5432`, user `postgres`, password `db-password`, database
 
    `gap` is about `00:00:30` and `connected` is `true`. See [Is the bot collecting?](#day-to-day-operations) for what
    other values mean.
-5. **The Administrators are tracked.** The two counts are equal (every current member with the Administrator
-   permission, the guild owner included, has an open tracking period):
+5. **The web login works.** Open `<PublicWebUrl>/auth/login`: Discord asks to authorize the application, then sends you
+   back to `<PublicWebUrl>/`. `<PublicWebUrl>/auth/me` now returns your user as JSON. An `invalid redirect_uri` from
+   Discord means the redirect is not registered exactly as `<PublicWebUrl>/signin-discord`, or the reverse proxy doesn't
+   send the forwarded headers ([Web login](#web-login-discord-oauth)). `docker service logs apollo_apollo-web` shows no
+   `fail:` lines, and one `Admin access on Discord: the Administrator permission in guild <id>` line with the
+   `DiscordGuildId` value.
+6. **Admin access follows the Administrator permission.** Logged in as an Administrator, `<PublicWebUrl>/api/admin/session`
+   returns your user as JSON with `"isAdmin": true`, and `<PublicWebUrl>/admin` opens. With an account without the
+   permission, `/api/admin/session` returns 403 and `/admin` shows "Kein Zugriff".
+7. **Set the tracking role** (first deploy only). Until now nobody is tracked, and no `tracking_periods` row is open.
+   Create the role on Discord if it doesn't exist (e.g. "Statistik"), below the bot's own role, and give it to the
+   members who should be recorded (yourself included, if you want to be). Then, as an Administrator, open
+   `<PublicWebUrl>/admin/settings`: the page shows "Keine Tracking-Rolle festgelegt: niemand wird erfasst". Pick the
+   role under *Tracking-Rolle*, save and confirm. The page shows no bot permission warning (if it does, give the bot
+   *Manage Roles* and move its role above the tracking role). Within 30 s the bot logs
+   `Tracking role <name> on Discord: tracking its holders`.
+8. **Exactly the role holders are tracked.** The two counts are equal (every current member holding the tracking role
+   has an open tracking period, and nobody else has one):
 
    ```sql
    SELECT (SELECT count(*) FROM tracking_periods WHERE "to" IS NULL) AS tracked,
-          (SELECT count(*) FROM guild_members WHERE is_administrator AND left_at IS NULL) AS administrators;
+          (SELECT count(DISTINCT mr.user_id)
+             FROM role_settings rs
+             JOIN member_roles mr ON mr.role_id = rs.role_id AND mr.guild_id = rs.guild_id
+             JOIN guild_members gm ON gm.user_id = mr.user_id AND gm.guild_id = mr.guild_id AND gm.left_at IS NULL
+            WHERE rs.purpose = 'Tracking') AS role_holders;
    ```
-6. **Event rows for an Administrator, none for anyone else.** Do this at a quiet moment: every Administrator is
-   tracked, so another Administrator's activity during the test adds rows too. The query counts only the last
-   5 minutes:
+9. **Event rows for a role holder, none for anyone else.** Do this at a quiet moment: every role holder is tracked, so
+   another holder's activity during the test adds rows too. The query counts only the last 5 minutes:
 
    ```sql
    SELECT (SELECT count(*) FROM message_events WHERE occurred_at > now() - interval '5 minutes') AS messages,
@@ -366,27 +390,18 @@ there: host `db`, port `5432`, user `postgres`, password `db-password`, database
           (SELECT count(*) FROM reaction_events WHERE occurred_at > now() - interval '5 minutes') AS reactions;
    ```
 
-   With a test account **without** the Administrator permission, post a message, join a voice channel and react to a
-   message, then run the query: all counts are 0 (if not, check that no Administrator was active, and repeat). Then do
-   the same as an Administrator and run it again within 5 minutes: each count is at least 1 (the voice session row
-   appears on joining, with `ended_at` empty until you leave). Rows hold internal IDs only, so the query output contains
-   no personal data.
-7. **The `/apollo` commands reply privately.** In the guild, type `/apollo`: Discord offers `tracking on`,
-   `tracking off`, `tracking status`, `privacy delete` and `stats`. Run `/apollo tracking status` as the Administrator:
-   Discord marks the reply as visible only to you (*Only you can see this* / *Nur für dich sichtbar*). In bootstrap
-   mode its first paragraph says you are tracked and ends with "Tracking ist noch nicht eingerichtet: Bis eine
-   Tracking-Rolle festgelegt ist, werden nur Admins erfasst."; then it lists your stored rows per table, and the last
-   line is `Datenschutz: <PublicWebUrl>/datenschutz`. Don't confirm `/apollo privacy delete` with an account whose data you
-   want to keep: it erases that data.
-8. **The web login works.** Open `<PublicWebUrl>/auth/login`: Discord asks to authorize the application, then sends you
-   back to `<PublicWebUrl>/`. `<PublicWebUrl>/auth/me` now returns your user as JSON. An `invalid redirect_uri` from
-   Discord means the redirect is not registered exactly as `<PublicWebUrl>/signin-discord`, or the reverse proxy doesn't
-   send the forwarded headers ([Web login](#web-login-discord-oauth)). `docker service logs apollo_apollo-web` shows no
-   `fail:` lines, and one `Admin access on Discord: the Administrator permission in guild <id>` line with the
-   `DiscordGuildId` value.
-9. **Admin access follows the Administrator permission.** Logged in as an Administrator, `<PublicWebUrl>/api/admin/session`
-   returns your user as JSON with `"isAdmin": true`, and `<PublicWebUrl>/admin` opens. With an account without the
-   permission, `/api/admin/session` returns 403 and `/admin` shows "Kein Zugriff".
+   With a test account **without** the tracking role (an Administrator without it works too: the permission doesn't
+   make anyone tracked), post a message, join a voice channel and react to a message, then run the query: all counts
+   are 0 (if not, check that no role holder was active, and repeat). Then do the same with an account that holds the
+   role and run it again within 5 minutes: each count is at least 1 (the voice session row appears on joining, with
+   `ended_at` empty until you leave). Rows hold internal IDs only, so the query output contains no personal data.
+10. **The `/apollo` commands reply privately.** In the guild, type `/apollo`: Discord offers `tracking on`,
+    `tracking off`, `tracking status`, `privacy delete` and `stats`. Run `/apollo tracking status` with an account that
+    holds the tracking role: Discord marks the reply as visible only to you (*Only you can see this* / *Nur für dich
+    sichtbar*). Its first paragraph says since when you are tracked (`Für dich werden seit dem <dd.MM.yyyy> Daten
+    erfasst.`), then it lists your stored rows per table, and the last line is `Datenschutz: <PublicWebUrl>/datenschutz`.
+    Without the role it says no data is recorded for you and points to `/apollo tracking on`. Don't confirm
+    `/apollo privacy delete` with an account whose data you want to keep: it erases that data.
 
 ## What the stack looks like
 

@@ -58,12 +58,16 @@ public sealed class SettingsPageTests : ApolloTestContext
     }
 
     [Fact]
-    public void SettingsPage_WhenBootstrap_ShouldShowBanner()
+    public void SettingsPage_WhenNoTrackingRoleIsSet_ShouldWarnThatNobodyIsTrackedNotEvenAdministrators()
     {
+        _client.Settings = _client.Settings with { TrackingRoleId = null, Mode = RoleSettingsMode.NoTrackingRole };
+
         var page = RenderPage();
 
-        page.WaitForAssertion(() => page.Find(".apollo-settings-bootstrap").TextContent.ShouldContain("Bootstrap-Modus"));
+        page.WaitForAssertion(() => page.Find(".apollo-settings-no-role").TextContent.ShouldContain("Keine Tracking-Rolle festgelegt: niemand wird erfasst"));
+        page.Find(".apollo-settings-no-role").TextContent.ShouldContain("auch nicht von Administratoren");
         page.FindAll(".apollo-settings-deleted").ShouldBeEmpty();
+        page.Markup.ShouldNotContain("Bootstrap", Case.Insensitive);
     }
 
     [Fact]
@@ -75,7 +79,7 @@ public sealed class SettingsPageTests : ApolloTestContext
 
         page.WaitForComponent<RoleSettingsPanel>();
         page.WaitForAssertion(() => page.FindComponents<MudSelect<Guid?>>().ShouldNotBeEmpty());
-        page.FindAll(".apollo-settings-bootstrap, .apollo-settings-deleted, .apollo-settings-cleared").ShouldBeEmpty();
+        page.FindAll(".apollo-settings-no-role, .apollo-settings-deleted").ShouldBeEmpty();
     }
 
     [Fact]
@@ -86,17 +90,7 @@ public sealed class SettingsPageTests : ApolloTestContext
         var page = RenderPage();
 
         page.WaitForAssertion(() => page.Find(".apollo-settings-deleted").TextContent.ShouldContain("niemand wird erfasst"));
-        page.FindAll(".apollo-settings-bootstrap").ShouldBeEmpty();
-    }
-
-    [Fact]
-    public void SettingsPage_WhenTrackingRoleCleared_ShouldWarnThatNobodyIsTracked()
-    {
-        _client.Settings = _client.Settings with { Mode = RoleSettingsMode.TrackingRoleCleared };
-
-        var page = RenderPage();
-
-        page.WaitForAssertion(() => page.Find(".apollo-settings-cleared").TextContent.ShouldContain("auch nicht Administratoren"));
+        page.FindAll(".apollo-settings-no-role").ShouldBeEmpty();
     }
 
     [Fact]
@@ -111,11 +105,11 @@ public sealed class SettingsPageTests : ApolloTestContext
     }
 
     [Fact]
-    public void SettingsPage_InBootstrapMode_ShouldPreviewTheAdministratorsBeforeAnythingIsSelected()
+    public void SettingsPage_WhenNoTrackingRoleIsSet_ShouldPreviewThatNobodyIsTrackedBeforeAnythingIsSelected()
     {
         var page = RenderPage();
 
-        page.WaitForAssertion(() => page.Find(".apollo-tracking-preview").TextContent.Trim().ShouldBe("Zurzeit: 3 Administratoren werden erfasst"));
+        page.WaitForAssertion(() => page.Find(".apollo-tracking-preview").TextContent.Trim().ShouldBe("0 Mitglieder werden erfasst"));
     }
 
     [Fact]
@@ -211,8 +205,9 @@ public sealed class SettingsPageTests : ApolloTestContext
 
         var saving = page.Find(".apollo-tracking-save").ClickAsync(new());
 
-        dialogs.WaitForAssertion(() => dialogs.Markup.ShouldContain("3 Mitglieder werden nicht mehr erfasst"));
-        dialogs.Markup.ShouldContain("Bootstrap-Modus endet");
+        dialogs.WaitForAssertion(() => dialogs.Markup.ShouldContain("168 Mitglieder werden neu erfasst."));
+        dialogs.Markup.ShouldNotContain("nicht mehr erfasst");
+        dialogs.Markup.ShouldNotContain("Bootstrap", Case.Insensitive);
         _client.Settings.TrackingRoleId.ShouldBeNull();
         await dialogs.FindAll("button").Single(b => b.TextContent.Trim() == "Bestätigen").ClickAsync(new());
         await saving;

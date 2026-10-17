@@ -24,7 +24,7 @@ public sealed class RoleSettingsStore(ApolloDbContext db, TimeProvider time)
 
     /// <summary>
     /// Makes <paramref name="roleId"/> the tracking role, replacing the current one; <see langword="null"/> clears it
-    /// (mode <see cref="TrackingMode.TrackingRoleCleared"/>: nobody is tracked). Saving the current role changes nothing.
+    /// (mode <see cref="TrackingMode.NoTrackingRole"/>: nobody is tracked). Saving the current role changes nothing.
     /// </summary>
     public Task<RoleSettingsWriteResult> SetTrackingRoleAsync(
         Guid guildId,

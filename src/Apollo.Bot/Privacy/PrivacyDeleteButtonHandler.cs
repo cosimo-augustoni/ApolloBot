@@ -23,7 +23,6 @@ internal sealed class PrivacyDeleteButtonHandler(IUserDataEraser eraser, IString
             UserDataErasureOutcome.Deleted => "Privacy_Deleted",
             UserDataErasureOutcome.DeletedButRoleKept => "Privacy_DeletedButRoleKept",
             UserDataErasureOutcome.DeletedNotSetUp => "Privacy_DeletedNotSetUp",
-            UserDataErasureOutcome.DeletedInBootstrapMode => "Privacy_DeletedInBootstrapMode", // TEMPORARY: removed by #62
             UserDataErasureOutcome.Failed => "Privacy_DeleteFailed",
             _ => throw new ArgumentOutOfRangeException(nameof(invocation), outcome, "Unknown erasure outcome."),
         }]);

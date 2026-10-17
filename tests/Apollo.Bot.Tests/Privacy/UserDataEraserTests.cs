@@ -181,7 +181,7 @@ public sealed class UserDataEraserTests(TimescaleFixture fixture) : TimescaleTes
     }
 
     [Fact]
-    public async Task Confirm_InBootstrapMode_ShouldDeleteTheAdministratorsDataMakeNoRoleCallAndSayTrackingIsNotSetUp()
+    public async Task Confirm_WhenNoTrackingRoleIsSet_ShouldDeleteTheAdministratorsDataMakeNoRoleCallAndSayTrackingIsNotSetUp()
     {
         await using var host = CreatePrivacyHost(Fixture);
         await host.SyncAsync(Snapshot());
@@ -190,19 +190,10 @@ public sealed class UserDataEraserTests(TimescaleFixture fixture) : TimescaleTes
 
         var reply = await host.ConfirmDeleteAsync(Bob);
 
-        var rows = await RowsAboutAsync(host, Bob);
-        _eventTables.ShouldAllBe(table => rows[table] == 0);
+        (await RowsAboutAsync(host, Bob)).ShouldAllBe(r => r.Value == 0);
         host.Platform.RoleChanges.ShouldBeEmpty();
-        reply.Body().ShouldBe(
-            "Deine Daten wurden gelöscht. Tracking ist noch nicht eingerichtet: Bis eine Tracking-Rolle festgelegt ist, "
-            + "werden Admins weiterhin erfasst.");
-
-        // Recording continues while the bootstrap fallback applies, from a new period.
-        var bob = await host.UserIdAsync(Bob);
-        host.Gate.IsTracked(bob).ShouldBeTrue();
-        var period = (await host.PeriodsAsync()).Where(p => p.UserId == bob).ShouldHaveSingleItem();
-        period.From.ShouldBe(TestTime.Now + _later);
-        period.To.ShouldBeNull();
+        reply.Body().ShouldBe("Deine Daten wurden gelöscht. Tracking ist noch nicht eingerichtet.");
+        host.Gate.IsTracked(await host.UserIdAsync(Bob)).ShouldBeFalse();
     }
 
     [Fact]

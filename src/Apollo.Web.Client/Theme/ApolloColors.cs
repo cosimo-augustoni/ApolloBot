@@ -52,7 +52,7 @@ public static class ApolloColors
         new(nameof(Secondary), Secondary, "Nebenaktionen"),
         new(nameof(Tertiary), Tertiary, "Hervorhebungen in Rückblicken"),
         new(nameof(Success), Success, "Erfasst, positiver Trend"),
-        new(nameof(Warning), Warning, "Bootstrap-Modus, Achtung"),
+        new(nameof(Warning), Warning, "Keine Tracking-Rolle, Achtung"),
         new(nameof(Error), Error, "Fehler, negativer Trend"),
         new(nameof(Info), Info, "Hinweise"),
         new(nameof(OnPrimary), OnPrimary, "Text auf Primary"),

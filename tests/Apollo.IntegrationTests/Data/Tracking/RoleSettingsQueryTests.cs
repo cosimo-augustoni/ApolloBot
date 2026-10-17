@@ -88,32 +88,32 @@ public sealed class RoleSettingsQueryTests(TimescaleFixture fixture) : Timescale
     }
 
     [Theory]
-    [InlineData(TrackingMode.Bootstrap)]
-    [InlineData(TrackingMode.TrackingRole)]
-    [InlineData(TrackingMode.TrackingRoleDeleted)]
-    [InlineData(TrackingMode.TrackingRoleCleared)]
-    public async Task SettingsQuery_ShouldReportBootstrapActiveDeletedAndClearedModes(TrackingMode mode)
+    [InlineData("never set", TrackingMode.NoTrackingRole)]
+    [InlineData("set", TrackingMode.TrackingRole)]
+    [InlineData("deleted", TrackingMode.TrackingRoleDeleted)]
+    [InlineData("cleared", TrackingMode.NoTrackingRole)]
+    public async Task SettingsQuery_ShouldReportTheModeOfTheTrackingRoleSetting(string trackingRole, TrackingMode expected)
     {
         await using var db = Fixture.CreateDbContext();
         var (guildId, adminId) = await SeedGuildAndAdminAsync(db);
         var statistik = await SeedRoleAsync(db, new RoleBuilder().For(_statistik));
-        if (mode != TrackingMode.Bootstrap)
+        if (trackingRole != "never set")
         {
             await Store(db).SetTrackingRoleAsync(guildId, PlatformKind.Discord, statistik, adminId, Ct);
         }
 
-        if (mode == TrackingMode.TrackingRoleDeleted)
+        if (trackingRole == "deleted")
         {
             await db.Roles.Where(r => r.Id == statistik).ExecuteUpdateAsync(s => s.SetProperty(r => r.DeletedAt, TestTime.Now), Ct);
         }
-        else if (mode == TrackingMode.TrackingRoleCleared)
+        else if (trackingRole == "cleared")
         {
             await Store(db).SetTrackingRoleAsync(guildId, PlatformKind.Discord, null, adminId, Ct);
         }
 
         var settings = await new RoleSettingsQuery(db).GetAsync(guildId, PlatformKind.Discord, Ct);
 
-        settings.Mode.ShouldBe(mode);
+        settings.Mode.ShouldBe(expected);
     }
 
     [Fact]
@@ -179,7 +179,7 @@ public sealed class RoleSettingsQueryTests(TimescaleFixture fixture) : Timescale
     }
 
     [Fact]
-    public async Task Preview_InBootstrapMode_ShouldCountWhoStartsAndStopsBeingTrackedWithTheRoleAsTrackingRole()
+    public async Task Preview_WhenNoTrackingRoleIsSet_ShouldCountEveryHolderAsNewlyTrackedAndNobodyAsStopping()
     {
         await using var db = Fixture.CreateDbContext();
         var guildId = await SeedGuildAsync(db);
@@ -190,7 +190,7 @@ public sealed class RoleSettingsQueryTests(TimescaleFixture fixture) : Timescale
 
         var preview = await new RoleSettingsQuery(db).PreviewAsync(guildId, PlatformKind.Discord, [statistik], Ct);
 
-        preview.ShouldBe(new RolePreview(Members: 2, NewlyTracked: 1, NoLongerTracked: 1));
+        preview.ShouldBe(new RolePreview(Members: 2, NewlyTracked: 2, NoLongerTracked: 0));
     }
 
     [Fact]

@@ -1,6 +1,5 @@
 using Apollo.Bot.Resources;
 using Apollo.Data.Identity;
-using Apollo.Domain.Tracking;
 using Apollo.Platform.Abstractions.Commands;
 using Microsoft.Extensions.Localization;
 
@@ -54,9 +53,7 @@ internal sealed class TrackingStatusCommandHandler(
 
         string? next = view.TrackingRole is not null
             ? (tracked ? null : strings["Status_TurnOnHint"].Value)
-            : view.Mode == TrackingMode.Bootstrap // TEMPORARY: removed by #62
-                ? strings["Status_NotSetUpBootstrap"].Value
-                : strings["Tracking_NotSetUp"].Value;
+            : strings["Tracking_NotSetUp"].Value;
 
         return next is null ? state : $"{state} {next}";
     }

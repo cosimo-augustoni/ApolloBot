@@ -9,7 +9,7 @@ public enum PlatformPermissions
     None = 0,
 
     /// <summary>
-    /// Administrator: grants admin access (scope D8) and tracking in bootstrap mode (scope §5.1.1).
+    /// Administrator: grants admin access (scope D8). It never makes a member tracked (scope §5.1.1).
     /// </summary>
     Administrator = 1 << 0,
 }
