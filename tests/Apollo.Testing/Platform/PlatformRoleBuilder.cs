@@ -11,6 +11,8 @@ public sealed class PlatformRoleBuilder : TestDataBuilder<PlatformRoleBuilder, P
 
     public PlatformRoleBuilder AsAdministrator(bool isAdministrator = true) => With(r => r with { IsAdministrator = isAdministrator });
 
+    public PlatformRoleBuilder ManagingRoles(bool managesRoles = true) => With(r => r with { ManagesRoles = managesRoles });
+
     public PlatformRoleBuilder AtPosition(int position) => With(r => r with { Position = position });
 
     public PlatformRoleBuilder WithColor(int? color) => With(r => r with { Color = color });
@@ -20,6 +22,7 @@ public sealed class PlatformRoleBuilder : TestDataBuilder<PlatformRoleBuilder, P
         Name: "Member",
         Position: 1,
         IsAdministrator: false,
+        ManagesRoles: false,
         IsManaged: false,
         Color: null);
 }

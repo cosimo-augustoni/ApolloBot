@@ -23,7 +23,19 @@ public sealed class DiscordRoleHandlerTests
 
         var created = _harness.Dispatcher.Events.ShouldHaveSingleItem().ShouldBeOfType<PlatformRoleCreated>();
         created.OccurredAt.ShouldBe(TestTime.Now);
-        created.Role.ShouldBe(new PlatformRole(Ref(7), "Statistik", 2, IsAdministrator: false, IsManaged: false, Color: 0x3498DB));
+        created.Role.ShouldBe(new PlatformRole(Ref(7), "Statistik", 2, IsAdministrator: false, ManagesRoles: false, IsManaged: false, Color: 0x3498DB));
+    }
+
+    [Fact]
+    public async Task RoleUpdate_WhenRoleGainsManageRoles_ShouldDispatchRoleUpdatedWithTheFlag()
+    {
+        var role = NetCordPayloads.Role(DiscordHost.GuildId, 7, "Apollo", permissions: Permissions.ManageRoles);
+
+        await ((IRoleUpdateGatewayHandler)Handler()).HandleAsync(role);
+
+        var updated = _harness.Dispatcher.Events.ShouldHaveSingleItem().ShouldBeOfType<PlatformRoleUpdated>();
+        updated.Role.ManagesRoles.ShouldBeTrue();
+        updated.Role.IsAdministrator.ShouldBeFalse();
     }
 
     [Fact]

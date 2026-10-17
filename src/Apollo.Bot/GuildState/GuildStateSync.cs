@@ -178,6 +178,7 @@ internal sealed partial class GuildStateSync(
         using var _ = await syncLock.AcquireAsync(cancellationToken);
         var guildId = await ids.ResolveGuildAsync(snapshot.Guild, cancellationToken);
         var ownerId = await ids.ResolveUserAsync(snapshot.Owner, cancellationToken);
+        var botId = await ids.ResolveUserAsync(snapshot.Bot, cancellationToken);
         await ResolveRolesAsync(snapshot.Guild, snapshot.Roles.Select(r => r.Role), cancellationToken);
         foreach (var channel in snapshot.Channels)
         {
@@ -190,6 +191,12 @@ internal sealed partial class GuildStateSync(
             var guild = await db.Guilds.SingleAsync(g => g.Id == guildId, cancellationToken);
             guild.Name = snapshot.Name;
             guild.OwnerUserId = ownerId;
+
+            // Per platform mapping: a guild linked on several platforms has one bot user on each (admin page, #33).
+            var mapping = await db.GuildPlatformIds.SingleAsync(
+                m => m.Platform == snapshot.Guild.Platform && m.ExternalId == snapshot.Guild.ExternalId,
+                cancellationToken);
+            mapping.BotUserId = botId;
 
             var roleIds = new HashSet<Guid>();
             foreach (var role in snapshot.Roles)
@@ -363,6 +370,7 @@ internal sealed partial class GuildStateSync(
         role.Color = snapshot.Color;
         role.Position = snapshot.Position;
         role.IsAdministrator = snapshot.IsAdministrator;
+        role.ManagesRoles = snapshot.ManagesRoles;
         if (revive)
         {
             role.DeletedAt = null;

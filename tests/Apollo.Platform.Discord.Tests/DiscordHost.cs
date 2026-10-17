@@ -17,6 +17,9 @@ internal static class DiscordHost
 {
     public const string Token = "MTIzNDU2Nzg5MDEyMzQ1Njc4.test.token";
 
+    /// <summary>The bot's user ID that <see cref="Token"/> encodes (its first part is the ID in base64).</summary>
+    public const ulong BotUserId = 123456789012345678;
+
     public const ulong GuildId = 111111111111111111;
 
     public static Dictionary<string, string?> ValidSettings() => new()
