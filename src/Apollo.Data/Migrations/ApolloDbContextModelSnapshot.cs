@@ -471,6 +471,54 @@ namespace Apollo.Data.Migrations
                         .HasAnnotation("TimescaleDB:TimeColumnName", "OccurredAt");
                 });
 
+            modelBuilder.Entity("Apollo.Data.Presence.PresenceActivitySession", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<string>("ActivityName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("activity_name");
+
+                    b.Property<string>("ActivityType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("activity_type");
+
+                    b.Property<DateTimeOffset>("EndedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ended_at");
+
+                    b.Property<Guid>("GuildId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("guild_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id", "OccurredAt");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("GuildId", "UserId", "OccurredAt");
+
+                    b.ToTable("presence_activity_sessions", (string)null);
+
+                    b
+                        .HasAnnotation("TimescaleDB:IsHypertable", true)
+                        .HasAnnotation("TimescaleDB:TimeColumnName", "OccurredAt");
+                });
+
             modelBuilder.Entity("Apollo.Data.Reactions.ReactionEvent", b =>
                 {
                     b.Property<long>("Id")
@@ -1008,6 +1056,21 @@ namespace Apollo.Data.Migrations
                         .WithMany()
                         .HasForeignKey("MentionedUserId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Apollo.Data.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Apollo.Data.Presence.PresenceActivitySession", b =>
+                {
+                    b.HasOne("Apollo.Data.Identity.Guild", null)
+                        .WithMany()
+                        .HasForeignKey("GuildId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("Apollo.Data.Identity.User", null)
                         .WithMany()
