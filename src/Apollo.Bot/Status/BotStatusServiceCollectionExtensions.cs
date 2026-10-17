@@ -10,14 +10,13 @@ public static class BotStatusServiceCollectionExtensions
     /// Registers the heartbeat (<see cref="BotHeartbeatService"/>, one <c>bot_status</c> row every 30 s), its
     /// <see cref="IBotStatusSource"/>, the gateway health check and <see cref="HealthStatusLogPublisher"/>, which runs it
     /// and logs its transitions. Needs an <c>IPlatformConnectionStatus</c> from the platform adapter and the
-    /// <c>ApolloDbContext</c>. A voice recorder's <see cref="IOpenVoiceSessionCounter"/> wins
-    /// over the temporary default, whether it is registered before or after.
+    /// <c>ApolloDbContext</c>, and an <see cref="IOpenVoiceSessionCounter"/> (the voice recorder's,
+    /// <see cref="Voice.VoiceRecordingServiceCollectionExtensions.AddVoiceRecording"/>).
     /// </summary>
     public static IServiceCollection AddBotStatus(this IServiceCollection services)
     {
         services.AddPlatformEventDispatcher();
         services.TryAddSingleton(TimeProvider.System);
-        services.TryAddSingleton<IOpenVoiceSessionCounter, NoOpenVoiceSessionCounter>();
         services.AddSingleton<IBotStatusSource, BotStatusSource>();
         services.AddHostedService<BotHeartbeatService>();
         services.AddHealthChecks().AddCheck<GatewayConnectionHealthCheck>(GatewayConnectionHealthCheck.Name);

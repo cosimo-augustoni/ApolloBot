@@ -60,6 +60,8 @@ internal sealed class TrackingHost : IAsyncDisposable
         _services = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
     }
 
+    public IServiceProvider Services => _services;
+
     public FakeChatPlatform Platform => _services.GetRequiredService<FakeChatPlatform>();
 
     public ITrackingGate Gate => _services.GetRequiredService<ITrackingGate>();

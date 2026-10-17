@@ -110,6 +110,7 @@ public sealed class HealthStatusLogPublisherTests
             .AddFakeLogging()
             .AddSingleton<TimeProvider>(time)
             .AddSingleton<Apollo.Platform.Abstractions.IPlatformConnectionStatus>(new FakePlatformConnectionStatus(time))
+            .AddSingleton<IOpenVoiceSessionCounter>(new FixedOpenVoiceSessionCounter(0))
             .AddBotStatus()
             .Configure<HealthCheckPublisherOptions>(o => o.Delay = TimeSpan.Zero)
             .BuildServiceProvider();

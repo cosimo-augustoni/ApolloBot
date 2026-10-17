@@ -4,6 +4,7 @@ using Apollo.Platform.Abstractions.Dispatch;
 using Apollo.Testing;
 using Apollo.Testing.Platform;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Apollo.Bot.Tests.Status;
@@ -68,12 +69,6 @@ public sealed class BotStatusSourceTests : IDisposable
         services.GetRequiredService<IBotStatusSource>().GetCurrent().OpenVoiceSessions.ShouldBe(4);
     }
 
-    [Fact]
-    public void GetCurrent_WhenNoVoiceRecorderIsRegistered_ShouldReportZeroOpenVoiceSessions()
-    {
-        Build().GetRequiredService<IBotStatusSource>().GetCurrent().OpenVoiceSessions.ShouldBe(0);
-    }
-
     public void Dispose() => _services?.Dispose();
 
     private ServiceProvider Build(Action<IServiceCollection>? configure = null)
@@ -84,13 +79,9 @@ public sealed class BotStatusSourceTests : IDisposable
             .AddSingleton<IPlatformConnectionStatus>(_connection)
             .AddPlatformEventDispatcher();
         configure?.Invoke(services);
+        services.TryAddSingleton<IOpenVoiceSessionCounter>(new FixedOpenVoiceSessionCounter(0));
         services.AddBotStatus();
         _services = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
         return _services;
-    }
-
-    private sealed class FixedOpenVoiceSessionCounter(int count) : IOpenVoiceSessionCounter
-    {
-        public int CountOpenSessions() => count;
     }
 }
