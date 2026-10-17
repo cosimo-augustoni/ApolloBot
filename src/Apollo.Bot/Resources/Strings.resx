@@ -97,4 +97,8 @@
     <value>Es sind keine Daten von dir gespeichert.</value>
     <comment>/apollo tracking status: no rows in any event table</comment>
   </data>
+  <data name="Stats_Link" xml:space="preserve">
+    <value>Deine Statistiken findest du hier: {0}</value>
+    <comment>/apollo stats: {0} is the /me page URL. No stats values in Discord (scope §3, §7.2)</comment>
+  </data>
 </root>
