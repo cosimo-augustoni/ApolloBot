@@ -26,7 +26,7 @@ public sealed class AccessCheckFailureTests : IAsyncDisposable
     {
         using var http = await SignedInClientWithDueCheckAsync();
 
-        using var response = await http.GetAsync(new Uri("/api/admin/session", UriKind.Relative), Ct);
+        using var response = await http.GetAsync(new Uri("/api/admin/bot-status", UriKind.Relative), Ct);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
         ShouldNotClearTheSessionCookie(response);

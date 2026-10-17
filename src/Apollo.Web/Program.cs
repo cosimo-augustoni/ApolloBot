@@ -2,6 +2,7 @@ using ApexCharts;
 using Apollo.Data;
 using Apollo.Data.Tracking;
 using Apollo.Platform.Discord.Identity;
+using Apollo.Web.Admin;
 using Apollo.Web.Api;
 using Apollo.Web.Auth;
 using Apollo.Web.Components;
@@ -20,6 +21,13 @@ builder.Services.AddDiscordIdentityProvider();
 // Admin settings page (#33): role settings of the configured guild per platform.
 builder.Services.AddScoped<RoleSettingsQuery>();
 builder.Services.AddScoped<RoleSettingsStore>();
+
+// Admin bot status page (#31): latest heartbeat and events per hour.
+builder.Services.AddOptions<BotStatusOptions>()
+    .BindConfiguration(BotStatusOptions.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddScoped<BotStatusQuery>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -77,7 +85,7 @@ app.MapRazorComponents<App>()
     .AddAdditionalAssemblies(typeof(Apollo.Web.Client._Imports).Assembly);
 
 app.MapAppInfoEndpoints();
-app.MapAdminEndpoints();
+app.MapBotStatusEndpoints();
 app.MapRoleSettingsEndpoints();
 app.MapAuthEndpoints();
 app.MapDefaultEndpoints();

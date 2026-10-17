@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Apollo.Data;
 using Apollo.Data.Identity;
+using Apollo.Data.Status;
 using Apollo.Domain.Tracking;
 using Apollo.Platform.Abstractions;
 using Apollo.Testing;
@@ -21,7 +22,7 @@ namespace Apollo.Web.Tests.Api;
 /// </summary>
 public sealed class AdminEndpointsTests(TimescaleFixture fixture) : TimescaleTest(fixture)
 {
-    private const string AdminSessionPath = "/api/admin/session";
+    private const string BotStatusPath = "/api/admin/bot-status";
     private const string DiscordUserId = "80351110224678912";
 
     private static readonly TimeSpan _interval = TimeSpan.FromMinutes(5);
@@ -32,17 +33,60 @@ public sealed class AdminEndpointsTests(TimescaleFixture fixture) : TimescaleTes
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact]
-    public async Task AdminSession_WhenUserIsAdministrator_ShouldReturn200()
+    public async Task GetBotStatus_WhenAdmin_ShouldReturn200()
     {
-        var userId = await SeedMemberAsync(isAdministrator: true);
+        await SeedMemberAsync(isAdministrator: true);
         await using var factory = CreateFactory(useTestClock: false);
         using var http = factory.CreateHttpsClient();
         await LoginAsync(http);
 
-        using var response = await GetAsync(http, AdminSessionPath);
+        using var response = await GetAsync(http, BotStatusPath);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await response.Content.ReadFromJsonAsync<CurrentUserDto>(Ct)).ShouldBe(new CurrentUserDto(userId, "Discord", "Nelly", null, IsAdmin: true));
+        var status = (await response.Content.ReadFromJsonAsync<BotStatusDto>(Ct)).ShouldNotBeNull();
+        status.HasHeartbeat.ShouldBeFalse();
+        status.EventsPerHour.Count.ShouldBe(24);
+    }
+
+    [Fact]
+    public async Task GetBotStatus_WhenAdminAndHeartbeatRecent_ShouldReturnTheHeartbeat()
+    {
+        await SeedMemberAsync(isAdministrator: true);
+        await using (var db = Fixture.CreateDbContext())
+        {
+            db.BotStatuses.Add(new BotStatus
+            {
+                GuildId = await Ids(db).ResolveGuildAsync(ApolloWebApplicationFactory.Guild, Ct),
+                OccurredAt = TestTime.Now - TimeSpan.FromSeconds(30),
+                Connected = true,
+                GatewayLatencyMs = 84,
+                LastEventAt = TestTime.Now - TimeSpan.FromSeconds(12),
+                OpenVoiceSessions = 3,
+            });
+            await db.SaveChangesAsync(Ct);
+        }
+
+        await using var factory = CreateFactory(useTestClock: true);
+        using var http = factory.CreateHttpsClient();
+        await PlatformSignInAsync(http);
+
+        var status = (await http.GetFromJsonAsync<BotStatusDto>(new Uri(BotStatusPath, UriKind.Relative), Ct)).ShouldNotBeNull();
+
+        status.ShouldBe(new BotStatusDto(
+            TestTime.Now, TestTime.Now - TimeSpan.FromSeconds(30), true, 84, TestTime.Now - TimeSpan.FromSeconds(12), 3, IsStale: false, status.EventsPerHour));
+    }
+
+    [Fact]
+    public async Task AdminSession_WhenCalled_ShouldBeGone()
+    {
+        await SeedMemberAsync(isAdministrator: true);
+        await using var factory = CreateFactory(useTestClock: false);
+        using var http = factory.CreateHttpsClient();
+        await LoginAsync(http);
+
+        using var response = await GetAsync(http, "/api/admin/session");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
     [Fact]
@@ -60,33 +104,33 @@ public sealed class AdminEndpointsTests(TimescaleFixture fixture) : TimescaleTes
     }
 
     [Fact]
-    public async Task AdminSession_WhenUserIsNotAdministrator_ShouldReturn403()
+    public async Task GetBotStatus_WhenNotAdmin_ShouldReturn403()
     {
         await SeedMemberAsync(isAdministrator: false);
         await using var factory = CreateFactory(useTestClock: false);
         using var http = factory.CreateHttpsClient();
         await LoginAsync(http);
 
-        using var response = await GetAsync(http, AdminSessionPath);
+        using var response = await GetAsync(http, BotStatusPath);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         response.Headers.Location.ShouldBeNull();
     }
 
     [Fact]
-    public async Task AdminSession_WhenAnonymous_ShouldReturn401()
+    public async Task GetBotStatus_WhenAnonymous_ShouldReturn401()
     {
         await using var factory = CreateFactory(useTestClock: false);
         using var http = factory.CreateHttpsClient();
 
-        using var response = await GetAsync(http, AdminSessionPath);
+        using var response = await GetAsync(http, BotStatusPath);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
         response.Headers.Location.ShouldBeNull();
     }
 
     [Fact]
-    public async Task AdminSession_WhenUserIsNotGuildMember_ShouldReturn403()
+    public async Task AdminApi_WhenUserIsNotGuildMember_ShouldReturn403()
     {
         await using (var db = Fixture.CreateDbContext())
         {
@@ -98,7 +142,7 @@ public sealed class AdminEndpointsTests(TimescaleFixture fixture) : TimescaleTes
         using var http = factory.CreateHttpsClient();
         await LoginAsync(http);
 
-        using var response = await GetAsync(http, AdminSessionPath);
+        using var response = await GetAsync(http, BotStatusPath);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
@@ -106,7 +150,7 @@ public sealed class AdminEndpointsTests(TimescaleFixture fixture) : TimescaleTes
     [Theory]
     [InlineData(RoleSettingPurpose.MemberAccess)]
     [InlineData(RoleSettingPurpose.Tracking)]
-    public async Task AdminSession_WhenUserHoldsAConfiguredRoleWithoutAdministratorFlag_ShouldReturn403(RoleSettingPurpose purpose)
+    public async Task AdminApi_WhenUserHoldsAConfiguredRoleWithoutAdministratorFlag_ShouldReturn403(RoleSettingPurpose purpose)
     {
         await using (var db = Fixture.CreateDbContext())
         {
@@ -122,29 +166,29 @@ public sealed class AdminEndpointsTests(TimescaleFixture fixture) : TimescaleTes
         using var http = factory.CreateHttpsClient();
         await LoginAsync(http);
 
-        using var response = await GetAsync(http, AdminSessionPath);
+        using var response = await GetAsync(http, BotStatusPath);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 
     [Fact]
-    public async Task AdminSession_WhenAdministratorRevokedAndIntervalElapsed_ShouldReturn403()
+    public async Task AdminApi_WhenAdministratorRevokedAndIntervalElapsed_ShouldReturn403()
     {
         await SeedMemberAsync(isAdministrator: true);
         await using var factory = CreateFactory(useTestClock: true);
         using var http = factory.CreateHttpsClient();
         await PlatformSignInAsync(http);
-        (await GetAsync(http, AdminSessionPath)).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await GetAsync(http, BotStatusPath)).StatusCode.ShouldBe(HttpStatusCode.OK);
         await SetAdministratorAsync(false);
         _time.Advance(_interval);
 
-        using var response = await GetAsync(http, AdminSessionPath);
+        using var response = await GetAsync(http, BotStatusPath);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 
     [Fact]
-    public async Task AdminSession_WhenAdministratorRevokedAndIntervalNotElapsed_ShouldStillUseTheClaims()
+    public async Task AdminApi_WhenAdministratorRevokedAndIntervalNotElapsed_ShouldStillUseTheClaims()
     {
         await SeedMemberAsync(isAdministrator: true);
         await using var factory = CreateFactory(useTestClock: true);
@@ -153,23 +197,23 @@ public sealed class AdminEndpointsTests(TimescaleFixture fixture) : TimescaleTes
         await SetAdministratorAsync(false);
         _time.Advance(_interval - TimeSpan.FromSeconds(1));
 
-        using var response = await GetAsync(http, AdminSessionPath);
+        using var response = await GetAsync(http, BotStatusPath);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
     [Fact]
-    public async Task AdminSession_WhenAdministratorGrantedAndIntervalElapsed_ShouldReturn200WithoutNewLogin()
+    public async Task AdminApi_WhenAdministratorGrantedAndIntervalElapsed_ShouldReturn200WithoutNewLogin()
     {
         await SeedMemberAsync(isAdministrator: false);
         await using var factory = CreateFactory(useTestClock: true);
         using var http = factory.CreateHttpsClient();
         await PlatformSignInAsync(http);
-        (await GetAsync(http, AdminSessionPath)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await GetAsync(http, BotStatusPath)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         await SetAdministratorAsync(true);
         _time.Advance(_interval);
 
-        using var response = await GetAsync(http, AdminSessionPath);
+        using var response = await GetAsync(http, BotStatusPath);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var me = await http.GetFromJsonAsync<CurrentUserDto>(new Uri("/auth/me", UriKind.Relative), Ct);
@@ -177,7 +221,7 @@ public sealed class AdminEndpointsTests(TimescaleFixture fixture) : TimescaleTes
     }
 
     [Fact]
-    public async Task AdminSession_WhenCookieCopiedBeforeLogoutAndIntervalElapsed_ShouldReturn401()
+    public async Task AdminApi_WhenCookieCopiedBeforeLogoutAndIntervalElapsed_ShouldReturn401()
     {
         await SeedMemberAsync(isAdministrator: true);
         await using var factory = CreateFactory(useTestClock: true);
@@ -192,7 +236,7 @@ public sealed class AdminEndpointsTests(TimescaleFixture fixture) : TimescaleTes
             AllowAutoRedirect = false,
             HandleCookies = false,
         });
-        using var request = new HttpRequestMessage(HttpMethod.Get, AdminSessionPath);
+        using var request = new HttpRequestMessage(HttpMethod.Get, BotStatusPath);
         request.Headers.Add("Cookie", copiedCookie);
 
         using var response = await thief.SendAsync(request, Ct);
@@ -213,7 +257,7 @@ public sealed class AdminEndpointsTests(TimescaleFixture fixture) : TimescaleTes
         await PlatformSignInAsync(http);
         _time.Advance(_interval);
 
-        using var response = await GetAsync(http, AdminSessionPath);
+        using var response = await GetAsync(http, BotStatusPath);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
