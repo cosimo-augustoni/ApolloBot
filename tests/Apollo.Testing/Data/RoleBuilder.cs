@@ -41,6 +41,12 @@ public sealed class RoleBuilder : TestDataBuilder<RoleBuilder, Role>
         return r;
     });
 
+    public RoleBuilder ManagingRoles() => With(r =>
+    {
+        r.ManagesRoles = true;
+        return r;
+    });
+
     public RoleBuilder WithColor(int? color) => With(r =>
     {
         r.Color = color;
@@ -62,6 +68,7 @@ public sealed class RoleBuilder : TestDataBuilder<RoleBuilder, Role>
         row.Color = values.Color;
         row.Position = values.Position;
         row.IsAdministrator = values.IsAdministrator;
+        row.ManagesRoles = values.ManagesRoles;
         row.DeletedAt = values.DeletedAt;
         await db.SaveChangesAsync(cancellationToken);
         return row;

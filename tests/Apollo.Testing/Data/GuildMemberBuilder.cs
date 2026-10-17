@@ -29,6 +29,12 @@ public sealed class GuildMemberBuilder : TestDataBuilder<GuildMemberBuilder, Gui
         return m;
     });
 
+    public GuildMemberBuilder AsBot() => With(m =>
+    {
+        m.IsBot = true;
+        return m;
+    });
+
     public GuildMemberBuilder LeftAt(DateTimeOffset leftAt) => With(m =>
     {
         m.LeftAt = leftAt;
