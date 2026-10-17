@@ -18,9 +18,10 @@ namespace Apollo.Bot.Membership;
 /// <para>
 /// Join and unban count if the tracking gate tracks the user when the event is processed (a join only after the sync
 /// stored the new member, so the recorder is registered after it). Leave and ban count if the user had a tracking
-/// period at <c>occurred_at</c>: the leave itself stops tracking, whichever handler runs first. A ban also counts if
-/// the period ended at most <see cref="BanGrace"/> before it, because Discord sends the member remove of a ban as a
-/// separate event that may arrive (and close the period) first.
+/// period at <c>occurred_at</c>: the leave itself stops tracking, whichever handler runs first. Discord sends the member
+/// remove of a ban as a separate event that may arrive (and close the period) first, so a ban also counts if the user
+/// has a <c>Leave</c> row at most <see cref="BanGrace"/> before it. Tracking that ended any other way (role removed,
+/// opt-out) gets no grace.
 /// </para>
 /// <para>
 /// Replays: the payloads carry no timestamp, so a replayed event has a new <c>occurred_at</c>. An event is therefore
@@ -42,7 +43,8 @@ internal sealed partial class MembershipRecorder(
         IPlatformEventHandler<PlatformMemberUnbanned>
 {
     /// <summary>
-    /// How long before a ban the user's tracking period may have ended for the ban to count (see remarks).
+    /// How long before a ban a recorded leave of the same user lets the ban count although tracking has stopped (see
+    /// remarks).
     /// </summary>
     public static readonly TimeSpan BanGrace = TimeSpan.FromSeconds(10);
 
@@ -53,10 +55,10 @@ internal sealed partial class MembershipRecorder(
         RecordIfTrackedNowAsync(platformEvent, platformEvent.User, MembershipEventKind.Unban, cancellationToken);
 
     public Task HandleAsync(PlatformMemberLeft platformEvent, CancellationToken cancellationToken) =>
-        RecordIfTrackedAtAsync(platformEvent, platformEvent.User, MembershipEventKind.Leave, TimeSpan.Zero, cancellationToken);
+        RecordIfTrackedAtAsync(platformEvent, platformEvent.User, MembershipEventKind.Leave, cancellationToken);
 
     public Task HandleAsync(PlatformMemberBanned platformEvent, CancellationToken cancellationToken) =>
-        RecordIfTrackedAtAsync(platformEvent, platformEvent.User, MembershipEventKind.Ban, BanGrace, cancellationToken);
+        RecordIfTrackedAtAsync(platformEvent, platformEvent.User, MembershipEventKind.Ban, cancellationToken);
 
     private async Task RecordIfTrackedNowAsync(
         PlatformEvent platformEvent,
@@ -78,19 +80,32 @@ internal sealed partial class MembershipRecorder(
         PlatformEvent platformEvent,
         PlatformRef user,
         MembershipEventKind kind,
-        TimeSpan grace,
         CancellationToken cancellationToken)
     {
         // Never creates a row: a user or guild the bot has not seen was never tracked.
         if (await ids.TryGetUserAsync(user, cancellationToken) is not { } userId
             || await ids.TryGetGuildAsync(platformEvent.Guild, cancellationToken) is not { } guildId
-            || !await history.WasTrackedBetweenAsync(guildId, userId, platformEvent.OccurredAt - grace, platformEvent.OccurredAt, cancellationToken))
+            || !(await history.WasTrackedAtAsync(guildId, userId, platformEvent.OccurredAt, cancellationToken)
+                || (kind == MembershipEventKind.Ban && await LeftJustBeforeAsync(guildId, userId, platformEvent.OccurredAt, cancellationToken))))
         {
             Drop(platformEvent, user);
             return;
         }
 
         await RecordAsync(platformEvent, guildId, userId, kind, cancellationToken);
+    }
+
+    /// <summary>
+    /// Whether a leave of the user was recorded (so they were tracked then) at most <see cref="BanGrace"/> before
+    /// <paramref name="bannedAt"/>: the member remove of the same ban, which arrived first.
+    /// </summary>
+    private Task<bool> LeftJustBeforeAsync(Guid guildId, Guid userId, DateTimeOffset bannedAt, CancellationToken cancellationToken)
+    {
+        var from = bannedAt - BanGrace;
+        return db.MembershipEvents.AnyAsync(
+            e => e.GuildId == guildId && e.UserId == userId && e.Kind == MembershipEventKind.Leave
+                && e.OccurredAt >= from && e.OccurredAt <= bannedAt,
+            cancellationToken);
     }
 
     private async Task RecordAsync(
@@ -133,6 +148,10 @@ internal sealed partial class MembershipRecorder(
             return false;
         }
 
+        // Known gap: a real repeat whose tracking left no new period in between looks like a replay. Example: a
+        // leave processed before the first guild sync after a start (the gate has no snapshot yet, so the period left
+        // open by the previous run stays open), a quick rejoin, and the first sync finding the user tracked with that
+        // period still open; the next leave is then skipped.
         var periods = db.TrackingPeriods.Where(p => p.GuildId == guildId && p.UserId == userId);
         var trackingChangedSince = kind is MembershipEventKind.Leave or MembershipEventKind.Ban
             ? await periods.AnyAsync(p => p.From > since, cancellationToken)

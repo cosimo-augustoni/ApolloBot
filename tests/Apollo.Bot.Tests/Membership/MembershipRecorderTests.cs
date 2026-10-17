@@ -133,6 +133,21 @@ public sealed class MembershipRecorderTests(TimescaleFixture fixture) : Timescal
         (await KindsAsync(host)).ShouldBe([MembershipEventKind.Leave, MembershipEventKind.Ban]);
     }
 
+    /// <summary>
+    /// The ban grace only covers a member remove that arrived first, not tracking that ended for another reason.
+    /// </summary>
+    [Fact]
+    public async Task Ban_WhenTrackingStoppedMomentsBeforeWithoutALeave_ShouldStoreNothing()
+    {
+        await using var host = await HostAsync();
+        await host.RaiseAsync(new PlatformMemberUpdatedBuilder().WithMember(Member(_alice)).Build());
+        host.Time.Advance(TimeSpan.FromSeconds(5));
+
+        await host.RaiseAsync(Banned(_alice).At(host.Time.GetUtcNow()).Build());
+
+        (await EventsAsync(host)).ShouldBeEmpty();
+    }
+
     [Fact]
     public async Task Ban_WhenTheUserLeftLongBefore_ShouldStoreNothingForTheBan()
     {
@@ -241,6 +256,23 @@ public sealed class MembershipRecorderTests(TimescaleFixture fixture) : Timescal
         await host.RaiseAsync(Unbanned(_alice).At(host.Time.GetUtcNow()).Build());
 
         (await EventsAsync(host)).ShouldHaveSingleItem();
+    }
+
+    /// <summary>
+    /// A leave replayed later is already dropped by the gate rule (the first leave closed the period); one replayed with
+    /// the same <c>occurred_at</c> passes it and must be caught as a replay.
+    /// </summary>
+    [Theory]
+    [InlineData(HandlerOrder.AfterGuildStateSync)]
+    [InlineData(HandlerOrder.BeforeGuildStateSync)]
+    public async Task Leave_WhenReplayedWithTheSameTimestamp_ShouldStoreOneRow(HandlerOrder order)
+    {
+        await using var host = await HostAsync(order);
+        await host.RaiseAsync(Left(_alice).Build());
+
+        await host.RaiseAsync(Left(_alice).Build());
+
+        (await KindsAsync(host)).ShouldBe([MembershipEventKind.Leave]);
     }
 
     [Theory]
