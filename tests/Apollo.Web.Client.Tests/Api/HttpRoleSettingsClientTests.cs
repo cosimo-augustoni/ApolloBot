@@ -11,6 +11,15 @@ public sealed class HttpRoleSettingsClientTests
     private static readonly Guid _mitglied = Guid.Parse("1c7a4e5f-2b3c-4d4e-9fa0-b1c2d3e4f5a6");
     private static readonly AntiforgeryTokenDto _antiforgery = new("X-XSRF-TOKEN", "request-token");
 
+    // The host's TypedResults.ValidationProblem for a rejected role.
+    private static readonly object _validationProblem = new
+    {
+        type = "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        title = "One or more validation errors occurred.",
+        status = 400,
+        errors = new Dictionary<string, string[]> { ["RoleId"] = ["The role is unknown, deleted, or not a role of this guild on this platform."] },
+    };
+
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact]
@@ -89,10 +98,41 @@ public sealed class HttpRoleSettingsClientTests
     [Fact]
     public async Task SetTrackingRole_WhenTheHostRejectsTheRole_ShouldThrowRoleSettingsRejected()
     {
-        var handler = new StubHttpMessageHandler(_antiforgery).Respond("/api/admin/settings/Discord/tracking-role", HttpStatusCode.BadRequest);
+        var handler = new StubHttpMessageHandler(_antiforgery)
+            .Respond("/api/admin/settings/Discord/tracking-role", HttpStatusCode.BadRequest, _validationProblem);
 
         await Should.ThrowAsync<RoleSettingsRejectedException>(
             () => new HttpRoleSettingsClient(handler.CreateClient()).SetTrackingRoleAsync("Discord", _statistik, Ct));
+    }
+
+    [Fact]
+    public async Task SetMemberAccessRoles_WhenTheHostRejectsARole_ShouldThrowRoleSettingsRejected()
+    {
+        var handler = new StubHttpMessageHandler(_antiforgery)
+            .Respond("/api/admin/settings/Discord/member-access-roles", HttpStatusCode.BadRequest, _validationProblem);
+
+        await Should.ThrowAsync<RoleSettingsRejectedException>(
+            () => new HttpRoleSettingsClient(handler.CreateClient()).SetMemberAccessRolesAsync("Discord", [_statistik], Ct));
+    }
+
+    [Fact]
+    public async Task SetTrackingRole_WhenTheHostAnswers400WithoutAValidationProblem_ShouldFailAsAnHttpError()
+    {
+        var handler = new StubHttpMessageHandler(_antiforgery).Respond("/api/admin/settings/Discord/tracking-role", HttpStatusCode.BadRequest);
+
+        var exception = await Should.ThrowAsync<HttpRequestException>(
+            () => new HttpRoleSettingsClient(handler.CreateClient()).SetTrackingRoleAsync("Discord", _statistik, Ct));
+
+        exception.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task SetMemberAccessRoles_WhenTheHostAnswers400WithoutAValidationProblem_ShouldFailAsAnHttpError()
+    {
+        var handler = new StubHttpMessageHandler(_antiforgery).Respond("/api/admin/settings/Discord/member-access-roles", HttpStatusCode.BadRequest);
+
+        await Should.ThrowAsync<HttpRequestException>(
+            () => new HttpRoleSettingsClient(handler.CreateClient()).SetMemberAccessRolesAsync("Discord", [_statistik], Ct));
     }
 
     private static T? Body<T>(StubHttpMessageHandler handler, int index) =>
