@@ -111,6 +111,93 @@ public sealed class BotStatusPageTests : ApolloTestContext
     }
 
     [Fact]
+    public void BotStatusPage_WhenFirstLoadFailsWithNonHttpError_ShouldShowTheFailureStateNotTheErrorUi()
+    {
+        _client.Failure = new System.Text.Json.JsonException("<!DOCTYPE html> is no JSON");
+
+        var page = Render<BotStatus>();
+
+        page.WaitForAssertion(() => page.Find(".apollo-bot-load-failed").TextContent.ShouldContain("konnte nicht geladen werden"));
+        page.Find("h1").TextContent.Trim().ShouldBe("Bot-Status");
+    }
+
+    [Fact]
+    public void BotStatusPage_WhenATickTimesOut_ShouldShowTheFailureAndKeepRefreshing()
+    {
+        var page = Render<BotStatus>();
+        page.WaitForAssertion(() => _client.Calls.ShouldBe(1));
+        _client.Failure = new TaskCanceledException("The request was canceled due to the configured HttpClient.Timeout.");
+
+        _time.Advance(TimeSpan.FromSeconds(30));
+
+        page.WaitForAssertion(() => page.Find(".apollo-bot-load-failed").ShouldNotBeNull());
+        page.Find(".apollo-bot-connection").TextContent.Trim().ShouldBe("Verbunden");
+        _client.Failure = null;
+        _client.Status = _client.Status with { Connected = false };
+
+        _time.Advance(TimeSpan.FromSeconds(30));
+
+        page.WaitForAssertion(() => page.Find(".apollo-bot-connection").TextContent.Trim().ShouldBe("Getrennt"));
+        page.FindAll(".apollo-bot-load-failed").ShouldBeEmpty();
+        _client.Calls.ShouldBe(3);
+    }
+
+    [Fact]
+    public void BotStatusPage_WhenATickFailsWithNonHttpError_ShouldKeepRefreshing()
+    {
+        var page = Render<BotStatus>();
+        page.WaitForAssertion(() => _client.Calls.ShouldBe(1));
+        _client.Failure = new InvalidOperationException("GET api/admin/bot-status returned no content.");
+
+        _time.Advance(TimeSpan.FromSeconds(30));
+
+        page.WaitForAssertion(() => page.Find(".apollo-bot-load-failed").ShouldNotBeNull());
+        _client.Failure = null;
+
+        _time.Advance(TimeSpan.FromSeconds(30));
+
+        page.WaitForAssertion(() => page.FindAll(".apollo-bot-load-failed").ShouldBeEmpty());
+        _client.Calls.ShouldBe(3);
+    }
+
+    [Fact]
+    public void BotStatusPage_WhileALoadRuns_ShouldDisableRefresh()
+    {
+        var client = new PendingBotStatusClient(_client.Status);
+        Services.AddSingleton<IBotStatusClient>(client);
+        var page = Render<BotStatus>();
+        client.Complete(0);
+        page.WaitForAssertion(() => page.Find(".apollo-bot-connection").TextContent.Trim().ShouldBe("Verbunden"));
+
+        page.Find(".apollo-bot-refresh").Click();
+
+        page.WaitForAssertion(() => page.Find(".apollo-bot-refresh").HasAttribute("disabled").ShouldBeTrue());
+        client.Complete(1);
+        page.WaitForAssertion(() => page.Find(".apollo-bot-refresh").HasAttribute("disabled").ShouldBeFalse());
+    }
+
+    [Fact]
+    public void BotStatusPage_WhenAClickAndATickOverlap_ShouldKeepTheNewerAnswer()
+    {
+        var client = new PendingBotStatusClient(_client.Status);
+        Services.AddSingleton<IBotStatusClient>(client);
+        var page = Render<BotStatus>();
+        client.Complete(0);
+        page.WaitForAssertion(() => page.Find(".apollo-bot-connection").TextContent.Trim().ShouldBe("Verbunden"));
+        page.Find(".apollo-bot-refresh").Click();
+        page.WaitForAssertion(() => client.Calls.ShouldBe(2));
+        _time.Advance(TimeSpan.FromSeconds(30));
+        page.WaitForAssertion(() => client.Calls.ShouldBe(3));
+
+        client.Complete(2, _client.Status with { Connected = false });
+        page.WaitForAssertion(() => page.Find(".apollo-bot-connection").TextContent.Trim().ShouldBe("Getrennt"));
+        client.Complete(1, _client.Status with { Connected = true });
+
+        page.WaitForAssertion(() => page.Find(".apollo-bot-refresh").HasAttribute("disabled").ShouldBeFalse());
+        page.Find(".apollo-bot-connection").TextContent.Trim().ShouldBe("Getrennt");
+    }
+
+    [Fact]
     public void BotStatusPage_WhenTimerTicks_ShouldReloadData()
     {
         var page = Render<BotStatus>();
@@ -157,6 +244,45 @@ public sealed class BotStatusPageTests : ApolloTestContext
         _time.Advance(TimeSpan.FromMinutes(2));
 
         _client.Calls.ShouldBe(1);
+    }
+
+    /// <summary>Each load waits until the test completes it by its index (0 = first load).</summary>
+    private sealed class PendingBotStatusClient(Contracts.BotStatusDto status) : IBotStatusClient
+    {
+        private readonly List<TaskCompletionSource<Contracts.BotStatusDto>> _loads = [];
+
+        public int Calls
+        {
+            get
+            {
+                lock (_loads)
+                {
+                    return _loads.Count;
+                }
+            }
+        }
+
+        public Task<Contracts.BotStatusDto> GetStatusAsync(CancellationToken cancellationToken)
+        {
+            var load = new TaskCompletionSource<Contracts.BotStatusDto>(TaskCreationOptions.RunContinuationsAsynchronously);
+            lock (_loads)
+            {
+                _loads.Add(load);
+            }
+
+            return load.Task;
+        }
+
+        public void Complete(int index, Contracts.BotStatusDto? result = null)
+        {
+            TaskCompletionSource<Contracts.BotStatusDto> load;
+            lock (_loads)
+            {
+                load = _loads[index];
+            }
+
+            load.SetResult(result ?? status);
+        }
     }
 
     private static string Tile(IRenderedComponent<BotStatus> page, string label) =>

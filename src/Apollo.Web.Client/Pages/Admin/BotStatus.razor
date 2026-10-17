@@ -21,7 +21,7 @@
                 <MudText Typo="Typo.body2" Class="apollo-bot-checked mud-text-secondary">@L["BotStatus_CheckedAt", UiTime.FormatTimeWithSeconds(_status.CheckedAt)]</MudText>
             }
         </div>
-        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Outlined.Refresh" OnClick="LoadAsync" Class="apollo-bot-refresh">@L["BotStatus_Refresh"]</MudButton>
+        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Outlined.Refresh" OnClick="LoadAsync" Disabled="@(_loadsRunning > 0)" Class="apollo-bot-refresh">@L["BotStatus_Refresh"]</MudButton>
     </div>
 
     @if (_failed)
@@ -108,10 +108,18 @@
     private PeriodicTimer? _timer;
     private BotStatusDto? _status;
     private bool _failed;
+    private int _loadsRunning;
+    private int _latestLoad;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadAsync();
+        if (_stop.IsCancellationRequested)
+        {
+            // Left while the first load ran: no timer to leak.
+            return;
+        }
+
         _timer = new PeriodicTimer(RefreshInterval, Time);
         _ = RefreshPeriodicallyAsync(_timer, _stop.Token);
     }
@@ -129,23 +137,44 @@
                 });
             }
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (_stop.IsCancellationRequested)
         {
             // The page was left.
         }
     }
 
+    /// <summary>
+    /// Loads the status. A click and a tick can overlap; only the newest load may change the page, so an older answer
+    /// that arrives late is dropped. Any failure but leaving the page keeps the last status on screen and marks it
+    /// failed; the next tick tries again.
+    /// </summary>
     private async Task LoadAsync()
     {
+        var load = ++_latestLoad;
+        _loadsRunning++;
         try
         {
-            _status = await Client.GetStatusAsync(_stop.Token);
-            _failed = false;
+            var status = await Client.GetStatusAsync(_stop.Token);
+            if (load == _latestLoad)
+            {
+                _status = status;
+                _failed = false;
+            }
         }
-        catch (HttpRequestException)
+        catch (OperationCanceledException) when (_stop.IsCancellationRequested)
         {
-            // The last status stays on screen; the next tick tries again.
-            _failed = true;
+            // The page was left.
+        }
+#pragma warning disable CA1031 // A timeout, an HTML answer or an empty body all mean "not loaded"; none may stop the refresh.
+        catch (Exception)
+#pragma warning restore CA1031
+        {
+            // Only the newest load decides; an older one that fails late changes nothing.
+            _failed |= load == _latestLoad;
+        }
+        finally
+        {
+            _loadsRunning--;
         }
     }
 
