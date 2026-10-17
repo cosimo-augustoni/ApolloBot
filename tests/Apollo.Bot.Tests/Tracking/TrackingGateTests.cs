@@ -431,6 +431,87 @@ public sealed class TrackingGateTests(TimescaleFixture fixture) : TimescaleTest(
         record.StructuredState!.ShouldContain(kv => kv.Key == "RoleName" && kv.Value == "Statistik");
     }
 
+    [Fact]
+    public async Task MarkUntracked_WhenUserIsTracked_ShouldStopTrackingAtOnceClosePeriodAndCallTheStoppedHook()
+    {
+        await using var host = await HostInTrackingRoleModeAsync();
+        var (guild, alice) = (await GuildIdAsync(host), await host.UserIdAsync(_alice));
+        host.Time.Advance(_later);
+
+        await Gate(host).MarkUntrackedAsync(guild, alice, TestContext.Current.CancellationToken);
+
+        host.Gate.IsTracked(alice).ShouldBeFalse();
+        host.Gate.TryGetTrackedUserId(_alice).ShouldBeNull();
+        host.Lifecycle.Stopped.ShouldBe([alice]);
+        (await host.PeriodsAsync()).Single(p => p.UserId == alice).To.ShouldBe(TestTime.Now + _later);
+    }
+
+    [Fact]
+    public async Task MarkUntracked_WhileTheUserStillHoldsTheTrackingRole_ShouldKeepThemUntrackedAcrossSyncsAndMemberChanges()
+    {
+        await using var host = await HostInTrackingRoleModeAsync();
+        var (guild, alice) = (await GuildIdAsync(host), await host.UserIdAsync(_alice));
+        await Gate(host).MarkUntrackedAsync(guild, alice, TestContext.Current.CancellationToken);
+
+        await host.RaiseAsync(Updated(_alice, _statistik, _mods));
+        await host.SyncAsync(Snapshot());
+
+        host.Gate.IsTracked(alice).ShouldBeFalse();
+        host.Lifecycle.Started.ShouldBeEmpty();
+        (await host.PeriodsAsync()).Where(p => p.UserId == alice).ShouldAllBe(p => p.To != null);
+    }
+
+    [Fact]
+    public async Task MarkUntracked_OnceTheRuleNoLongerTracksTheUser_ShouldEndSoRegainingTheRoleTracksThemAgain()
+    {
+        await using var host = await HostInTrackingRoleModeAsync();
+        var (guild, alice) = (await GuildIdAsync(host), await host.UserIdAsync(_alice));
+        await Gate(host).MarkUntrackedAsync(guild, alice, TestContext.Current.CancellationToken);
+        await host.RaiseAsync(Updated(_alice));
+        host.Time.Advance(_later);
+
+        await host.RaiseAsync(Updated(_alice, _statistik));
+
+        host.Gate.IsTracked(alice).ShouldBeTrue();
+        host.Lifecycle.Started.ShouldBe([alice]);
+        (await host.PeriodsAsync()).Where(p => p.UserId == alice && p.To == null).ShouldHaveSingleItem().From.ShouldBe(TestTime.Now + _later);
+    }
+
+    [Fact]
+    public async Task ReleaseUntrackedMark_WhenTheRuleStillTracksTheUser_ShouldTrackThemAgainAtOnceWithAFreshPeriod()
+    {
+        await using var host = new TrackingHost(Fixture);
+        await host.SyncAsync(Snapshot());
+        var (guild, bob) = (await GuildIdAsync(host), await host.UserIdAsync(_bob));
+        await Gate(host).MarkUntrackedAsync(guild, bob, TestContext.Current.CancellationToken);
+        host.Lifecycle.Clear();
+        host.Time.Advance(_later);
+
+        await Gate(host).ReleaseUntrackedMarkAsync(guild, bob, TestContext.Current.CancellationToken);
+
+        host.Gate.IsTracked(bob).ShouldBeTrue();
+        host.Lifecycle.Started.ShouldBe([bob]);
+        (await host.PeriodsAsync()).Where(p => p.UserId == bob && p.To == null).ShouldHaveSingleItem().From.ShouldBe(TestTime.Now + _later);
+    }
+
+    [Fact]
+    public async Task MarkUntracked_WhenUserIsNotTracked_ShouldCallNoHook()
+    {
+        await using var host = await HostInTrackingRoleModeAsync();
+        var (guild, carol) = (await GuildIdAsync(host), await host.UserIdAsync(_carol));
+
+        await Gate(host).MarkUntrackedAsync(guild, carol, TestContext.Current.CancellationToken);
+
+        host.Gate.IsTracked(carol).ShouldBeFalse();
+        host.Lifecycle.All.ShouldBeEmpty();
+    }
+
+    private static TrackingGate Gate(TrackingHost host) => host.Services.GetRequiredService<TrackingGate>();
+
+    private static Task<Guid> GuildIdAsync(TrackingHost host) =>
+        host.InScopeAsync(async (_, ids) => await ids.TryGetGuildAsync(TestPlatform.Guild, TestContext.Current.CancellationToken)
+            ?? throw new InvalidOperationException("The guild was never resolved."));
+
     private static PlatformMemberUpdated Updated(PlatformRef user, params PlatformRef[] roles) =>
         new PlatformMemberUpdatedBuilder()
             .WithMember(new PlatformMemberBuilder().ForUser(user).WithRoles(roles).Build())

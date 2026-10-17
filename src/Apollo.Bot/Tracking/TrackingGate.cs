@@ -20,6 +20,10 @@ namespace Apollo.Bot.Tracking;
 /// for every tracked user, so session recorders can reconcile after a restart.
 /// </para>
 /// <para>
+/// A data deletion (#22) keeps a user untracked with <see cref="MarkUntrackedAsync"/> while the rule still tracks them,
+/// until the removal of their tracking role is synced or the deletion releases the mark.
+/// </para>
+/// <para>
 /// A recorder that asked <see cref="IsTracked"/> just before a change may still store an event right after the user's
 /// period closed (or skip one right after it opened). The gate decision at processing time wins; such in-flight events
 /// are not reconciled with the period or with session closes.
@@ -34,6 +38,10 @@ internal sealed partial class TrackingGate(
     private static readonly IReadOnlyDictionary<Guid, PlatformRef> _nobody = new Dictionary<Guid, PlatformRef>();
 
     private readonly SemaphoreSlim _rebuild = new(1, 1);
+
+    // Users kept untracked while their data is deleted (MarkUntrackedAsync). Read and written only under _rebuild.
+    private readonly HashSet<Guid> _untracked = [];
+
     private volatile TrackingSnapshot? _snapshot;
 
     // The guild of the latest full sync, remembered before its reload runs, so the 30 s reloader retries a startup
@@ -96,22 +104,35 @@ internal sealed partial class TrackingGate(
         await _rebuild.WaitAsync(cancellationToken);
         try
         {
-            if (_snapshot is not { } current || current.GuildId != guildId)
+            await ReevaluateAsync(guildId, userId, cancellationToken);
+        }
+        finally
+        {
+            _rebuild.Release();
+        }
+    }
+
+    /// <summary>
+    /// Stops tracking <paramref name="userId"/> at once, although the rule may still track them, for a data deletion
+    /// (#22): the period closes and the <see cref="ITrackingLifecycleHandler.TrackingStoppedAsync"/> hooks run, as for any
+    /// loss of tracking, so events on their way are dropped. The mark ends by itself once a rebuild or member
+    /// re-evaluation finds the rule no longer tracks the user (the removal of their tracking role is synced), or with
+    /// <see cref="ReleaseUntrackedMarkAsync"/>.
+    /// </summary>
+    public async Task MarkUntrackedAsync(Guid guildId, Guid userId, CancellationToken cancellationToken)
+    {
+        await _rebuild.WaitAsync(cancellationToken);
+        try
+        {
+            _untracked.Add(userId);
+            if (_snapshot is not { } current || current.GuildId != guildId || !current.Tracked.ContainsKey(userId))
             {
                 return;
             }
 
-            await using var scope = scopeFactory.CreateAsyncScope();
-            var loader = scope.ServiceProvider.GetRequiredService<TrackingStateLoader>();
-            var member = await loader.LoadTrackedAsync(guildId, platform.Platform, current.Settings, userId, cancellationToken);
-
             var tracked = new Dictionary<Guid, PlatformRef>(current.Tracked);
             tracked.Remove(userId);
-            if (member.TryGetValue(userId, out var user))
-            {
-                tracked[userId] = user;
-            }
-
+            await using var scope = scopeFactory.CreateAsyncScope();
             await ApplyAsync(
                 scope.ServiceProvider,
                 new TrackingSnapshot(guildId, current.Settings, current.TrackingRoleName, current.TrackingRole, tracked),
@@ -124,7 +145,51 @@ internal sealed partial class TrackingGate(
         }
     }
 
+    /// <summary>
+    /// Ends the mark of <see cref="MarkUntrackedAsync"/> and re-evaluates the member at once: a user the rule still
+    /// tracks (bootstrap mode, or a tracking role that could not be removed) is tracked again from now, with a new period.
+    /// </summary>
+    public async Task ReleaseUntrackedMarkAsync(Guid guildId, Guid userId, CancellationToken cancellationToken)
+    {
+        await _rebuild.WaitAsync(cancellationToken);
+        try
+        {
+            _untracked.Remove(userId);
+            await ReevaluateAsync(guildId, userId, cancellationToken);
+        }
+        finally
+        {
+            _rebuild.Release();
+        }
+    }
+
     public void Dispose() => _rebuild.Dispose();
+
+    /// <remarks>Call under <c>_rebuild</c>.</remarks>
+    private async Task ReevaluateAsync(Guid guildId, Guid userId, CancellationToken cancellationToken)
+    {
+        if (_snapshot is not { } current || current.GuildId != guildId)
+        {
+            return;
+        }
+
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var loader = scope.ServiceProvider.GetRequiredService<TrackingStateLoader>();
+        var member = ApplyMarks(await loader.LoadTrackedAsync(guildId, platform.Platform, current.Settings, userId, cancellationToken), userId);
+
+        var tracked = new Dictionary<Guid, PlatformRef>(current.Tracked);
+        tracked.Remove(userId);
+        if (member.TryGetValue(userId, out var user))
+        {
+            tracked[userId] = user;
+        }
+
+        await ApplyAsync(
+            scope.ServiceProvider,
+            new TrackingSnapshot(guildId, current.Settings, current.TrackingRoleName, current.TrackingRole, tracked),
+            userId,
+            cancellationToken);
+    }
 
     /// <remarks>Call under <c>_rebuild</c>.</remarks>
     private async Task RebuildAsync(Guid guildId, CancellationToken cancellationToken)
@@ -132,8 +197,25 @@ internal sealed partial class TrackingGate(
         await using var scope = scopeFactory.CreateAsyncScope();
         var loader = scope.ServiceProvider.GetRequiredService<TrackingStateLoader>();
         var (settings, roleName, role) = await loader.LoadSettingsAsync(guildId, platform.Platform, cancellationToken);
-        var tracked = await loader.LoadTrackedAsync(guildId, platform.Platform, settings, userId: null, cancellationToken);
+        var tracked = ApplyMarks(await loader.LoadTrackedAsync(guildId, platform.Platform, settings, userId: null, cancellationToken), userId: null);
         await ApplyAsync(scope.ServiceProvider, new TrackingSnapshot(guildId, settings, roleName, role, tracked), userId: null, cancellationToken);
+    }
+
+    /// <summary>
+    /// Takes the marked users (only <paramref name="userId"/> when given) out of what the rule tracks, and ends the mark
+    /// of every one the rule no longer tracks. Call under <c>_rebuild</c>.
+    /// </summary>
+    private Dictionary<Guid, PlatformRef> ApplyMarks(Dictionary<Guid, PlatformRef> tracked, Guid? userId)
+    {
+        foreach (var marked in _untracked.Where(id => userId == null || id == userId).ToList())
+        {
+            if (!tracked.Remove(marked))
+            {
+                _untracked.Remove(marked);
+            }
+        }
+
+        return tracked;
     }
 
     /// <summary>
