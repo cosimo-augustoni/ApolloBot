@@ -272,6 +272,7 @@ Layout (D16, chosen from the wireframe concepts in #27): the member area is a **
 
 **Admin area (`/admin`)**
 - Bot status: connected, gateway latency, last event received, events per hour, open voice sessions. This is the "data is being collected" proof for M2.
+  The page (#31, `/admin`) reads `GET /api/admin/bot-status`: the latest `bot_status` heartbeat of the configured guild (§4.3) and the rows of `message_events`, `reaction_events`, `membership_events`, `voice_sessions` and `presence_activity_sessions` (by `occurred_at`, the start for sessions) per `Europe/Zurich` hour over the last 24 hours, the current hour included and empty hours as 0. A heartbeat older than `Apollo:Web:BotStatus:StaleAfter` (default 2 minutes) shows a stale warning; no heartbeat at all shows "Noch kein Heartbeat empfangen". The page reloads every 30 s while it is open.
 - Server dashboard: totals, growth, activity over time, channel ranking, heatmap
 - Members: list with search, opening a member's stats page (same view as `/me`)
 - Recaps: server recap per month/year, regenerate a snapshot
