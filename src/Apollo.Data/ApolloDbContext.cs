@@ -5,6 +5,7 @@ using Apollo.Data.Membership;
 using Apollo.Data.Messages;
 using Apollo.Data.Presence;
 using Apollo.Data.Reactions;
+using Apollo.Data.Sessions;
 using Apollo.Data.Status;
 using Apollo.Data.Tracking;
 using Apollo.Data.Voice;
@@ -67,6 +68,8 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
 
     public DbSet<PresenceActivitySession> PresenceActivitySessions => Set<PresenceActivitySession>();
 
+    public DbSet<UserSignOut> UserSignOuts => Set<UserSignOut>();
+
     /// <summary>The web host's data protection keys (<c>PersistKeysToDbContext</c>).</summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
@@ -94,5 +97,6 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
         MembershipModel.Configure(modelBuilder);
         PresenceModel.Configure(modelBuilder);
         DataProtectionModel.Configure(modelBuilder);
+        SessionModel.Configure(modelBuilder);
     }
 }

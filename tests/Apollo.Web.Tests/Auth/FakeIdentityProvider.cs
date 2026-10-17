@@ -18,6 +18,8 @@ public sealed class FakeIdentityProvider : IPlatformIdentityProvider
 
     public string SchemeName => Scheme;
 
+    public PlatformRef Guild => ApolloWebApplicationFactory.Guild;
+
     public static ClaimsIdentity CreateIdentity(string userId, string displayName, string? avatarUrl)
     {
         var identity = new ClaimsIdentity(Scheme);

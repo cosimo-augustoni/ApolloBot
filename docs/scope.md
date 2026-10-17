@@ -221,7 +221,8 @@ There are two separate actions: **stop tracking**, which is role-based and rever
 ### 6.1 Login
 
 - An OAuth2 authorization-code flow with `identify` scope only. **Discord** first. The design is platform-neutral (`IPlatformIdentityProvider`), so Fluxer OAuth can be added later; Fluxer.Net already has OAuth types.
-- After login, the web host maps the platform user to the internal user and issues an ASP.NET Core **cookie session**. The cookie holds only internal claims (internal user id, platform, roles). No platform tokens are stored after login.
+- After login, the web host maps the platform user to the internal user and issues an ASP.NET Core **cookie session**. The cookie holds only internal claims (internal user id, platform, display name, login time, and the result of the last access check: the admin claim and when it was checked, §6.2). No platform tokens are stored after login.
+- **Logout ends every session of the user.** `/auth/logout` deletes the cookie and stores the logout time (`user_sign_outs`); any session cookie of that user issued before it, a copied one included, is rejected at its next access check (D18).
 - The Blazor WASM client uses the BFF pattern: cookie auth on same-origin API calls and no tokens in the browser. This is the same as topg's web/client split.
 
 ### 6.2 Access rules (based on Discord roles)
@@ -239,7 +240,12 @@ There are two separate actions: **stop tracking**, which is role-based and rever
 
 Member access roles are edited in the admin UI (§5.1.2, §7.2). Access is checked again every few minutes, so removing someone's role revokes their web access.
 
-Bot and web are separate processes, so the web host needs a way to ask the bot for member info. **Recommendation:** the bot syncs `member_roles` and the permission flags into the DB, and the web host reads from there. This means no extra service-to-service API, and the data stays useful if the bot is temporarily down.
+Bot and web are separate processes, so the web host does not ask the bot: the bot syncs `member_roles` and the permission flags into the DB (#13), and the web host reads from there. This means no extra service-to-service API, and the data stays useful if the bot is temporarily down.
+
+How it works (#30):
+- **Admin** = `guild_members.is_administrator` of a current member (`left_at IS NULL`) of the configured guild of the platform the user logged in with (the bot's `Apollo:Platform:Discord:GuildId`). The flag includes the guild owner. No other code path grants it: role settings and configuration never do (D8).
+- The check result lives in the cookie as the admin claim plus the check time. It is computed at login and again on the first request after `Apollo:Web:Auth:RevalidationInterval` (default 5 minutes); within the interval no DB lookup is made. The client gets the claim through `/auth/me` and uses the same policy definition (`ApolloPolicies`) to show or hide pages; the host enforces it on every API call.
+- `/api/admin/**` requires `Admin`: anonymous callers get 401, others 403. `/admin` pages (`Pages/Admin` in the client) require it too: anonymous users go to the login, logged-in users without it see "Kein Zugriff" (`/kein-zugriff`).
 
 ## 7. Frontend
 
@@ -392,6 +398,7 @@ Alongside the template, the repo gets a **`CLAUDE.md`** with build and test comm
 | D13 | Test stack | xUnit v3, Shouldly, NSubstitute (edges only), Testcontainers (Timescale image), bUnit, Aspire.Hosting.Testing |
 | D16 | Member area layout | Magazine page without a drawer: header with logo, period switch and avatar menu; themed chapters; recap covers instead of a recaps list; admins reach `/admin` from the avatar menu. Picked over a bento grid and a timeline in the #27 wireframe review (§7.2) |
 | D17 | DB retries | Aspire's EF retry strategy is off (`AddApolloDbContext` sets `DisableRetry`), because it rejects the explicit transactions the bot uses. Code that needs a retry does it itself (tracking gate reload, voice startup close, `DatabaseMigrator`) instead of wrapping each transaction in `CreateExecutionStrategy()` ([#77](https://github.com/cosimo-augustoni/ApolloBot/issues/77)) |
+| D18 | Logout revocation | Logout stores a per-user logout time (`user_sign_outs`). The access check (§6.2) rejects every session cookie of that user issued before it, so a copied cookie stops working within the revalidation interval, and logging out on one device ends the sessions on the others too (#30) |
 
 ## 12. Open questions
 

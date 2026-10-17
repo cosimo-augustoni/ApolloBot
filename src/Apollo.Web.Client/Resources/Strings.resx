@@ -141,6 +141,18 @@
     <value>Diese Seite gibt es nicht. Prüfe die Adresse oder öffne die Startseite.</value>
     <comment>Not-found page</comment>
   </data>
+  <data name="NoAccess_Title" xml:space="preserve">
+    <value>Kein Zugriff</value>
+    <comment>No-access page (#30): signed in, but no policy grants the page</comment>
+  </data>
+  <data name="NoAccess_Text" xml:space="preserve">
+    <value>Du hast keine Berechtigung für diesen Bereich.</value>
+    <comment>No-access page</comment>
+  </data>
+  <data name="NoAccess_Home" xml:space="preserve">
+    <value>Startseite öffnen</value>
+    <comment>No-access page: button back to the start page</comment>
+  </data>
   <data name="NotFound_Home" xml:space="preserve">
     <value>Startseite öffnen</value>
     <comment>Not-found page button</comment>

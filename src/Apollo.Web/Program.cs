@@ -26,6 +26,8 @@ builder.Services.AddApexCharts();
 
 var app = builder.Build();
 
+AdminAccessStartupLog.Write(app.Services);
+
 // In Development the AppHost starts web only after the migrationservice finished; Swarm has no start order.
 if (!app.Environment.IsDevelopment())
 {
@@ -70,6 +72,7 @@ app.MapRazorComponents<App>()
     .AddAdditionalAssemblies(typeof(Apollo.Web.Client._Imports).Assembly);
 
 app.MapAppInfoEndpoints();
+app.MapAdminEndpoints();
 app.MapAuthEndpoints();
 app.MapDefaultEndpoints();
 

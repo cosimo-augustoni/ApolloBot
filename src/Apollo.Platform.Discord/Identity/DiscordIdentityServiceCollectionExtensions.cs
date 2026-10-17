@@ -28,6 +28,11 @@ public static class DiscordIdentityServiceCollectionExtensions
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        services.AddOptions<DiscordLoginGuildOptions>()
+            .BindConfiguration(DiscordLoginGuildOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         services.AddAuthentication().AddOAuth(DiscordIdentityProvider.Scheme, options =>
         {
             options.AuthorizationEndpoint = AuthorizationEndpoint;

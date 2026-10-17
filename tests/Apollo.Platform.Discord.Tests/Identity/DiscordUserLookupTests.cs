@@ -26,7 +26,7 @@ public sealed class DiscordUserLookupTests
 
         handler.Authorization.ShouldBe("Bearer secret-access-token");
         handler.RequestUri.ShouldBe(new Uri("https://discord.com/api/users/@me"));
-        new DiscordIdentityProvider().GetIdentity(new ClaimsPrincipal(identity))
+        new DiscordIdentityProvider(DiscordIdentityProviderTests.Guild).GetIdentity(new ClaimsPrincipal(identity))
             .ShouldBe(new PlatformIdentity(new PlatformRef(PlatformKind.Discord, "42"), "Nelly", null));
         identity.Claims.ShouldNotContain(c => c.Value.Contains("secret-access-token"));
         context.Properties.GetTokens().ShouldBeEmpty();

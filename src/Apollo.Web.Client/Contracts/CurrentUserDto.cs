@@ -5,4 +5,5 @@ namespace Apollo.Web.Client.Contracts;
 /// <param name="Platform">The platform the user logged in with, e.g. <c>Discord</c>.</param>
 /// <param name="DisplayName">The user's name on that platform at login.</param>
 /// <param name="AvatarUrl">The user's avatar image on that platform at login, or <see langword="null"/> without one.</param>
-public sealed record CurrentUserDto(Guid UserId, string Platform, string DisplayName, string? AvatarUrl);
+/// <param name="IsAdmin">Whether the session holds the admin claim (<see cref="ApolloClaimTypes.Admin"/>) as of its last access check.</param>
+public sealed record CurrentUserDto(Guid UserId, string Platform, string DisplayName, string? AvatarUrl, bool IsAdmin = false);

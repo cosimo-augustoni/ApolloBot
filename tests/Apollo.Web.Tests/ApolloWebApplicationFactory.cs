@@ -1,3 +1,4 @@
+using Apollo.Platform.Abstractions;
 using Apollo.Platform.Abstractions.Identity;
 using Apollo.Web.Tests.Auth;
 using Microsoft.AspNetCore.DataProtection;
@@ -23,11 +24,17 @@ public sealed class ApolloWebApplicationFactory : WebApplicationFactory<Program>
 
     public const string OAuthClientId = "123456789012345678";
 
+    /// <summary>The configured guild (<c>Apollo:Platform:Discord:GuildId</c>) whose synced members get access.</summary>
+    public static readonly PlatformRef Guild = new(PlatformKind.Discord, "222222222222222222");
+
     public static readonly Uri BaseAddress = new("https://localhost/");
 
     public string ConnectionString { get; init; } = "Host=localhost;Database=apollo_web_tests";
 
     public bool PersistDataProtectionKeys { get; init; }
+
+    /// <summary>Replaces the host's clock (access checks, cookie lifetimes) when set, e.g. with a <c>FakeTimeProvider</c>.</summary>
+    public TimeProvider? TimeProvider { get; init; }
 
     /// <summary>A client on <see cref="BaseAddress"/> (HTTPS, so secure cookies are sent) that does not follow redirects.</summary>
     public HttpClient CreateHttpsClient() =>
@@ -39,6 +46,7 @@ public sealed class ApolloWebApplicationFactory : WebApplicationFactory<Program>
         builder.UseSetting("ConnectionStrings:apollo", ConnectionString);
         builder.UseSetting("Apollo:Platform:Discord:OAuth:ClientId", OAuthClientId);
         builder.UseSetting("Apollo:Platform:Discord:OAuth:ClientSecret", "placeholder-secret");
+        builder.UseSetting("Apollo:Platform:Discord:GuildId", Guild.ExternalId);
 
         builder.ConfigureTestServices(services =>
         {
@@ -48,6 +56,11 @@ public sealed class ApolloWebApplicationFactory : WebApplicationFactory<Program>
                 // startup and would otherwise retry the dummy connection string for a minute and a half.
                 services.AddDataProtection().UseEphemeralDataProtectionProvider();
                 services.Configure<KeyManagementOptions>(options => options.XmlRepository = new InMemoryXmlRepository());
+            }
+
+            if (TimeProvider is not null)
+            {
+                services.AddSingleton(TimeProvider);
             }
 
             services.AddSingleton<IPlatformIdentityProvider, FakeIdentityProvider>();

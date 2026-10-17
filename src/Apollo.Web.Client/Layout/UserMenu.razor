@@ -23,11 +23,7 @@
 @code {
     private readonly CancellationTokenSource _disposed = new();
 
-    private void Login()
-    {
-        var returnUrl = "/" + Navigation.ToBaseRelativePath(Navigation.Uri);
-        Navigation.NavigateTo($"/auth/login?returnUrl={Uri.EscapeDataString(returnUrl)}", forceLoad: true);
-    }
+    private void Login() => Navigation.NavigateToLogin();
 
     private async Task LogoutAsync()
     {

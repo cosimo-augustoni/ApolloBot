@@ -170,6 +170,54 @@ public sealed class AuthEndpointsTests(ApolloWebApplicationFactory factory) : IC
         response.Headers.Location!.PathAndQuery.ShouldBe($"/auth/login?returnUrl={Uri.EscapeDataString(TestSignInEndpoints.ProtectedPagePath)}");
     }
 
+    [Fact]
+    public async Task AdminPage_WhenAnonymous_ShouldRedirectToLoginWithReturnUrl()
+    {
+        using var http = factory.CreateHttpsClient();
+
+        using var response = await http.GetAsync(new Uri("/admin/members", UriKind.Relative), Ct);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Redirect);
+        response.Headers.Location!.PathAndQuery.ShouldBe("/auth/login?returnUrl=%2Fadmin%2Fmembers");
+    }
+
+    [Fact]
+    public async Task AdminPage_WhenAuthenticatedWithoutAdminClaim_ShouldRedirectToKeinZugriff()
+    {
+        using var http = factory.CreateHttpsClient();
+        await SignInAsync(http);
+
+        using var response = await http.GetAsync(new Uri("/admin/members", UriKind.Relative), Ct);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Redirect);
+        response.Headers.Location!.AbsolutePath.ShouldBe("/kein-zugriff");
+    }
+
+    [Fact]
+    public async Task KeinZugriffPage_WhenAuthenticated_ShouldServeTheApp()
+    {
+        using var http = factory.CreateHttpsClient();
+        await SignInAsync(http);
+
+        using var response = await http.GetAsync(new Uri("/kein-zugriff?returnUrl=%2Fadmin", UriKind.Relative), Ct);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        response.Content.Headers.ContentType!.MediaType.ShouldBe("text/html");
+    }
+
+    [Fact]
+    public async Task AdminApi_WhenAuthenticatedWithoutAdminClaim_ShouldReturnBare403()
+    {
+        using var http = factory.CreateHttpsClient();
+        await SignInAsync(http);
+
+        using var response = await http.GetAsync(new Uri("/api/admin/session", UriKind.Relative), Ct);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        response.Headers.Location.ShouldBeNull();
+        await ShouldHaveNoBodyAsync(response);
+    }
+
     // Status code pages would otherwise re-execute /not-found and send the HTML app shell to API callers.
     private static async Task ShouldHaveNoBodyAsync(HttpResponseMessage response)
     {

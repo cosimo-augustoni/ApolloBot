@@ -1,0 +1,8 @@
+@using Apollo.Web.Client.Auth
+@inject NavigationManager Navigation
+
+@* Rendered by Routes.razor when an anonymous user opens a protected page: off to the login, then back here. *@
+
+@code {
+    protected override void OnInitialized() => Navigation.NavigateToLogin();
+}

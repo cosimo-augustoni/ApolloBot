@@ -187,6 +187,18 @@ public sealed partial class AppHostModelTests
         resource.Secret.ShouldBe(secret);
     }
 
+    [Fact]
+    public async Task AppHost_WhenPublishing_ShouldPassTheGuildIdParameterToTheWebHost()
+    {
+        await using var builder = await CreateBuilderAsync(Environments.Production, "--operation", "publish");
+        var web = builder.Resources.OfType<ProjectResource>().Single(r => r.Name == "apollo-web");
+
+        var environment = await GetEnvironmentAsync(web, DistributedApplicationOperation.Publish);
+
+        environment.ShouldContainKey("Apollo__Platform__Discord__GuildId");
+        environment["Apollo__Platform__Discord__GuildId"].ShouldBeOfType<ParameterResource>().Name.ShouldBe("DiscordGuildId");
+    }
+
     private static async Task<Dictionary<string, object>> GetEnvironmentAsync(IResource resource, DistributedApplicationOperation operation)
     {
         var context = new EnvironmentCallbackContext(

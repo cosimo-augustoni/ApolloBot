@@ -46,11 +46,13 @@ public sealed class AppHostFixture : IAsyncLifetime
             .WithEnvironment("Apollo__Platform__Discord__GuildId", "111111111111111111")
             .WithEnvironment("Apollo__Platform__Discord__Connect", "false");
 
-    // The login is never exercised here; web only needs settings that pass its startup validation.
+    // The login is never exercised here; web only needs settings that pass its startup validation (environment
+    // variables win over a developer's user-secrets).
     private static void UsePlaceholderOAuthClient(IDistributedApplicationTestingBuilder builder) =>
         builder.CreateResourceBuilder<ProjectResource>("apollo-web")
             .WithEnvironment("Apollo__Platform__Discord__OAuth__ClientId", "123456789012345678")
-            .WithEnvironment("Apollo__Platform__Discord__OAuth__ClientSecret", "placeholder-secret");
+            .WithEnvironment("Apollo__Platform__Discord__OAuth__ClientSecret", "placeholder-secret")
+            .WithEnvironment("Apollo__Platform__Discord__GuildId", "111111111111111111");
 
     private static void UseThrowawayDatabase(IDistributedApplicationTestingBuilder builder)
     {
