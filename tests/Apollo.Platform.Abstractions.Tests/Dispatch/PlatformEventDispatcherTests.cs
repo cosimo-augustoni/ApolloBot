@@ -87,7 +87,7 @@ public sealed class PlatformEventDispatcherTests
     }
 
     [Fact]
-    public async Task DispatchAsync_WhenCalled_ShouldResolveHandlersFromOneScopePerEvent()
+    public async Task DispatchAsync_WhenCalled_ShouldResolveEachHandlerInAScopeOfItsOwn()
     {
         var dispatcher = BuildDispatcher(services => services
             .AddScoped<ScopeProbe>()
@@ -98,10 +98,25 @@ public sealed class PlatformEventDispatcherTests
         await dispatcher.DispatchAsync(new PlatformMessageCreatedBuilder().Build(), TestContext.Current.CancellationToken);
 
         _log.Scopes.Count.ShouldBe(4);
-        _log.Scopes[0].ShouldBeSameAs(_log.Scopes[1]);
-        _log.Scopes[2].ShouldBeSameAs(_log.Scopes[3]);
-        _log.Scopes[0].ShouldNotBeSameAs(_log.Scopes[2]);
-        _log.Scopes[0].IsDisposed.ShouldBeTrue();
+        _log.Scopes.Distinct().Count().ShouldBe(4);
+        _log.Scopes.ShouldAllBe(scope => scope.IsDisposed);
+    }
+
+    /// <summary>
+    /// A handler that fails leaves its unit of work (e.g. a <c>DbContext</c> with pending changes) behind; the next
+    /// handler of the same event must not save it.
+    /// </summary>
+    [Fact]
+    public async Task DispatchAsync_WhenAHandlerFailsWithPendingWork_ShouldNotLetTheNextHandlerSaveIt()
+    {
+        var dispatcher = BuildDispatcher(services => services
+            .AddScoped<UnitOfWork>()
+            .AddPlatformEventHandler<PlatformMessageCreated, FailingWriter>()
+            .AddPlatformEventHandler<PlatformMessageCreated, SavingWriter>());
+
+        await dispatcher.DispatchAsync(new PlatformMessageCreatedBuilder().Build(), TestContext.Current.CancellationToken);
+
+        _log.Saved.ShouldBe([nameof(SavingWriter)]);
     }
 
     [Fact]
@@ -191,6 +206,43 @@ public sealed class PlatformEventDispatcherTests
         public List<(string Handler, PlatformEvent Event)> Received { get; } = [];
 
         public List<ScopeProbe> Scopes { get; } = [];
+
+        public List<string> Saved { get; } = [];
+    }
+
+    /// <summary>
+    /// A scoped unit of work, like a <c>DbContext</c>: <see cref="Save"/> writes everything added so far.
+    /// </summary>
+    private sealed class UnitOfWork(HandlerLog log)
+    {
+        private readonly List<string> _pending = [];
+
+        public void Add(string item) => _pending.Add(item);
+
+        public void Save()
+        {
+            log.Saved.AddRange(_pending);
+            _pending.Clear();
+        }
+    }
+
+    private sealed class FailingWriter(UnitOfWork work) : IPlatformEventHandler<PlatformMessageCreated>
+    {
+        public Task HandleAsync(PlatformMessageCreated platformEvent, CancellationToken cancellationToken)
+        {
+            work.Add(nameof(FailingWriter));
+            throw new InvalidOperationException("Save failed.");
+        }
+    }
+
+    private sealed class SavingWriter(UnitOfWork work) : IPlatformEventHandler<PlatformMessageCreated>
+    {
+        public Task HandleAsync(PlatformMessageCreated platformEvent, CancellationToken cancellationToken)
+        {
+            work.Add(nameof(SavingWriter));
+            work.Save();
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class ScopeProbe : IDisposable

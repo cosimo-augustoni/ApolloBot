@@ -29,10 +29,19 @@ internal sealed partial class PlatformEventDispatcher(
 
         var invoker = _invokers.GetOrAdd(platformEvent.GetType(), HandlerInvoker.Create);
 
-        await using var scope = scopeFactory.CreateAsyncScope();
-        foreach (var handler in invoker.ResolveHandlers(scope.ServiceProvider))
+        int count;
+        await using (var countScope = scopeFactory.CreateAsyncScope())
+        {
+            count = invoker.ResolveHandlers(countScope.ServiceProvider).Count();
+        }
+
+        // One scope per handler: a handler that fails leaves its scoped services (e.g. a DbContext with pending
+        // changes) behind, and the next handler must not save them.
+        for (var index = 0; index < count; index++)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            await using var scope = scopeFactory.CreateAsyncScope();
+            var handler = invoker.ResolveHandlers(scope.ServiceProvider).ElementAt(index);
             try
             {
                 await invoker.InvokeAsync(handler, platformEvent, cancellationToken);

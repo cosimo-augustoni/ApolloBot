@@ -45,7 +45,7 @@ public static class GuildStateServiceCollectionExtensions
         return services;
     }
 
-    // One GuildStateSync per event scope, whichever event it handles.
+    // One GuildStateSync per handler scope, whichever event it handles.
     private static void AddSyncHandler<TEvent>(IServiceCollection services)
         where TEvent : PlatformEvent =>
         services.AddScoped<IPlatformEventHandler<TEvent>>(serviceProvider => (IPlatformEventHandler<TEvent>)(object)serviceProvider.GetRequiredService<GuildStateSync>());

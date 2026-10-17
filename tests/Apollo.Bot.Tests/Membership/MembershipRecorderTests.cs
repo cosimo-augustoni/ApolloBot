@@ -1,6 +1,8 @@
 using System.Diagnostics.Metrics;
 using Apollo.Bot.Membership;
 using Apollo.Bot.Tests.Tracking;
+using Apollo.Data;
+using Apollo.Data.Identity;
 using Apollo.Data.Membership;
 using Apollo.Platform.Abstractions;
 using Apollo.Platform.Abstractions.Diagnostics;
@@ -52,6 +54,21 @@ public sealed class MembershipRecorderTests(TimescaleFixture fixture) : Timescal
             () => row.OccurredAt.ShouldBe(TestTime.Now),
             () => row.Kind.ShouldBe(MembershipEventKind.Leave));
         host.Gate.TryGetTrackedUserId(_alice).ShouldBeNull();
+    }
+
+    /// <summary>
+    /// The recorder runs after <c>GuildStateSync</c> for the same event; a handler before it that fails with pending
+    /// changes must not have them saved by the recorder's <c>SaveChangesAsync</c>.
+    /// </summary>
+    [Fact]
+    public async Task Leave_WhenAnEarlierHandlerFailsWithPendingChanges_ShouldStoreOnlyItsOwnRow()
+    {
+        await using var host = await HostAsync(configure: services =>
+            services.Insert(0, ServiceDescriptor.Scoped<IPlatformEventHandler<PlatformMemberLeft>, FailingLeaveWriter>()));
+
+        await host.RaiseAsync(Left(_alice).Build());
+
+        (await KindsAsync(host)).ShouldBe([MembershipEventKind.Leave]);
     }
 
     [Fact]
@@ -337,7 +354,10 @@ public sealed class MembershipRecorderTests(TimescaleFixture fixture) : Timescal
     private static Task<Guid> GuildIdAsync(TrackingHost host) =>
         host.InScopeAsync(async (_, ids) => (await ids.TryGetGuildAsync(TestPlatform.Guild, TestContext.Current.CancellationToken)).GetValueOrDefault());
 
-    private async Task<TrackingHost> HostAsync(HandlerOrder order = HandlerOrder.AfterGuildStateSync, bool trackingRole = true)
+    private async Task<TrackingHost> HostAsync(
+        HandlerOrder order = HandlerOrder.AfterGuildStateSync,
+        bool trackingRole = true,
+        Action<IServiceCollection>? configure = null)
     {
         var host = new TrackingHost(Fixture, services =>
         {
@@ -347,6 +367,8 @@ public sealed class MembershipRecorderTests(TimescaleFixture fixture) : Timescal
             {
                 MoveRecorderFirst(services);
             }
+
+            configure?.Invoke(services);
         });
         if (trackingRole)
         {
@@ -360,5 +382,23 @@ public sealed class MembershipRecorderTests(TimescaleFixture fixture) : Timescal
             .WithMembers(Member(_alice, _statistik), Member(_carol))
             .Build());
         return host;
+    }
+
+    /// <summary>
+    /// Adds a row it never saves, then fails, like a handler whose <c>SaveChangesAsync</c> threw.
+    /// </summary>
+    private sealed class FailingLeaveWriter(ApolloDbContext db, IPlatformIdResolver ids) : IPlatformEventHandler<PlatformMemberLeft>
+    {
+        public async Task HandleAsync(PlatformMemberLeft platformEvent, CancellationToken cancellationToken)
+        {
+            db.MembershipEvents.Add(new MembershipEvent
+            {
+                GuildId = await ids.ResolveGuildAsync(platformEvent.Guild, cancellationToken),
+                OccurredAt = platformEvent.OccurredAt,
+                UserId = await ids.ResolveUserAsync(platformEvent.User, cancellationToken),
+                Kind = MembershipEventKind.Join,
+            });
+            throw new InvalidOperationException("Save failed.");
+        }
     }
 }
