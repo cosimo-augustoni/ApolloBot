@@ -27,7 +27,6 @@ public sealed class RoutesTests : ApolloTestContext
         { "admin/members", "Mitglieder" },
         { "admin/recaps", "Server-Rückblicke" },
         { "admin/data", "Daten" },
-        { "admin/settings", "Einstellungen" },
         { "me", "Meine Statistik" },
         { "me/recaps", "Meine Rückblicke" },
         { "me/privacy", "Privatsphäre" },
@@ -97,10 +96,20 @@ public sealed class RoutesTests : ApolloTestContext
     {
         UseApiClients(useMockData: false, _appInfo, _nonAdmin with { IsAdmin = true });
 
-        var routes = RenderAt("admin/settings");
+        var routes = RenderAt("admin/members");
 
         routes.WaitForAssertion(() => routes.FindComponents<AreaPlaceholder>().ShouldHaveSingleItem());
         routes.FindComponents<NoAccess>().ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Router_WhenRouteIsSettings_ShouldShowTheSettingsPage()
+    {
+        var routes = RenderAt("admin/settings");
+
+        routes.WaitForAssertion(() => routes.FindComponents<Apollo.Web.Client.Pages.Admin.Settings>().ShouldHaveSingleItem());
+        routes.Find("h1").TextContent.Trim().ShouldBe("Einstellungen");
+        routes.FindComponents<AreaPlaceholder>().ShouldBeEmpty();
     }
 
     [Fact]

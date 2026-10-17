@@ -169,4 +169,220 @@
     <value>Abmelden hat nicht geklappt. Versuch es bitte nochmal.</value>
     <comment>Snackbar when the logout request fails; the user is still logged in</comment>
   </data>
+  <data name="Settings_LoadFailed" xml:space="preserve">
+    <value>Die Einstellungen konnten nicht geladen werden. Lade die Seite bitte neu.</value>
+    <comment>Settings page (#33): error when the settings API fails</comment>
+  </data>
+  <data name="Settings_NoPlatforms_Title" xml:space="preserve">
+    <value>Noch keine Plattform verbunden</value>
+    <comment>Settings page: no platform has a synced guild yet</comment>
+  </data>
+  <data name="Settings_NoPlatforms_Text" xml:space="preserve">
+    <value>Sobald der Bot einen Server synchronisiert hat, legst du hier die Tracking-Rolle und die Zugriffsrollen fest.</value>
+    <comment>Settings page: explanation of the empty state</comment>
+  </data>
+  <data name="Settings_Bootstrap_Title" xml:space="preserve">
+    <value>Bootstrap-Modus</value>
+    <comment>Settings page: banner title while no tracking role was ever set</comment>
+  </data>
+  <data name="Settings_Bootstrap_Text" xml:space="preserve">
+    <value>Es ist keine Tracking-Rolle festgelegt. Apollo erfasst zurzeit nur Mitglieder mit der Administrator-Berechtigung. Sobald du eine Rolle festlegst, endet der Bootstrap-Modus endgültig.</value>
+    <comment>Settings page: bootstrap banner text (TEMPORARY: removed by #62)</comment>
+  </data>
+  <data name="Settings_Deleted_Title" xml:space="preserve">
+    <value>Die Tracking-Rolle wurde auf {0} gelöscht</value>
+    <comment>Settings page: warning title; {0} is the platform</comment>
+  </data>
+  <data name="Settings_Deleted_Text" xml:space="preserve">
+    <value>Zurzeit gilt: niemand wird erfasst. Lege eine neue Tracking-Rolle fest.</value>
+    <comment>Settings page: the configured tracking role was deleted on the platform</comment>
+  </data>
+  <data name="Settings_Cleared_Title" xml:space="preserve">
+    <value>Keine Tracking-Rolle festgelegt</value>
+    <comment>Settings page: warning title after the tracking role was cleared</comment>
+  </data>
+  <data name="Settings_Cleared_Text" xml:space="preserve">
+    <value>Zurzeit wird niemand erfasst, auch nicht Administratoren. Lege eine Tracking-Rolle fest, damit wieder Daten erfasst werden.</value>
+    <comment>Settings page: the tracking role was cleared; bootstrap does not come back</comment>
+  </data>
+  <data name="Settings_BotWarning_Title" xml:space="preserve">
+    <value>Apollo kann die Tracking-Rolle nicht vergeben</value>
+    <comment>Settings page: bot permission or hierarchy warning title</comment>
+  </data>
+  <data name="Settings_BotWarning_ManageRoles" xml:space="preserve">
+    <value>Der Bot braucht die Berechtigung «Rollen verwalten».</value>
+    <comment>Settings page: the bot lacks Manage Roles</comment>
+  </data>
+  <data name="Settings_BotWarning_Hierarchy" xml:space="preserve">
+    <value>Die Rolle des Bots muss in der Rollenliste über «{0}» stehen.</value>
+    <comment>Settings page: the bot's highest role is not above the tracking role {0}</comment>
+  </data>
+  <data name="Settings_BotWarning_Effect" xml:space="preserve">
+    <value>Solange das fehlt, funktionieren /apollo tracking on|off und /apollo privacy delete nicht.</value>
+    <comment>Settings page: what the bot permission problem breaks</comment>
+  </data>
+  <data name="Settings_BotOk" xml:space="preserve">
+    <value>Bot-Berechtigungen geprüft: «Rollen verwalten» vorhanden, Bot-Rolle steht über «{0}».</value>
+    <comment>Settings page: bot check passed; {0} is the tracking role</comment>
+  </data>
+  <data name="Settings_BotOkWithoutRole" xml:space="preserve">
+    <value>Bot-Berechtigungen geprüft: «Rollen verwalten» vorhanden.</value>
+    <comment>Settings page: bot check passed while no tracking role is set</comment>
+  </data>
+  <data name="Settings_Tracking_Title" xml:space="preserve">
+    <value>Tracking-Rolle</value>
+    <comment>Settings page: card title</comment>
+  </data>
+  <data name="Settings_Tracking_Label" xml:space="preserve">
+    <value>Rolle</value>
+    <comment>Settings page: tracking role select label</comment>
+  </data>
+  <data name="Settings_Tracking_None" xml:space="preserve">
+    <value>Keine Rolle (niemand wird erfasst)</value>
+    <comment>Settings page: select option that clears the tracking role</comment>
+  </data>
+  <data name="Settings_Tracking_Help" xml:space="preserve">
+    <value>Mitglieder mit dieser Rolle werden erfasst. Sie schalten die Rolle mit /apollo tracking on|off selbst um.</value>
+    <comment>Settings page: help text under the tracking role select</comment>
+  </data>
+  <data name="Settings_Tracking_Preview" xml:space="preserve">
+    <value>{0} Mitglieder werden erfasst</value>
+    <comment>Settings page: live preview for the selected tracking role</comment>
+  </data>
+  <data name="Settings_Tracking_PreviewOne" xml:space="preserve">
+    <value>1 Mitglied wird erfasst</value>
+    <comment>Settings page: live preview, singular</comment>
+  </data>
+  <data name="Settings_Tracking_PreviewBootstrap" xml:space="preserve">
+    <value>Zurzeit: {0} Administratoren werden erfasst</value>
+    <comment>Settings page: preview in bootstrap mode before a role is selected</comment>
+  </data>
+  <data name="Settings_RoleMembers" xml:space="preserve">
+    <value>{0} Mitglieder</value>
+    <comment>Settings page: member count next to a role</comment>
+  </data>
+  <data name="Settings_RoleMembersOne" xml:space="preserve">
+    <value>1 Mitglied</value>
+    <comment>Settings page: member count next to a role, singular</comment>
+  </data>
+  <data name="Settings_RoleDeleted" xml:space="preserve">
+    <value>{0} (gelöscht)</value>
+    <comment>Settings page: a configured role that was deleted on the platform</comment>
+  </data>
+  <data name="Settings_Save" xml:space="preserve">
+    <value>Speichern</value>
+    <comment>Settings page: save button</comment>
+  </data>
+  <data name="Settings_Cancel" xml:space="preserve">
+    <value>Abbrechen</value>
+    <comment>Settings page: discard the selection, and the cancel button of the confirmation</comment>
+  </data>
+  <data name="Settings_Saved" xml:space="preserve">
+    <value>Gespeichert. Gilt innerhalb von 30 Sekunden.</value>
+    <comment>Settings page: snackbar after saving; the bot reloads every 30 s</comment>
+  </data>
+  <data name="Settings_SaveFailed" xml:space="preserve">
+    <value>Speichern hat nicht geklappt. Versuch es bitte nochmal.</value>
+    <comment>Settings page: snackbar when saving fails</comment>
+  </data>
+  <data name="Settings_Rejected" xml:space="preserve">
+    <value>Eine Rolle gibt es nicht mehr. Die Einstellungen wurden neu geladen, es wurde nichts geändert.</value>
+    <comment>Settings page: snackbar when the host rejects a role (deleted meanwhile)</comment>
+  </data>
+  <data name="Settings_Confirm_Title" xml:space="preserve">
+    <value>Tracking-Rolle ändern?</value>
+    <comment>Settings page: confirmation title when setting or changing the tracking role</comment>
+  </data>
+  <data name="Settings_Confirm_Set" xml:space="preserve">
+    <value>Ab jetzt werden Mitglieder mit «{0}» erfasst.</value>
+    <comment>Settings page: confirmation; {0} is the new tracking role</comment>
+  </data>
+  <data name="Settings_Confirm_Starting" xml:space="preserve">
+    <value>{0} Mitglieder werden neu erfasst.</value>
+    <comment>Settings page: confirmation, members who start being tracked</comment>
+  </data>
+  <data name="Settings_Confirm_StartingOne" xml:space="preserve">
+    <value>1 Mitglied wird neu erfasst.</value>
+    <comment>Settings page: confirmation, singular</comment>
+  </data>
+  <data name="Settings_Confirm_Stopping" xml:space="preserve">
+    <value>{0} Mitglieder werden nicht mehr erfasst. Ihre bisherigen Daten bleiben gespeichert.</value>
+    <comment>Settings page: confirmation, members who stop being tracked</comment>
+  </data>
+  <data name="Settings_Confirm_StoppingOne" xml:space="preserve">
+    <value>1 Mitglied wird nicht mehr erfasst. Seine bisherigen Daten bleiben gespeichert.</value>
+    <comment>Settings page: confirmation, singular</comment>
+  </data>
+  <data name="Settings_Confirm_Bootstrap" xml:space="preserve">
+    <value>Der Bootstrap-Modus endet damit endgültig.</value>
+    <comment>Settings page: confirmation in bootstrap mode (TEMPORARY: removed by #62)</comment>
+  </data>
+  <data name="Settings_Confirm_Clear_Title" xml:space="preserve">
+    <value>Tracking-Rolle entfernen?</value>
+    <comment>Settings page: confirmation title when clearing the tracking role</comment>
+  </data>
+  <data name="Settings_Confirm_Clear" xml:space="preserve">
+    <value>Danach werden keine Daten mehr erfasst – auch nicht für Administratoren.</value>
+    <comment>Settings page: confirmation text when clearing the tracking role</comment>
+  </data>
+  <data name="Settings_Confirm_Yes" xml:space="preserve">
+    <value>Bestätigen</value>
+    <comment>Settings page: confirm button of the confirmation</comment>
+  </data>
+  <data name="Settings_Access_Title" xml:space="preserve">
+    <value>Zugriffsrollen</value>
+    <comment>Settings page: card title for the member access roles</comment>
+  </data>
+  <data name="Settings_Access_Label" xml:space="preserve">
+    <value>Rollen</value>
+    <comment>Settings page: member access roles select label</comment>
+  </data>
+  <data name="Settings_Access_Help" xml:space="preserve">
+    <value>Mitglieder mit mindestens einer dieser Rollen können sich anmelden und ihre eigene Statistik sehen. Admin-Zugriff hat immer, wer die Administrator-Berechtigung hat.</value>
+    <comment>Settings page: help text under the member access roles select</comment>
+  </data>
+  <data name="Settings_Access_Preview" xml:space="preserve">
+    <value>{0} Mitglieder haben Zugriff</value>
+    <comment>Settings page: live preview for the selected member access roles</comment>
+  </data>
+  <data name="Settings_Access_PreviewOne" xml:space="preserve">
+    <value>1 Mitglied hat Zugriff</value>
+    <comment>Settings page: live preview, singular</comment>
+  </data>
+  <data name="Settings_History_Title" xml:space="preserve">
+    <value>Änderungsverlauf</value>
+    <comment>Settings page: card title for the change history</comment>
+  </data>
+  <data name="Settings_History_Empty" xml:space="preserve">
+    <value>Noch keine Änderungen.</value>
+    <comment>Settings page: empty change history</comment>
+  </data>
+  <data name="Settings_History_When" xml:space="preserve">
+    <value>Zeitpunkt</value>
+    <comment>Settings page: history column</comment>
+  </data>
+  <data name="Settings_History_Who" xml:space="preserve">
+    <value>Geändert von</value>
+    <comment>Settings page: history column</comment>
+  </data>
+  <data name="Settings_History_What" xml:space="preserve">
+    <value>Änderung</value>
+    <comment>Settings page: history column</comment>
+  </data>
+  <data name="Settings_History_TrackingAdded" xml:space="preserve">
+    <value>Tracking-Rolle festgelegt: {0}</value>
+    <comment>Settings page: history entry; {0} is the role</comment>
+  </data>
+  <data name="Settings_History_TrackingRemoved" xml:space="preserve">
+    <value>Tracking-Rolle entfernt: {0}</value>
+    <comment>Settings page: history entry; {0} is the role</comment>
+  </data>
+  <data name="Settings_History_AccessAdded" xml:space="preserve">
+    <value>Zugriffsrolle hinzugefügt: {0}</value>
+    <comment>Settings page: history entry; {0} is the role</comment>
+  </data>
+  <data name="Settings_History_AccessRemoved" xml:space="preserve">
+    <value>Zugriffsrolle entfernt: {0}</value>
+    <comment>Settings page: history entry; {0} is the role</comment>
+  </data>
 </root>

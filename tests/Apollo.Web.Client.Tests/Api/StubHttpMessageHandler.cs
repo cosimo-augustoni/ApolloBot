@@ -13,6 +13,9 @@ public sealed class StubHttpMessageHandler(object responseBody) : HttpMessageHan
 
     public List<Uri> Requests { get; } = [];
 
+    /// <summary>The request bodies, in order; read when sent, since the caller may dispose the request.</summary>
+    public List<string?> Bodies { get; } = [];
+
     /// <summary>The requests with method and headers, in order.</summary>
     public List<HttpRequestMessage> Messages { get; } = [];
 
@@ -25,14 +28,15 @@ public sealed class StubHttpMessageHandler(object responseBody) : HttpMessageHan
         return this;
     }
 
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         Requests.Add(request.RequestUri!);
         Messages.Add(request);
+        Bodies.Add(request.Content is null ? null : await request.Content.ReadAsStringAsync(cancellationToken));
 
         var (status, body) = _responses.TryGetValue(request.RequestUri!.AbsolutePath, out var response)
             ? response
             : (HttpStatusCode.OK, responseBody);
-        return Task.FromResult(new HttpResponseMessage(status) { Content = body is null ? null : JsonContent.Create(body) });
+        return new HttpResponseMessage(status) { Content = body is null ? null : JsonContent.Create(body) };
     }
 }

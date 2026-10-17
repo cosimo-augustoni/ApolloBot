@@ -1,0 +1,102 @@
+@using Apollo.Web.Client.Contracts
+@inject IRoleSettingsClient Client
+@inject ISnackbar Snackbar
+@inject IStringLocalizer<Strings> L
+
+@*
+    The member access roles of one platform (#33, scope §6.2): any number of roles, with a live preview of who could log
+    in. The Member policy that uses them is #41. A configured role that was deleted is shown as such and dropped on save.
+*@
+<SectionCard Title="@L["Settings_Access_Title"]">
+    <MudSelect T="Guid" MultiSelection="true" SelectedValues="_selected" SelectedValuesChanged="SelectAsync" Label="@L["Settings_Access_Label"]"
+               ToStringFunc="Display" FullWidth="true" Variant="Variant.Outlined" Dense="true" Class="apollo-access-select">
+        @foreach (var role in Settings.Roles.Where(r => !r.IsDeleted))
+        {
+            <MudSelectItem T="Guid" Value="role.Id"><RoleLabel Role="role" /></MudSelectItem>
+        }
+    </MudSelect>
+    <MudText Typo="Typo.body2" Class="mud-text-secondary mt-1">@L["Settings_Access_Help"]</MudText>
+
+    @if (_preview is not null)
+    {
+        <MudText Typo="Typo.subtitle1" Class="apollo-access-preview mt-3">
+            @L.Count(_preview.Members, "Settings_Access_PreviewOne", "Settings_Access_Preview")
+        </MudText>
+    }
+
+    <div class="d-flex flex-wrap gap-2 mt-3">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!Changed || _saving)" OnClick="SaveAsync" Class="apollo-access-save">
+            @L["Settings_Save"]
+        </MudButton>
+        <MudButton Variant="Variant.Text" Disabled="@(!Changed || _saving)" OnClick="ResetAsync">@L["Settings_Cancel"]</MudButton>
+    </div>
+</SectionCard>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Platform { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public RoleSettingsDto Settings { get; set; } = default!;
+
+    /// <summary>Called after a save attempt, so the panel reloads settings and history.</summary>
+    [Parameter]
+    public EventCallback OnSaved { get; set; }
+
+    private RoleSettingsDto? _shown;
+    private HashSet<Guid> _selected = [];
+    private RolePreviewDto? _preview;
+    private bool _saving;
+
+    private bool Changed => !_selected.SetEquals(Settings.MemberAccessRoleIds);
+
+    // Deleted roles grant nothing and the host rejects them, so they are left out of the preview and the save.
+    private List<Guid> Selectable => [.. _selected.Where(id => Settings.Roles.Any(r => r.Id == id && !r.IsDeleted))];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!ReferenceEquals(_shown, Settings))
+        {
+            _shown = Settings;
+            await SelectAsync(Settings.MemberAccessRoleIds);
+        }
+    }
+
+    private async Task SelectAsync(IEnumerable<Guid>? roleIds)
+    {
+        _selected = [.. roleIds ?? []];
+        _preview = await Client.GetPreviewAsync(Platform, Selectable, CancellationToken.None);
+    }
+
+    private Task ResetAsync() => SelectAsync(Settings.MemberAccessRoleIds);
+
+    private string Display(Guid roleId) =>
+        Settings.Roles.FirstOrDefault(r => r.Id == roleId) is { } role
+            ? role.IsDeleted ? L["Settings_RoleDeleted", role.Name] : role.Name
+            : string.Empty;
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        try
+        {
+            await Client.SetMemberAccessRolesAsync(Platform, Selectable, CancellationToken.None);
+            Snackbar.Add(L["Settings_Saved"], Severity.Success);
+        }
+        catch (RoleSettingsRejectedException)
+        {
+            Snackbar.Add(L["Settings_Rejected"], Severity.Error);
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add(L["Settings_SaveFailed"], Severity.Error);
+            return;
+        }
+        finally
+        {
+            _saving = false;
+        }
+
+        await OnSaved.InvokeAsync();
+    }
+}

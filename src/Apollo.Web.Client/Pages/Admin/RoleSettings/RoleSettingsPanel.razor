@@ -1,0 +1,91 @@
+@using Apollo.Web.Client.Contracts
+@inject IRoleSettingsClient Client
+@inject IStringLocalizer<Strings> L
+
+@*
+    The role settings of one platform (#33, wireframe admin-settings): the mode and bot permission banners, the tracking
+    role, the member access roles and the change history. Reloads everything after a save.
+*@
+@if (_failed)
+{
+    <MudAlert Severity="Severity.Error">@L["Settings_LoadFailed"]</MudAlert>
+}
+else if (_settings is null)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else
+{
+    <div class="d-flex flex-column gap-4">
+        @switch (_settings.Mode)
+        {
+            case RoleSettingsMode.Bootstrap: @* TEMPORARY: removed by #62 *@
+                <MudAlert Severity="Severity.Info" Class="apollo-settings-bootstrap">
+                    <strong>@L["Settings_Bootstrap_Title"]</strong> @L["Settings_Bootstrap_Text"]
+                </MudAlert>
+                break;
+            case RoleSettingsMode.TrackingRoleDeleted:
+                <MudAlert Severity="Severity.Error" Class="apollo-settings-deleted">
+                    <strong>@L["Settings_Deleted_Title", Platform]</strong> @L["Settings_Deleted_Text"]
+                </MudAlert>
+                break;
+            case RoleSettingsMode.TrackingRoleCleared:
+                <MudAlert Severity="Severity.Warning" Class="apollo-settings-cleared">
+                    <strong>@L["Settings_Cleared_Title"]</strong> @L["Settings_Cleared_Text"]
+                </MudAlert>
+                break;
+        }
+
+        @if (!_settings.BotPermissions.IsOk)
+        {
+            <MudAlert Severity="Severity.Warning" Class="apollo-settings-bot-warning">
+                <strong>@L["Settings_BotWarning_Title"]</strong>
+                @if (!_settings.BotPermissions.CanManageRoles)
+                {
+                    @(" ")@L["Settings_BotWarning_ManageRoles"]
+                }
+                @if (_settings.BotPermissions.IsAboveTrackingRole == false)
+                {
+                    @(" ")@L["Settings_BotWarning_Hierarchy", TrackingRoleName]
+                }
+                @(" ")@L["Settings_BotWarning_Effect"]
+            </MudAlert>
+        }
+
+        <TrackingRoleCard Platform="@Platform" Settings="_settings" OnSaved="LoadAsync" />
+        <MemberAccessCard Platform="@Platform" Settings="_settings" OnSaved="LoadAsync" />
+        <RoleSettingsHistory Entries="_history" />
+    </div>
+}
+
+@code {
+    /// <summary>The newest changes shown (#33: the 20 newest).</summary>
+    public const int HistoryTake = 20;
+
+    [Parameter, EditorRequired]
+    public string Platform { get; set; } = string.Empty;
+
+    private RoleSettingsDto? _settings;
+    private IReadOnlyList<RoleSettingChangeDto> _history = [];
+    private bool _failed;
+
+    private string TrackingRoleName => _settings?.Roles.FirstOrDefault(r => r.Id == _settings.TrackingRoleId)?.Name ?? string.Empty;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            var settings = Client.GetSettingsAsync(Platform, CancellationToken.None);
+            var history = Client.GetHistoryAsync(Platform, HistoryTake, CancellationToken.None);
+            _settings = await settings;
+            _history = await history;
+            _failed = false;
+        }
+        catch (HttpRequestException)
+        {
+            _failed = true;
+        }
+    }
+}

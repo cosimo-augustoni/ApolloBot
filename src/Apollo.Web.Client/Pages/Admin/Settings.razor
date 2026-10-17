@@ -1,0 +1,58 @@
+@page "/admin/settings"
+@using Apollo.Web.Client.Pages.Admin.RoleSettings
+@inject IRoleSettingsClient Client
+@inject IStringLocalizer<Strings> L
+
+@*
+    Einstellungen (#33, scope §5.1.2, §7.2): one tab per platform whose guild the bot has synced. Admin access is never
+    a setting (D8), so it does not appear here.
+*@
+<PageTitle>@L["PageTitle", L["Nav_Settings"]]</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-6">
+    <MudText Typo="Typo.h1" Class="mb-4">@L["Nav_Settings"]</MudText>
+
+    @if (_failed)
+    {
+        <MudAlert Severity="Severity.Error">@L["Settings_LoadFailed"]</MudAlert>
+    }
+    else if (_platforms is null)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_platforms.Count == 0)
+    {
+        <MudPaper Elevation="0" Class="apollo-section-card">
+            <EmptyState Icon="@Icons.Material.Outlined.Link" Title="@L["Settings_NoPlatforms_Title"]" Explanation="@L["Settings_NoPlatforms_Text"]" />
+        </MudPaper>
+    }
+    else
+    {
+        @* Every platform stays rendered, so switching tabs keeps unsaved selections. *@
+        <MudTabs Elevation="0" KeepPanelsAlive="true" TabPanelsClass="pt-4" Class="apollo-settings-tabs">
+            @foreach (var platform in _platforms)
+            {
+                <MudTabPanel Text="@platform">
+                    <RoleSettingsPanel Platform="@platform" />
+                </MudTabPanel>
+            }
+        </MudTabs>
+    }
+</MudContainer>
+
+@code {
+    private IReadOnlyList<string>? _platforms;
+    private bool _failed;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _platforms = await Client.GetPlatformsAsync(CancellationToken.None);
+        }
+        catch (HttpRequestException)
+        {
+            _failed = true;
+        }
+    }
+}

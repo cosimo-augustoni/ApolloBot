@@ -32,6 +32,16 @@ public sealed class ApiClientServiceCollectionExtensionsTests
         provider.GetRequiredService<IAppInfoClient>().ShouldBeOfType<HttpAppInfoClient>();
     }
 
+    [Theory]
+    [InlineData("true", typeof(MockRoleSettingsClient))]
+    [InlineData("false", typeof(HttpRoleSettingsClient))]
+    public void AddApolloApiClients_ShouldRegisterTheRoleSettingsClientOfTheSetting(string useMockData, Type expected)
+    {
+        using var provider = BuildProvider(useMockData, new StubHttpMessageHandler(new object()));
+
+        provider.GetRequiredService<IRoleSettingsClient>().ShouldBeOfType(expected);
+    }
+
     [Fact]
     public async Task HttpAppInfoClient_ShouldReadAppInfoFromApi()
     {
