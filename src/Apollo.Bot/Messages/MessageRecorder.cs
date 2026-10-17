@@ -112,26 +112,26 @@ internal sealed partial class MessageRecorder(
         MessageMetadata? metadata,
         Guid? replyToUserId,
         bool isBot) => new()
-    {
-        GuildId = channel.GuildId,
-        OccurredAt = platformEvent.OccurredAt,
-        UserId = userId,
-        ChannelId = channel.ChannelId,
-        ThreadParentId = channel.ThreadParentId,
-        MessageExtId = message.ExternalId,
-        Kind = kind,
-        Length = metadata?.Length,
-        WordCount = metadata?.WordCount,
-        AttachmentCount = metadata?.AttachmentCount,
-        EmbedCount = metadata?.EmbedCount,
-        EmojiCount = metadata?.EmojiCount,
-        UserMentionCount = metadata?.UserMentionCount,
-        RoleMentionCount = metadata?.RoleMentionCount,
-        MentionsEveryone = metadata?.MentionsEveryone,
-        ContentParts = metadata?.ContentParts,
-        ReplyToUserId = replyToUserId,
-        IsBot = isBot,
-    };
+        {
+            GuildId = channel.GuildId,
+            OccurredAt = platformEvent.OccurredAt,
+            UserId = userId,
+            ChannelId = channel.ChannelId,
+            ThreadParentId = channel.ThreadParentId,
+            MessageExtId = message.ExternalId,
+            Kind = kind,
+            Length = metadata?.Length,
+            WordCount = metadata?.WordCount,
+            AttachmentCount = metadata?.AttachmentCount,
+            EmbedCount = metadata?.EmbedCount,
+            EmojiCount = metadata?.EmojiCount,
+            UserMentionCount = metadata?.UserMentionCount,
+            RoleMentionCount = metadata?.RoleMentionCount,
+            MentionsEveryone = metadata?.MentionsEveryone,
+            ContentParts = metadata?.ContentParts,
+            ReplyToUserId = replyToUserId,
+            IsBot = isBot,
+        };
 
     private async Task StoreAsync(PlatformEvent platformEvent, PlatformRef message, MessageEventKind kind, Guid userId, CancellationToken cancellationToken)
     {

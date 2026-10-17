@@ -1,3 +1,4 @@
+using System.Diagnostics.Metrics;
 using Apollo.Bot.Messages;
 using Apollo.Bot.Tests.Tracking;
 using Apollo.Data.Messages;
@@ -13,7 +14,6 @@ using Apollo.Testing.Platform;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.Metrics.Testing;
-using System.Diagnostics.Metrics;
 
 namespace Apollo.Bot.Tests.Messages;
 
