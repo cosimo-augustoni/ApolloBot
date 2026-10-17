@@ -28,6 +28,17 @@ public sealed class StatTileTests : ApolloTestContext
     }
 
     [Fact]
+    public void StatTile_WhenValueContentIsSet_ShouldShowItInsteadOfTheNumber()
+    {
+        var tile = Render<StatTile>(p => p
+            .Add(t => t.Label, "Verbindung")
+            .Add(t => t.ValueContent, b => b.AddMarkupContent(0, "<span class=\"status\">Getrennt</span>")));
+
+        tile.Find(".apollo-stat-value .status").TextContent.ShouldBe("Getrennt");
+        tile.Find(".apollo-stat-value").TextContent.Trim().ShouldBe("Getrennt");
+    }
+
+    [Fact]
     public void StatTile_WhenValueMissing_ShouldShowPlaceholder()
     {
         var tile = Render<StatTile>(p => p

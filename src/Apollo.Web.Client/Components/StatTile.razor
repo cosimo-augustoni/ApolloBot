@@ -6,7 +6,16 @@
             <MudIcon Icon="@Icon" Size="Size.Small" Class="mud-text-secondary" />
         }
     </div>
-    <MudText Typo="Typo.h4" Class="apollo-stat-value apollo-numeric">@FormattedValue</MudText>
+    <MudText Typo="Typo.h4" Class="apollo-stat-value apollo-numeric">
+        @if (ValueContent is not null)
+        {
+            @ValueContent
+        }
+        else
+        {
+            @FormattedValue
+        }
+    </MudText>
     @if (Delta is not null || SubText is not null)
     {
         <div class="d-flex align-center flex-wrap gap-2 mt-1">
@@ -46,6 +55,10 @@
     /// <summary>Optional secondary line, e.g. "davon 30 erfasst".</summary>
     [Parameter]
     public string? SubText { get; set; }
+
+    /// <summary>Shown instead of the formatted <see cref="Value"/>, for a value that is not a number, e.g. a state.</summary>
+    [Parameter]
+    public RenderFragment? ValueContent { get; set; }
 
     /// <summary>Optional MudBlazor icon shown next to the label.</summary>
     [Parameter]
