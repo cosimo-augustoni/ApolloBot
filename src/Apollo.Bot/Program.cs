@@ -1,5 +1,6 @@
 using Apollo.Bot.Commands;
 using Apollo.Bot.GuildState;
+using Apollo.Bot.Membership;
 using Apollo.Bot.Messages;
 using Apollo.Bot.Reactions;
 using Apollo.Bot.Status;
@@ -19,6 +20,7 @@ builder.Services.AddTrackingGate();
 builder.Services.AddMessageRecording();
 builder.Services.AddVoiceRecording();
 builder.Services.AddReactionRecording();
+builder.Services.AddMembershipRecording();
 builder.Services.AddBotStatus();
 
 var host = builder.Build();

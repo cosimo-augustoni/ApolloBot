@@ -14,6 +14,7 @@ public static class TrackingServiceCollectionExtensions
     {
         services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<TrackingStateLoader>();
+        services.AddScoped<TrackingHistory>();
         services.AddSingleton<TrackingGate>();
         services.AddSingleton<ITrackingGate>(serviceProvider => serviceProvider.GetRequiredService<TrackingGate>());
         services.AddGuildStateNotificationHandler<GuildStateSynchronized, TrackingGateNotificationHandler>();
