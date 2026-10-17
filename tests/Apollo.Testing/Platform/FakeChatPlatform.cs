@@ -37,6 +37,7 @@ public sealed class FakeChatPlatform(
     private readonly List<FakeReply> _replies = [];
     private ICommandRouter? _commandRouter;
     private Exception? _roleChangeFailure;
+    private List<PlatformMemberUpdated>? _heldUpdates;
     private int _memberListingFailures;
     private int _memberListings;
 
@@ -105,6 +106,40 @@ public sealed class FakeChatPlatform(
         }
 
         return this;
+    }
+
+    /// <summary>
+    /// Makes <see cref="AddRoleAsync"/> and <see cref="RemoveRoleAsync"/> change the role without echoing the
+    /// <see cref="PlatformMemberUpdated"/> yet, as a gateway whose member update arrives later would. Deliver the held
+    /// updates with <see cref="ReleaseMemberUpdatesAsync"/>.
+    /// </summary>
+    public FakeChatPlatform HoldMemberUpdates()
+    {
+        lock (_lock)
+        {
+            _heldUpdates = [];
+        }
+
+        return this;
+    }
+
+    /// <summary>
+    /// Echoes the member updates held since <see cref="HoldMemberUpdates"/>, in order, and echoes the following ones at
+    /// once again.
+    /// </summary>
+    public async Task ReleaseMemberUpdatesAsync(CancellationToken cancellationToken)
+    {
+        List<PlatformMemberUpdated> held;
+        lock (_lock)
+        {
+            held = _heldUpdates ?? [];
+            _heldUpdates = null;
+        }
+
+        foreach (var update in held)
+        {
+            await RaiseAsync(update, cancellationToken);
+        }
     }
 
     public FakeChatPlatform WithCapabilities(PlatformCapabilities capabilities)
@@ -237,7 +272,7 @@ public sealed class FakeChatPlatform(
 
     private async Task ChangeRoleAsync(PlatformRef guild, FakeRoleChange change, CancellationToken cancellationToken)
     {
-        PlatformMember updated;
+        PlatformMemberUpdated echo;
         lock (_lock)
         {
             if (_roleChangeFailure is { } failure)
@@ -250,12 +285,18 @@ public sealed class FakeChatPlatform(
             IReadOnlyList<PlatformRef> roles = change.Kind == FakeRoleChangeKind.Added
                 ? [.. member.Roles.Where(r => r != change.Role), change.Role]
                 : [.. member.Roles.Where(r => r != change.Role)];
-            updated = member with { Roles = roles };
+            var updated = member with { Roles = roles };
             _members[_members.IndexOf(member)] = updated;
             _roleChanges.Add(change);
+            echo = new PlatformMemberUpdated(Guild, timeProvider.GetUtcNow(), updated);
+            if (_heldUpdates is { } held)
+            {
+                held.Add(echo);
+                return;
+            }
         }
 
-        await RaiseAsync(new PlatformMemberUpdated(Guild, timeProvider.GetUtcNow(), updated), cancellationToken);
+        await RaiseAsync(echo, cancellationToken);
     }
 
     private async Task<CommandReply> ReplyAsync(PlatformRef member, Func<ICommandRouter, Task<CommandReply>> route)

@@ -22,8 +22,8 @@ namespace Apollo.Bot.Privacy;
 /// Only then is the tracking role removed: after a failed deletion the member keeps their role and their data as before,
 /// and after a successful one recording does not resume. The gate's mark ends once the role removal is synced (the
 /// echoed member update). Without a role to remove (bootstrap mode, tracking not set up, the member does not hold it) or
-/// when the platform refuses the removal, the mark ends right away and the gate tracks whoever the rule tracks, from a
-/// new tracking period.
+/// when the platform refuses the removal, the deletion fails or is cancelled, the mark ends right away and the gate
+/// tracks whoever the rule tracks, from a new tracking period. Only the deletion that added the mark ends it.
 /// </item>
 /// </list>
 /// <para>
@@ -42,9 +42,7 @@ internal sealed partial class UserDataEraser(
     public async Task<UserDataErasureOutcome> EraseAsync(PlatformRef guild, PlatformRef member, CancellationToken cancellationToken)
     {
         // One view for the whole deletion, so the mode, the tracking role and whether the member holds it belong together.
-        // With a tracking role, the gate tracks exactly its holders (see TrackingRoleSwitch).
         var view = gate.Current;
-        var role = view.TrackingRole is { } trackingRole && view.TryGetTrackedUserId(member) is not null ? trackingRole : null;
 
         // A member the bot has never seen has nothing stored, and nothing is created for them.
         if (await ids.TryGetGuildAsync(guild, cancellationToken) is not { } guildId
@@ -53,36 +51,52 @@ internal sealed partial class UserDataEraser(
             return WithoutRoleRemoval(view);
         }
 
+        // Only a mark this call added is released here, on every way out, unless the role removal ends it. A second
+        // confirm while the first one's role removal is not synced yet finds the mark and leaves it to the first.
+        var mark = UntrackedMark.NotTracked;
+        var markEndsWithRoleRemoval = false;
         try
         {
-            await gate.MarkUntrackedAsync(guildId, userId, cancellationToken);
-            await EraseRowsAsync(guildId, userId, cancellationToken);
-        }
-        catch (Exception exception) when (!IsCancellation(exception, cancellationToken))
-        {
-            LogEraseFailed(exception, userId);
-            await gate.ReleaseUntrackedMarkAsync(guildId, userId, CancellationToken.None);
-            return UserDataErasureOutcome.Failed;
-        }
+            try
+            {
+                mark = await gate.MarkUntrackedAsync(guildId, userId, cancellationToken);
+                await EraseRowsAsync(guildId, userId, cancellationToken);
+            }
+            catch (Exception exception) when (!IsCancellation(exception, cancellationToken))
+            {
+                LogEraseFailed(exception, userId);
+                return UserDataErasureOutcome.Failed;
+            }
 
-        if (role is null)
-        {
-            await gate.ReleaseUntrackedMarkAsync(guildId, userId, cancellationToken);
-            return WithoutRoleRemoval(view);
-        }
+            // With a tracking role, the gate tracks exactly its holders (see TrackingRoleSwitch). A mark another deletion
+            // added means the member held the role then, and its removal may not be synced yet: removing it again is
+            // harmless, and the reply stays true.
+            var holdsRole = view.TryGetTrackedUserId(member) is not null || mark == UntrackedMark.AlreadyMarked;
+            if (view.TrackingRole is not { } role || !holdsRole)
+            {
+                return WithoutRoleRemoval(view);
+            }
 
-        try
-        {
-            await platform.RemoveRoleAsync(guild, member, role, cancellationToken);
-        }
-        catch (Exception exception) when (!IsCancellation(exception, cancellationToken))
-        {
-            LogRemoveRoleFailed(exception, role.ToString(), userId);
-            await gate.ReleaseUntrackedMarkAsync(guildId, userId, CancellationToken.None);
-            return UserDataErasureOutcome.DeletedButRoleKept;
-        }
+            try
+            {
+                await platform.RemoveRoleAsync(guild, member, role, cancellationToken);
+            }
+            catch (Exception exception) when (!IsCancellation(exception, cancellationToken))
+            {
+                LogRemoveRoleFailed(exception, role.ToString(), userId);
+                return UserDataErasureOutcome.DeletedButRoleKept;
+            }
 
-        return UserDataErasureOutcome.DeletedAndRoleRemoved;
+            markEndsWithRoleRemoval = true;
+            return UserDataErasureOutcome.DeletedAndRoleRemoved;
+        }
+        finally
+        {
+            if (mark == UntrackedMark.Added && !markEndsWithRoleRemoval)
+            {
+                await gate.ReleaseUntrackedMarkAsync(guildId, userId, CancellationToken.None);
+            }
+        }
     }
 
     private static bool IsCancellation(Exception exception, CancellationToken cancellationToken) =>

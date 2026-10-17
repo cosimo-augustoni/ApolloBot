@@ -5,8 +5,8 @@ namespace Apollo.Bot.Tracking;
 
 /// <inheritdoc cref="IUserDataSummary"/>
 /// <remarks>
-/// A recorder issue that adds an event table adds it here too, and to <c>RecordedDataEraserStep</c> (privacy delete). The tables are hypertables on <c>occurred_at</c>, so
-/// each count looks at every chunk; fine for one user on demand.
+/// A recorder issue that adds an event table adds it here too, and to <c>RecordedDataEraserStep</c> (privacy delete).
+/// The tables are hypertables on <c>occurred_at</c>, so each count looks at every chunk; fine for one user on demand.
 /// </remarks>
 internal sealed class UserDataSummary(ApolloDbContext db) : IUserDataSummary
 {
