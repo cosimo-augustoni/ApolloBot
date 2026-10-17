@@ -68,6 +68,10 @@ if (builder.ExecutionContext.IsPublishMode)
 if (builder.ExecutionContext.IsPublishMode)
 {
     bot.WithEnvironment("Apollo__Links__PublicWebUrl", builder.AddParameter("PublicWebUrl"));
+
+    // The bot's Discord connection (#25). In development the bot project's user-secrets hold them (docs/deployment.md).
+    bot.WithEnvironment("Apollo__Platform__Discord__Token", builder.AddParameter("DiscordBotToken", secret: true))
+        .WithEnvironment("Apollo__Platform__Discord__GuildId", builder.AddParameter("DiscordGuildId"));
 }
 else
 {

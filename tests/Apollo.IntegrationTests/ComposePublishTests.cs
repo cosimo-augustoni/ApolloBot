@@ -157,6 +157,16 @@ public sealed class ComposePublishTests(ComposePublishFixture fixture) : IClassF
     }
 
     [Fact]
+    public void Publish_Bot_ShouldGetDiscordSettingsFromParameters()
+    {
+        // Without them the published bot fails its startup validation (#25).
+        var environment = Map(Service("bot"), "environment");
+
+        TryScalar(environment, "Apollo__Platform__Discord__Token").ShouldBe("${DISCORDBOTTOKEN}");
+        TryScalar(environment, "Apollo__Platform__Discord__GuildId").ShouldBe("${DISCORDGUILDID}");
+    }
+
+    [Fact]
     public void Publish_Web_ShouldListenOnPort80()
     {
         Scalar(Map(Service("apollo-web"), "environment"), "HTTP_PORTS").ShouldBe("80");
