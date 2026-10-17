@@ -10,7 +10,12 @@ public sealed class PlatformPresenceBuilder : TestDataBuilder<PlatformPresenceBu
     public PlatformPresenceBuilder WithStatus(PlatformPresenceStatus status) => With(p => p with { Status = status });
 
     public PlatformPresenceBuilder Playing(string game, DateTimeOffset? startedAt = null) =>
-        With(p => p with { Activities = [.. p.Activities, new PlatformActivity(PlatformActivityType.Playing, game, startedAt)] });
+        WithActivity(PlatformActivityType.Playing, game, startedAt);
+
+    public PlatformPresenceBuilder ListeningTo(string name) => WithActivity(PlatformActivityType.Listening, name);
+
+    public PlatformPresenceBuilder WithActivity(PlatformActivityType type, string name, DateTimeOffset? startedAt = null) =>
+        With(p => p with { Activities = [.. p.Activities, new PlatformActivity(type, name, startedAt)] });
 
     protected override PlatformPresence CreateDefault() => new(
         User: TestPlatform.User("alice"),
