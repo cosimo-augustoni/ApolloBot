@@ -126,4 +126,12 @@ public sealed class DiscordGatewaySetupTests
 
         DiscordHost.GatewayHandlers(host).ShouldContain(handler => handler is DiscordReactionHandler);
     }
+
+    [Fact]
+    public void AddDiscordPlatform_ShouldMapBanEvents()
+    {
+        using var host = DiscordHost.Build(DiscordHost.ValidSettings());
+
+        DiscordHost.GatewayHandlers(host).ShouldContain(handler => handler is DiscordBanHandler);
+    }
 }
