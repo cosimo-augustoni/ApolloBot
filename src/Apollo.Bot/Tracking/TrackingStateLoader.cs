@@ -12,18 +12,35 @@ namespace Apollo.Bot.Tracking;
 /// </summary>
 internal sealed class TrackingStateLoader(ApolloDbContext db)
 {
-    public async Task<(TrackingSettings Settings, string? RoleName)> LoadSettingsAsync(Guid guildId, PlatformKind platform, CancellationToken cancellationToken)
+    /// <summary>
+    /// The tracking role setting of the guild on <paramref name="platform"/>, with the role's name (for the log) and its
+    /// platform role (for the tracking commands); both <see langword="null"/> without a tracking role.
+    /// </summary>
+    public async Task<(TrackingSettings Settings, string? RoleName, PlatformRef? Role)> LoadSettingsAsync(
+        Guid guildId,
+        PlatformKind platform,
+        CancellationToken cancellationToken)
     {
         var trackingRole = await db.RoleSettings.AsNoTracking()
             .Where(s => s.GuildId == guildId && s.Platform == platform && s.Purpose == RoleSettingPurpose.Tracking)
-            .Join(db.Roles, s => s.RoleId, r => r.Id, (s, r) => new { r.Id, r.Name, r.DeletedAt })
+            .Join(db.Roles, s => s.RoleId, r => r.Id, (s, r) => r)
+            .Select(r => new
+            {
+                r.Id,
+                r.Name,
+                r.DeletedAt,
+                ExternalId = db.RolePlatformIds.Where(p => p.RoleId == r.Id && p.Platform == platform).Select(p => p.ExternalId).FirstOrDefault(),
+            })
             .SingleOrDefaultAsync(cancellationToken);
 
         // TEMPORARY: removed by #62. Only keeps the Administrator bootstrap from coming back once it ended.
         var everConfigured = await db.RoleSettingChanges.AsNoTracking()
             .AnyAsync(c => c.GuildId == guildId && c.Platform == platform && c.Purpose == RoleSettingPurpose.Tracking && c.Action == RoleSettingAction.Added, cancellationToken);
 
-        return (new TrackingSettings(trackingRole?.Id, trackingRole?.DeletedAt is not null, everConfigured), trackingRole?.Name);
+        return (
+            new TrackingSettings(trackingRole?.Id, trackingRole?.DeletedAt is not null, everConfigured),
+            trackingRole?.Name,
+            trackingRole?.ExternalId is { } externalId ? new PlatformRef(platform, externalId) : null);
     }
 
     /// <summary>

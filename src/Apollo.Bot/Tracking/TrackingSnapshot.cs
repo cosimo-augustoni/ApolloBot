@@ -10,6 +10,7 @@ internal sealed class TrackingSnapshot(
     Guid guildId,
     TrackingSettings settings,
     string? trackingRoleName,
+    PlatformRef? trackingRole,
     IReadOnlyDictionary<Guid, PlatformRef> tracked)
 {
     public Guid GuildId { get; } = guildId;
@@ -22,6 +23,12 @@ internal sealed class TrackingSnapshot(
     /// The tracking role's name, for the log; <see langword="null"/> without one.
     /// </summary>
     public string? TrackingRoleName { get; } = trackingRoleName;
+
+    /// <summary>
+    /// The tracking role on the bot's platform while <see cref="Mode"/> is <see cref="TrackingMode.TrackingRole"/>;
+    /// <see langword="null"/> otherwise.
+    /// </summary>
+    public PlatformRef? TrackingRole { get; } = TrackingRule.ModeOf(settings) == TrackingMode.TrackingRole ? trackingRole : null;
 
     /// <summary>
     /// The tracked users: internal ID to platform user.
