@@ -13,4 +13,10 @@ public sealed class GuildPlatformId
     public PlatformKind Platform { get; init; }
 
     public required string ExternalId { get; init; }
+
+    /// <summary>
+    /// The bot's own user on this platform, set by the guild state sync (#13) from every snapshot, so the admin page can
+    /// check the bot's permissions from the synced roles (#33). <see langword="null"/> before the first snapshot.
+    /// </summary>
+    public Guid? BotUserId { get; set; }
 }

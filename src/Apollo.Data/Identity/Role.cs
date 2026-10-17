@@ -29,5 +29,11 @@ public sealed class Role
     /// </summary>
     public bool IsAdministrator { get; set; }
 
+    /// <summary>
+    /// Whether the role grants the Manage Roles permission, which the bot needs to give and take the tracking role
+    /// (scope §5.1.2). Not set by Administrator alone; the admin page checks both.
+    /// </summary>
+    public bool ManagesRoles { get; set; }
+
     public DateTimeOffset? DeletedAt { get; set; }
 }
