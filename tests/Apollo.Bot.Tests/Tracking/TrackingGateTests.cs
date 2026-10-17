@@ -88,6 +88,61 @@ public sealed class TrackingGateTests(TimescaleFixture fixture) : TimescaleTest(
     }
 
     [Fact]
+    public async Task TrackingRole_WhenTrackingRoleIsConfigured_ShouldBeItsPlatformRole()
+    {
+        await using var host = await HostInTrackingRoleModeAsync();
+
+        host.Gate.TrackingRole.ShouldBe(_statistik);
+    }
+
+    [Fact]
+    public async Task TrackingRole_BeforeTheFirstGuildSync_ShouldBeNull()
+    {
+        await using var host = new TrackingHost(Fixture);
+        await host.SeedRoleSettingAsync(new RoleSettingBuilder().ForRole(_statistik));
+
+        host.Gate.TrackingRole.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task TrackingRole_InBootstrapMode_ShouldBeNull()
+    {
+        await using var host = new TrackingHost(Fixture);
+
+        await host.SyncAsync(Snapshot());
+
+        host.Gate.TrackingRole.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task TrackingRole_WhenTrackingRoleWasDeleted_ShouldBeNull()
+    {
+        await using var host = new TrackingHost(Fixture);
+        await host.SeedRoleSettingAsync(new RoleSettingBuilder().ForRole(_statistik));
+
+        await host.SyncAsync(Snapshot(withTrackingRole: false));
+
+        host.Gate.Mode.ShouldBe(TrackingMode.TrackingRoleDeleted);
+        host.Gate.TrackingRole.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task TrackingRole_WhenTrackingRowWasRemoved_ShouldBeNull()
+    {
+        await using var host = await HostInTrackingRoleModeAsync();
+        await host.InScopeAsync(async (db, _) =>
+        {
+            db.RoleSettings.RemoveRange(db.RoleSettings);
+            return await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        });
+
+        await host.SyncAsync(Snapshot());
+
+        host.Gate.Mode.ShouldBe(TrackingMode.TrackingRoleCleared);
+        host.Gate.TrackingRole.ShouldBeNull();
+    }
+
+    [Fact]
     public async Task MemberChange_WhenMemberGainsTheTrackingRole_ShouldStartTrackingOnceAndOpenAPeriod()
     {
         await using var host = await HostInTrackingRoleModeAsync();

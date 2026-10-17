@@ -42,6 +42,8 @@ internal sealed partial class TrackingGate(
 
     public TrackingMode? Mode => _snapshot?.Mode;
 
+    public PlatformRef? TrackingRole => _snapshot?.TrackingRole;
+
     public bool IsTracked(Guid userId) => _snapshot?.Tracked.ContainsKey(userId) == true;
 
     public Guid? TryGetTrackedUserId(PlatformRef user) =>
@@ -111,7 +113,7 @@ internal sealed partial class TrackingGate(
 
             await ApplyAsync(
                 scope.ServiceProvider,
-                new TrackingSnapshot(guildId, current.Settings, current.TrackingRoleName, tracked),
+                new TrackingSnapshot(guildId, current.Settings, current.TrackingRoleName, current.TrackingRole, tracked),
                 userId,
                 cancellationToken);
         }
@@ -128,9 +130,9 @@ internal sealed partial class TrackingGate(
     {
         await using var scope = scopeFactory.CreateAsyncScope();
         var loader = scope.ServiceProvider.GetRequiredService<TrackingStateLoader>();
-        var (settings, roleName) = await loader.LoadSettingsAsync(guildId, platform.Platform, cancellationToken);
+        var (settings, roleName, role) = await loader.LoadSettingsAsync(guildId, platform.Platform, cancellationToken);
         var tracked = await loader.LoadTrackedAsync(guildId, platform.Platform, settings, userId: null, cancellationToken);
-        await ApplyAsync(scope.ServiceProvider, new TrackingSnapshot(guildId, settings, roleName, tracked), userId: null, cancellationToken);
+        await ApplyAsync(scope.ServiceProvider, new TrackingSnapshot(guildId, settings, roleName, role, tracked), userId: null, cancellationToken);
     }
 
     /// <summary>

@@ -20,6 +20,13 @@ public interface ITrackingGate
     TrackingMode? Mode { get; }
 
     /// <summary>
+    /// The tracking role on the bot's platform while one is configured and exists (<see cref="Mode"/> is
+    /// <see cref="TrackingMode.TrackingRole"/>); <see langword="null"/> otherwise, which the tracking commands treat as
+    /// "not set up" (scope §5.4).
+    /// </summary>
+    PlatformRef? TrackingRole { get; }
+
+    /// <summary>
     /// Whether the user, by internal ID, is tracked right now.
     /// </summary>
     bool IsTracked(Guid userId);
