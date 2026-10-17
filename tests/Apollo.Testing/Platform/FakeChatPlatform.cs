@@ -36,6 +36,7 @@ public sealed class FakeChatPlatform(
     private readonly List<FakeRoleChange> _roleChanges = [];
     private readonly List<FakeReply> _replies = [];
     private ICommandRouter? _commandRouter;
+    private Exception? _roleChangeFailure;
     private int _memberListingFailures;
     private int _memberListings;
 
@@ -88,6 +89,21 @@ public sealed class FakeChatPlatform(
     public FakeChatPlatform FailMemberListings(int times)
     {
         Volatile.Write(ref _memberListingFailures, times);
+        return this;
+    }
+
+    /// <summary>
+    /// Makes every following <see cref="AddRoleAsync"/> and <see cref="RemoveRoleAsync"/> call throw
+    /// <paramref name="exception"/> without changing or recording anything, as a platform that refuses the change
+    /// (missing permission, role hierarchy) would.
+    /// </summary>
+    public FakeChatPlatform FailRoleChanges(Exception exception)
+    {
+        lock (_lock)
+        {
+            _roleChangeFailure = exception;
+        }
+
         return this;
     }
 
@@ -224,6 +240,11 @@ public sealed class FakeChatPlatform(
         PlatformMember updated;
         lock (_lock)
         {
+            if (_roleChangeFailure is { } failure)
+            {
+                throw failure;
+            }
+
             var member = FindMember(guild, change.User)
                 ?? throw new InvalidOperationException($"{change.User} is not a member of {Guild}.");
             IReadOnlyList<PlatformRef> roles = change.Kind == FakeRoleChangeKind.Added

@@ -161,6 +161,23 @@ public sealed class FakeChatPlatformTests
     }
 
     [Fact]
+    public async Task RoleChanges_WhenSetToFail_ShouldThrowTheFailureAndChangeNothing()
+    {
+        var role = TestPlatform.Role("stats");
+        var failure = new InvalidOperationException("Missing Permissions");
+        _platform.WithMember(new PlatformMemberBuilder().ForUser(_alice).WithRoles(role).Build()).FailRoleChanges(failure);
+
+        (await Should.ThrowAsync<InvalidOperationException>(
+            () => _platform.AddRoleAsync(_guild, _alice, TestPlatform.Role("other"), TestContext.Current.CancellationToken))).ShouldBeSameAs(failure);
+        (await Should.ThrowAsync<InvalidOperationException>(
+            () => _platform.RemoveRoleAsync(_guild, _alice, role, TestContext.Current.CancellationToken))).ShouldBeSameAs(failure);
+
+        _platform.RoleChanges.ShouldBeEmpty();
+        (await _platform.GetMemberRolesAsync(_guild, _alice, TestContext.Current.CancellationToken)).ShouldBe([role]);
+        _received.ShouldBeEmpty();
+    }
+
+    [Fact]
     public async Task RaiseAsync_WhenCalled_ShouldDeliverEventToRegisteredHandlers()
     {
         var message = new PlatformMessageCreatedBuilder().Build();
