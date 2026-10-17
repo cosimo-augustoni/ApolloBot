@@ -1,6 +1,7 @@
 using Apollo.Data.DataProtection;
 using Apollo.Data.Guilds;
 using Apollo.Data.Identity;
+using Apollo.Data.Messages;
 using Apollo.Data.Status;
 using Apollo.Data.Tracking;
 using CmdScale.EntityFrameworkCore.TimescaleDB;
@@ -48,6 +49,10 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
 
     public DbSet<TrackingPeriod> TrackingPeriods => Set<TrackingPeriod>();
 
+    public DbSet<MessageEvent> MessageEvents => Set<MessageEvent>();
+
+    public DbSet<MessageMention> MessageMentions => Set<MessageMention>();
+
     /// <summary>The web host's data protection keys (<c>PersistKeysToDbContext</c>).</summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
@@ -69,6 +74,7 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
         GuildStateModel.Configure(modelBuilder);
         StatusModel.Configure(modelBuilder);
         TrackingModel.Configure(modelBuilder);
+        MessageModel.Configure(modelBuilder);
         DataProtectionModel.Configure(modelBuilder);
     }
 }

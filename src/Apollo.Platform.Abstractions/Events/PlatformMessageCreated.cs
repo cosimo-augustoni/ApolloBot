@@ -13,6 +13,10 @@ namespace Apollo.Platform.Abstractions.Events;
 /// <param name="AuthorIsBot">Whether the author is a bot account.</param>
 /// <param name="ReplyToMessage">The message this one replies to, if it is a reply.</param>
 /// <param name="ReplyToAuthor">The author of the replied-to message when the payload has it; otherwise the recorder looks it up.</param>
+/// <param name="MentionedUsers">
+/// The distinct users the message mentions in its text, for the mention graph (<c>message_mentions</c>). A reply's
+/// automatic ping of the replied-to author is not a mention.
+/// </param>
 /// <param name="Metadata">What the adapter computed from the content.</param>
 public sealed record PlatformMessageCreated(
     PlatformRef Guild,
@@ -23,5 +27,6 @@ public sealed record PlatformMessageCreated(
     bool AuthorIsBot,
     PlatformRef? ReplyToMessage,
     PlatformRef? ReplyToAuthor,
+    IReadOnlyList<PlatformRef> MentionedUsers,
     MessageMetadata Metadata)
     : PlatformEvent(Guild, OccurredAt);
