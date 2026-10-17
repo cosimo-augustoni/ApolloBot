@@ -9,6 +9,7 @@ using Apollo.Testing.Platform;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
@@ -155,6 +156,7 @@ public sealed class BotHeartbeatServiceTests : TimescaleTest
         builder.Services.AddSingleton<IPlatformConnectionStatus>(_connection);
         builder.AddApolloDbContext();
         configure?.Invoke(builder.Services);
+        builder.Services.TryAddSingleton<IOpenVoiceSessionCounter>(new FixedOpenVoiceSessionCounter(0));
         builder.Services.AddBotStatus();
         _host = builder.Build();
         await _host.StartAsync(TestContext.Current.CancellationToken);
@@ -188,10 +190,5 @@ public sealed class BotHeartbeatServiceTests : TimescaleTest
             waited.Elapsed.ShouldBeLessThan(_wait, "the heartbeat did not get there in time");
             await Task.Delay(TimeSpan.FromMilliseconds(50), TestContext.Current.CancellationToken);
         }
-    }
-
-    private sealed class FixedOpenVoiceSessionCounter(int count) : IOpenVoiceSessionCounter
-    {
-        public int CountOpenSessions() => count;
     }
 }

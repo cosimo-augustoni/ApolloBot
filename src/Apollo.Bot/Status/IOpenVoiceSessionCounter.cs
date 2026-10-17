@@ -4,7 +4,8 @@ namespace Apollo.Bot.Status;
 /// How many voice sessions the voice recorder holds open, for the heartbeat's <c>open_voice_sessions</c>.
 /// </summary>
 /// <remarks>
-/// Until the voice recorder (#16) registers its own implementation, <see cref="NoOpenVoiceSessionCounter"/> reports 0.
+/// Implemented by the voice recorder's in-memory store (#16), registered with
+/// <see cref="Voice.VoiceRecordingServiceCollectionExtensions.AddVoiceRecording"/>.
 /// </remarks>
 public interface IOpenVoiceSessionCounter
 {
