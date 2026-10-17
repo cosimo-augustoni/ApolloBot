@@ -19,4 +19,6 @@ public static class TestPlatform
     public static PlatformRef Role(string id) => new(PlatformKind.Discord, id);
 
     public static PlatformRef Message(string id) => new(PlatformKind.Discord, id);
+
+    public static PlatformRef Emoji(string id) => new(PlatformKind.Discord, id);
 }
