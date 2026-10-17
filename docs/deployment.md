@@ -41,7 +41,8 @@ One Discord application serves both the bot and the web login. Set it up once in
    fewer than 100 servers needs no verification for them.
 2. **Bot page: token.** *Reset Token* shows the bot token once. It goes into the `DiscordBotToken` secret parameter
    ([Values to provide](#values-to-provide)). Don't paste it anywhere else: not into an issue, a PR, a chat or a file in
-   the repository. If it leaks, reset it here and deploy again with the new value.
+   the repository. If it leaks, reset it here, set the new value and delete Aspire's deployment state before you deploy
+   again: Aspire otherwise reuses the old token it cached ([Values to provide](#values-to-provide)).
 3. **OAuth2 page: client ID, client secret and redirect.** The *Client ID* (it is also the application ID) goes into
    `DiscordOAuthClientId`, the *Client Secret* into `DiscordOAuthClientSecret`. Under *Redirects*, add
    `<PublicWebUrl>/signin-discord` exactly as written (see [Web login](#web-login-discord-oauth)).
@@ -203,9 +204,25 @@ everyone out.
 Anyone who can read the database can use them to forge a login cookie for any user, admins included. Treat every way
 into the database as admin access to the website: the pgAdmin login (`PgAdminEmail`/`PgAdminPassword`, and keep
 `PgAdminPort` reachable only from your own network), the `db-password`, the `PostgresDataPath` directory on the node,
-and every backup of it. If one of them leaks, change the leaked credential, delete the rows of `data_protection_keys`
-and restart the web host (`docker service update --force apollo_apollo-web`, it caches the keys): everyone is logged
-out and new keys are created.
+and every backup of it. If one of them leaks, change the leaked credential (see below), then delete the rows of
+`data_protection_keys` and restart the web host (`docker service update --force apollo_apollo-web`, it caches the
+keys): everyone is logged out and new keys are created.
+
+**Changing a secret.** Aspire reuses the values cached in its deployment state
+(`~/.aspire/deployments/<hash>/production.json`, see [Values to provide](#values-to-provide)), so for every secret:
+set the new value (user-secret or env var), delete that state file, then run the [Steps](#steps) again. Two secrets
+are only read when their service first creates its data, so a new parameter value alone changes nothing:
+
+- **`db-password`:** Postgres reads `POSTGRES_PASSWORD` only during initdb. First change the password in the running
+  database (in pgAdmin: `ALTER USER postgres PASSWORD '<new password>';`), then set the new `db-password` value,
+  delete the state file and redeploy, so the connection strings of `bot`, `apollo-web` and `migrationservice` match
+  it again. Until the redeploy they can't reconnect.
+- **`PgAdminPassword`:** pgAdmin reads it only when it first creates its own database in `PgAdminDataPath`. Change
+  the password in the pgAdmin UI (*Change Password* in the user menu); also set the new parameter value so a fresh
+  `PgAdminDataPath` gets it.
+
+`DiscordBotToken`, `DiscordOAuthClientSecret` and the other parameters take effect with the next deploy (after
+deleting the state file); rotate the Discord ones in the developer portal first.
 
 ## Prepare the storage
 
@@ -288,14 +305,15 @@ there: host `db`, port `5432`, user `postgres`, password `db-password`, database
 
    `db`, `bot`, `apollo-web` and `pgadmin` show `1/1` replicas. `migrationservice` shows `0/1` and its latest task
    `Complete` (earlier `Failed` tasks on a first deploy are restarts while `db` was starting).
-2. **Migrations are applied.** `docker service logs apollo_migrationservice` ends with
+2. **Migrations are applied.** `docker service logs apollo_migrationservice` contains
    `Database migrated, <n> migrations applied` (`0` on a redeploy without new migrations). The newest row of
    `SELECT "MigrationId" FROM "__EFMigrationsHistory" ORDER BY "MigrationId" DESC LIMIT 1;` is the newest file in
    `src/Apollo.Data/Migrations/`.
 3. **The bot is connected, has registered its commands and is in bootstrap mode.** `docker service logs apollo_bot`
    shows, after `Database is up to date`:
    - `Discord gateway Connected, recording guild <guild id>`;
-   - `Registered <n> slash commands for guild <guild id>`;
+   - `Registered 1 slash commands for guild <guild id>` (every feature adds its part to the one `apollo` command, so
+     the count is 1);
    - the warning `Bootstrap mode: tracking Administrators on Discord until a tracking role is set (temporary, #62)`
      while no tracking role is configured ([scope §5.1.1](scope.md#511-who-is-tracked-the-tracking-role)).
 
@@ -317,18 +335,21 @@ there: host `db`, port `5432`, user `postgres`, password `db-password`, database
    SELECT (SELECT count(*) FROM tracking_periods WHERE "to" IS NULL) AS tracked,
           (SELECT count(*) FROM guild_members WHERE is_administrator AND left_at IS NULL) AS administrators;
    ```
-6. **Event rows for an Administrator, none for anyone else.** Note the counts of this query:
+6. **Event rows for an Administrator, none for anyone else.** Do this at a quiet moment: every Administrator is
+   tracked, so another Administrator's activity during the test adds rows too. The query counts only the last
+   5 minutes:
 
    ```sql
-   SELECT (SELECT count(*) FROM message_events) AS messages,
-          (SELECT count(*) FROM voice_sessions) AS voice_sessions,
-          (SELECT count(*) FROM reaction_events) AS reactions;
+   SELECT (SELECT count(*) FROM message_events WHERE occurred_at > now() - interval '5 minutes') AS messages,
+          (SELECT count(*) FROM voice_sessions WHERE occurred_at > now() - interval '5 minutes') AS voice_sessions,
+          (SELECT count(*) FROM reaction_events WHERE occurred_at > now() - interval '5 minutes') AS reactions;
    ```
 
    With a test account **without** the Administrator permission, post a message, join a voice channel and react to a
-   message, then run the query again: the counts are unchanged. Then do the same as an Administrator: each count goes
-   up (the voice session row appears on joining, with `ended_at` empty until you leave). Rows hold internal IDs only, so
-   the query output contains no personal data.
+   message, then run the query: all counts are 0 (if not, check that no Administrator was active, and repeat). Then do
+   the same as an Administrator and run it again within 5 minutes: each count is at least 1 (the voice session row
+   appears on joining, with `ended_at` empty until you leave). Rows hold internal IDs only, so the query output contains
+   no personal data.
 7. **The `/apollo` commands reply privately.** In the guild, type `/apollo`: Discord offers `tracking on`,
    `tracking off`, `tracking status`, `privacy delete` and `stats`. Run `/apollo tracking status` as the Administrator:
    Discord marks the reply as visible only to you (*Only you can see this* / *Nur für dich sichtbar*). In bootstrap
