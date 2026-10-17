@@ -22,6 +22,11 @@ public sealed class LinksOptions : IValidatableObject
     /// <remarks>A method, not a property: options validation reads every property, valid or not.</remarks>
     public Uri GetPrivacyPageUrl() => Page("datenschutz");
 
+    /// <summary>
+    /// The member's personal page (<c>/me</c>), linked by <c>/apollo stats</c> (scope D5).
+    /// </summary>
+    public Uri GetMePageUrl() => Page("me");
+
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (PublicWebUrl is null)

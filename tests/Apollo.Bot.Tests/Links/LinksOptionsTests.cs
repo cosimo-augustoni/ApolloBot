@@ -1,3 +1,4 @@
+using Apollo.Bot.Links;
 using Apollo.Bot.Tests.Commands;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -59,6 +60,27 @@ public sealed class LinksOptionsTests
         using var host = CommandTestHost.Build(settings);
 
         Should.NotThrow(() => ValidateOnStart(host));
+    }
+
+    [Theory]
+    [InlineData("https://apollo.example.ch", "https://apollo.example.ch/me")]
+    [InlineData("https://apollo.example.ch/", "https://apollo.example.ch/me")]
+    [InlineData("https://example.test/apollo/", "https://example.test/apollo/me")]
+    public void GetMePageUrl_WhenPublicWebUrlHasOrLacksATrailingSlash_ShouldJoinItWithMe(string publicWebUrl, string expected)
+    {
+        var links = new LinksOptions { PublicWebUrl = publicWebUrl };
+
+        links.GetMePageUrl().AbsoluteUri.ShouldBe(expected);
+    }
+
+    [Theory]
+    [InlineData("https://apollo.example.ch", "https://apollo.example.ch/datenschutz")]
+    [InlineData("https://apollo.example.ch/", "https://apollo.example.ch/datenschutz")]
+    public void GetPrivacyPageUrl_WhenPublicWebUrlHasOrLacksATrailingSlash_ShouldJoinItWithDatenschutz(string publicWebUrl, string expected)
+    {
+        var links = new LinksOptions { PublicWebUrl = publicWebUrl };
+
+        links.GetPrivacyPageUrl().AbsoluteUri.ShouldBe(expected);
     }
 
     // Runs the same options validation as IHost.StartAsync, without starting anything.
