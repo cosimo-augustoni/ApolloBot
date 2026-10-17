@@ -1,5 +1,6 @@
 using Apollo.Bot.Commands;
 using Apollo.Bot.GuildState;
+using Apollo.Bot.Messages;
 using Apollo.Bot.Status;
 using Apollo.Bot.Tracking;
 using Apollo.Data;
@@ -13,6 +14,7 @@ builder.Services.AddDiscordPlatform();
 builder.Services.AddCommandRouting();
 builder.Services.AddGuildStateSync();
 builder.Services.AddTrackingGate();
+builder.Services.AddMessageRecording();
 builder.Services.AddBotStatus();
 
 var host = builder.Build();
