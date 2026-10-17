@@ -11,7 +11,7 @@ public interface IUserDataEraser
 {
     /// <summary>
     /// Deletes the member's rows, clears references to them in other users' rows and removes their tracking role.
-    /// Never throws for a database or platform failure: the outcome says what happened.
+    /// A failed deletion or a refused role removal is logged and reported in the outcome.
     /// </summary>
     Task<UserDataErasureOutcome> EraseAsync(PlatformRef guild, PlatformRef member, CancellationToken cancellationToken);
 }
