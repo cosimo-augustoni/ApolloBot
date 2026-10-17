@@ -94,10 +94,25 @@ public static class AuthServiceCollectionExtensions
 
     // Runs on every request with a session cookie. A refreshed principal is written back to the cookie, so the next
     // check is one interval later; a rejected one (logged out since) ends the session and the request is anonymous.
+    // When the check itself fails (database unreachable), only this request runs as anonymous: the cookie stays and the
+    // next request checks again, so the app shell and static files are still served.
     private static async Task RevalidateAccessAsync(CookieValidatePrincipalContext context)
     {
         var revalidator = context.HttpContext.RequestServices.GetRequiredService<AccessRevalidator>();
-        var access = await revalidator.RevalidateAsync(context.Principal!, context.HttpContext.RequestAborted);
+        AccessRevalidation access;
+        try
+        {
+            access = await revalidator.RevalidateAsync(context.Principal!, context.HttpContext.RequestAborted);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
+                .CreateLogger(typeof(AccessRevalidator).FullName!)
+                .LogWarning(exception, "Access check failed; the request runs as anonymous and the next one checks again");
+            context.RejectPrincipal();
+            return;
+        }
+
         switch (access.Outcome)
         {
             case AccessRevalidationOutcome.Refreshed:
