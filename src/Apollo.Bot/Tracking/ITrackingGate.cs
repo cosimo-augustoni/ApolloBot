@@ -1,6 +1,3 @@
-using Apollo.Domain.Tracking;
-using Apollo.Platform.Abstractions;
-
 namespace Apollo.Bot.Tracking;
 
 /// <summary>
@@ -9,32 +6,19 @@ namespace Apollo.Bot.Tracking;
 /// <c>guild_members</c>: live for member changes, within 30 s for role setting changes.
 /// </summary>
 /// <remarks>
-/// Until the first full guild sync after startup nobody is tracked and <see cref="Mode"/> is <see langword="null"/>.
-/// The gate covers the one guild the bot records (scope §4.3).
+/// <para>
+/// Until the first full guild sync after startup nobody is tracked and <see cref="ITrackingView.Mode"/> is
+/// <see langword="null"/>. The gate covers the one guild the bot records (scope §4.3).
+/// </para>
+/// <para>
+/// Each member of <see cref="ITrackingView"/> answers from the latest snapshot. Code that needs several answers to agree
+/// (e.g. the tracking role and whether the member holds it) reads <see cref="Current"/> once instead.
+/// </para>
 /// </remarks>
-public interface ITrackingGate
+public interface ITrackingGate : ITrackingView
 {
     /// <summary>
-    /// The current mode; <see langword="null"/> before the first snapshot.
+    /// The latest snapshot as an immutable view: it keeps its answers when the gate refreshes.
     /// </summary>
-    TrackingMode? Mode { get; }
-
-    /// <summary>
-    /// The tracking role on the bot's platform while one is configured and exists (<see cref="Mode"/> is
-    /// <see cref="TrackingMode.TrackingRole"/>); <see langword="null"/> otherwise, which the tracking commands treat as
-    /// "not set up" (scope §5.4).
-    /// </summary>
-    PlatformRef? TrackingRole { get; }
-
-    /// <summary>
-    /// Whether the user, by internal ID, is tracked right now.
-    /// </summary>
-    bool IsTracked(Guid userId);
-
-    /// <summary>
-    /// The internal ID of a referenced user if that user is tracked, otherwise <see langword="null"/>. Never touches the
-    /// database and never creates a row, so references to untracked users (<c>reply_to_user_id</c>,
-    /// <c>message_author_id</c>) are stored as <c>NULL</c> (scope §5.1.1).
-    /// </summary>
-    Guid? TryGetTrackedUserId(PlatformRef user);
+    ITrackingView Current { get; }
 }

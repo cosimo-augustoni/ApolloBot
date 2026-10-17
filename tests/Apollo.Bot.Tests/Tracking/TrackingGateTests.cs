@@ -88,6 +88,46 @@ public sealed class TrackingGateTests(TimescaleFixture fixture) : TimescaleTest(
     }
 
     [Fact]
+    public async Task Current_WhenTheGateRefreshesAfterwards_ShouldKeepAnsweringFromItsOwnSnapshot()
+    {
+        await using var host = await HostInTrackingRoleModeAsync();
+        var alice = await host.UserIdAsync(_alice);
+        var before = host.Gate.Current;
+
+        await host.RaiseAsync(Updated(_alice, _mods));
+        await host.InScopeAsync(async (db, _) =>
+        {
+            db.RoleSettings.RemoveRange(db.RoleSettings);
+            return await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        });
+        await host.SyncAsync(Snapshot());
+
+        before.Mode.ShouldBe(TrackingMode.TrackingRole);
+        before.TrackingRole.ShouldBe(_statistik);
+        before.IsTracked(alice).ShouldBeTrue();
+        before.TryGetTrackedUserId(_alice).ShouldBe(alice);
+        var after = host.Gate.Current;
+        after.Mode.ShouldBe(TrackingMode.TrackingRoleCleared);
+        after.TrackingRole.ShouldBeNull();
+        after.IsTracked(alice).ShouldBeFalse();
+        after.TryGetTrackedUserId(_alice).ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task Current_BeforeTheFirstGuildSync_ShouldHaveNoModeNoRoleAndTrackNobody()
+    {
+        await using var host = new TrackingHost(Fixture);
+        await host.SeedRoleSettingAsync(new RoleSettingBuilder().ForRole(_statistik));
+
+        var view = host.Gate.Current;
+
+        view.Mode.ShouldBeNull();
+        view.TrackingRole.ShouldBeNull();
+        view.TryGetTrackedUserId(_alice).ShouldBeNull();
+        view.IsTracked(Guid.NewGuid()).ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task TrackingRole_WhenTrackingRoleIsConfigured_ShouldBeItsPlatformRole()
     {
         await using var host = await HostInTrackingRoleModeAsync();

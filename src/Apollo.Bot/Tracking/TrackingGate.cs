@@ -40,14 +40,15 @@ internal sealed partial class TrackingGate(
     // reload that failed. Read and written only under _rebuild.
     private Guid? _guildId;
 
-    public TrackingMode? Mode => _snapshot?.Mode;
+    public ITrackingView Current => _snapshot ?? TrackingSnapshot.None;
 
-    public PlatformRef? TrackingRole => _snapshot?.TrackingRole;
+    public TrackingMode? Mode => Current.Mode;
 
-    public bool IsTracked(Guid userId) => _snapshot?.Tracked.ContainsKey(userId) == true;
+    public PlatformRef? TrackingRole => Current.TrackingRole;
 
-    public Guid? TryGetTrackedUserId(PlatformRef user) =>
-        _snapshot is { } snapshot && snapshot.ByUser.TryGetValue(user, out var userId) ? userId : null;
+    public bool IsTracked(Guid userId) => Current.IsTracked(userId);
+
+    public Guid? TryGetTrackedUserId(PlatformRef user) => Current.TryGetTrackedUserId(user);
 
     /// <summary>
     /// Rebuilds the snapshot of the guild of the latest full sync, also when its reload failed so far; does nothing

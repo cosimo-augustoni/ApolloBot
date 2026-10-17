@@ -25,23 +25,25 @@ internal sealed class TrackingStatusCommandHandler(
         var guildId = await ids.TryGetGuildAsync(invocation.Guild, cancellationToken);
         var userId = await ids.TryGetUserAsync(invocation.Member, cancellationToken);
 
+        // One view for the whole reply, so the tracked state and the setup hint come from the same snapshot.
+        var view = gate.Current;
         var tracked = false;
         DateTimeOffset? since = null;
         var counts = UserDataCounts.None;
         if (guildId is { } guild && userId is { } user)
         {
-            tracked = gate.IsTracked(user);
+            tracked = view.IsTracked(user);
             since = tracked ? await history.OpenPeriodStartAsync(guild, user, cancellationToken) : null;
             counts = await summary.CountAsync(guild, user, cancellationToken);
         }
 
-        return CommandReply.Private($"{Tracking(tracked, since)}\n\n{Data(counts)}");
+        return CommandReply.Private($"{Tracking(view, tracked, since)}\n\n{Data(counts)}");
     }
 
     /// <summary>
     /// The first paragraph: tracked since when or not, then why not or how to start.
     /// </summary>
-    private string Tracking(bool tracked, DateTimeOffset? since)
+    private string Tracking(ITrackingView view, bool tracked, DateTimeOffset? since)
     {
         string state = (tracked, since) switch
         {
@@ -50,9 +52,9 @@ internal sealed class TrackingStatusCommandHandler(
             _ => strings["Status_NotTracked"],
         };
 
-        string? next = gate.TrackingRole is not null
+        string? next = view.TrackingRole is not null
             ? (tracked ? null : strings["Status_TurnOnHint"].Value)
-            : gate.Mode == TrackingMode.Bootstrap // TEMPORARY: removed by #62
+            : view.Mode == TrackingMode.Bootstrap // TEMPORARY: removed by #62
                 ? strings["Status_NotSetUpBootstrap"].Value
                 : strings["Tracking_NotSetUp"].Value;
 
