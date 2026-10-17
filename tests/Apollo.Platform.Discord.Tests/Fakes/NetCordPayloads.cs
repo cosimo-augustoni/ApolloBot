@@ -96,6 +96,12 @@ internal static class NetCordPayloads
             IsMuted = serverMute,
         }, guildId, Rest);
 
+    /// <summary>
+    /// A presence as PRESENCE_UPDATE delivers it.
+    /// </summary>
+    public static Presence Presence(ulong guildId, ulong userId, UserStatusType status, params JsonUserActivity[] activities) =>
+        new(new JsonPresence { User = new JsonUser { Id = userId }, GuildId = guildId, Status = status, Activities = activities }, guildId, Rest);
+
     public static Message DirectMessage(ulong authorId) => new(Parse<JsonMessage>($$"""
         {
           "id": "1", "channel_id": "2", "type": 0, "content": "hi", "timestamp": "2026-01-15T09:00:00+00:00",
