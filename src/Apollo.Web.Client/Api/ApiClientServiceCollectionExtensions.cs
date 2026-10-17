@@ -20,12 +20,14 @@ public static class ApiClientServiceCollectionExtensions
             services.AddScoped<IAppInfoClient, MockAppInfoClient>();
             services.AddScoped<IAuthClient, MockAuthClient>();
             services.AddScoped<IRoleSettingsClient, MockRoleSettingsClient>();
+            services.AddScoped<IBotStatusClient, MockBotStatusClient>();
         }
         else
         {
             services.AddScoped<IAppInfoClient, HttpAppInfoClient>();
             services.AddScoped<IAuthClient, HttpAuthClient>();
             services.AddScoped<IRoleSettingsClient, HttpRoleSettingsClient>();
+            services.AddScoped<IBotStatusClient, HttpBotStatusClient>();
         }
 
         return services;

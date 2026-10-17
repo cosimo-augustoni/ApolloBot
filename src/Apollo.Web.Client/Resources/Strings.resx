@@ -377,4 +377,24 @@
     <value>Zugriffsrolle entfernt: {0}</value>
     <comment>Settings page: history entry; {0} is the role</comment>
   </data>
+  <data name="Time_SecondsAgo" xml:space="preserve">
+    <value>vor {0} s</value>
+    <comment>Relative time; {0} is a number of seconds</comment>
+  </data>
+  <data name="Time_MinutesAgo" xml:space="preserve">
+    <value>vor {0} min</value>
+    <comment>Relative time; {0} is a number of minutes</comment>
+  </data>
+  <data name="Time_HoursAgo" xml:space="preserve">
+    <value>vor {0} h</value>
+    <comment>Relative time; {0} is a number of hours</comment>
+  </data>
+  <data name="Time_OneDayAgo" xml:space="preserve">
+    <value>vor 1 Tag</value>
+    <comment>Relative time, exactly one day</comment>
+  </data>
+  <data name="Time_DaysAgo" xml:space="preserve">
+    <value>vor {0} Tagen</value>
+    <comment>Relative time; {0} is a number of days (2 or more)</comment>
+  </data>
 </root>
