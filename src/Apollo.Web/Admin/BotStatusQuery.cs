@@ -24,7 +24,7 @@ public sealed class BotStatusQuery(
     public async Task<BotStatusDto> GetAsync(CancellationToken cancellationToken)
     {
         var now = time.GetUtcNow();
-        var guildIds = await ConfiguredGuildIdsAsync(cancellationToken);
+        var guildIds = await ConfiguredGuilds.IdsAsync(db, providers, cancellationToken);
         var eventsPerHour = await CountEventsPerHourAsync(guildIds, now, cancellationToken);
 
         var heartbeat = await db.BotStatuses.AsNoTracking()
@@ -48,14 +48,13 @@ public sealed class BotStatusQuery(
             eventsPerHour);
     }
 
-    private async Task<List<HourlyEventCountDto>> CountEventsPerHourAsync(List<Guid> guildIds, DateTimeOffset now, CancellationToken cancellationToken)
+    private async Task<List<HourlyEventCountDto>> CountEventsPerHourAsync(Guid[] guilds, DateTimeOffset now, CancellationToken cancellationToken)
     {
         // Zurich is a whole number of hours off UTC (+1, +2, switching at 01:00 UTC), so its hours start on UTC hours.
         var nowUtc = now.UtcDateTime;
         var currentHour = new DateTimeOffset(nowUtc.Date.AddHours(nowUtc.Hour), TimeSpan.Zero);
         var from = currentHour.AddHours(-(Hours - 1));
         var to = currentHour.AddHours(1);
-        var guilds = guildIds.ToArray();
 
         // Raw SQL: EF has no translation for time_bucket with a time zone, nor for one count over five hypertables.
         // voice_sessions and presence_activity_sessions count by their start (occurred_at, #16).
@@ -78,20 +77,6 @@ public sealed class BotStatusQuery(
         return [.. Enumerable.Range(0, Hours)
             .Select(i => from.AddHours(i))
             .Select(hour => new HourlyEventCountDto(hour, counts.GetValueOrDefault(hour)))];
-    }
-
-    private async Task<List<Guid>> ConfiguredGuildIdsAsync(CancellationToken cancellationToken)
-    {
-        var guildIds = new List<Guid>();
-        foreach (var guild in providers.Select(p => p.Guild).Distinct())
-        {
-            guildIds.AddRange(await db.GuildPlatformIds.AsNoTracking()
-                .Where(m => m.Platform == guild.Platform && m.ExternalId == guild.ExternalId)
-                .Select(m => m.GuildId)
-                .ToListAsync(cancellationToken));
-        }
-
-        return guildIds;
     }
 
     private sealed class HourCount
