@@ -22,8 +22,6 @@ public static class NavigationAreas
         new("Nav_SectionMember",
         [
             new("me", "Nav_MemberOverview", "Page_MemberOverview", Icons.Material.Outlined.Insights),
-            new("me/recaps", "Nav_MemberRecaps", "Page_MemberRecaps", Icons.Material.Outlined.AutoAwesome),
-            new("me/privacy", "Nav_MemberPrivacy", "Nav_MemberPrivacy", Icons.Material.Outlined.Shield),
         ]),
         new("Nav_SectionInfo",
         [

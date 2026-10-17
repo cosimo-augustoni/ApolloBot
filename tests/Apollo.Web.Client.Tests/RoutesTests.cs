@@ -22,14 +22,11 @@ public sealed class RoutesTests : ApolloTestContext
     /// <summary>Every navigation route with its page heading from the wireframes (#27).</summary>
     public static TheoryData<string, string> PlaceholderRoutes => new()
     {
-        { "admin", "Bot-Status" },
         { "admin/dashboard", "Server-Übersicht" },
         { "admin/members", "Mitglieder" },
         { "admin/recaps", "Server-Rückblicke" },
         { "admin/data", "Daten" },
         { "me", "Meine Statistik" },
-        { "me/recaps", "Meine Rückblicke" },
-        { "me/privacy", "Privatsphäre" },
         { "datenschutz", "Datenschutz" },
     };
 
@@ -40,6 +37,27 @@ public sealed class RoutesTests : ApolloTestContext
 
         routes.WaitForAssertion(() => routes.Find(".apollo-empty-title").TextContent.Trim().ShouldBe("Seite nicht gefunden"));
         routes.FindComponents<MainLayout>().ShouldHaveSingleItem();
+    }
+
+    [Theory]
+    [InlineData("me/recaps")]
+    [InlineData("me/privacy")]
+    public void Router_WhenRouteIsARemovedMemberArea_ShouldShowNotFoundPage(string href)
+    {
+        var routes = RenderAt(href);
+
+        routes.WaitForAssertion(() => routes.Find(".apollo-empty-title").TextContent.Trim().ShouldBe("Seite nicht gefunden"));
+        routes.FindComponents<AreaPlaceholder>().ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Router_WhenRouteIsAdmin_ShouldShowTheBotStatusPage()
+    {
+        var routes = RenderAt("admin");
+
+        routes.WaitForAssertion(() => routes.FindComponents<Apollo.Web.Client.Pages.Admin.BotStatus>().ShouldHaveSingleItem());
+        routes.Find("h1").TextContent.Trim().ShouldBe("Bot-Status");
+        routes.FindComponents<AreaPlaceholder>().ShouldBeEmpty();
     }
 
     [Fact]

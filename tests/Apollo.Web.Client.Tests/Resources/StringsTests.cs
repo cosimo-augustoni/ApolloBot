@@ -16,7 +16,8 @@ public sealed partial class StringsTests : ApolloTestContext
         ["Layout/MainLayout.razor", "Layout/NavMenu.razor", "Layout/UserMenu.razor", "Pages/Home.razor", "Pages/NotFound.razor", "Pages/NoAccess.razor",
          "Pages/Placeholder.razor", "Pages/Admin/AdminPlaceholder.razor", "Components/AreaPlaceholder.razor", "Pages/Admin/Settings.razor",
          "Pages/Admin/RoleSettings/RoleSettingsPanel.razor", "Pages/Admin/RoleSettings/TrackingRoleCard.razor", "Pages/Admin/RoleSettings/MemberAccessCard.razor",
-         "Pages/Admin/RoleSettings/RoleSettingsHistory.razor", "Pages/Admin/RoleSettings/RoleLabel.razor"];
+         "Pages/Admin/RoleSettings/RoleSettingsHistory.razor", "Pages/Admin/RoleSettings/RoleLabel.razor",
+         "Pages/Admin/BotStatus.razor", "Pages/Admin/Status/EventsPerHourChart.razor"];
 
     [Fact]
     public void Strings_ShouldContainAllKeysUsedInRazorFiles()

@@ -1,0 +1,43 @@
+@using ApexCharts
+@using Apollo.Web.Client.Contracts
+@inject IStringLocalizer<Strings> L
+
+@* Kept apart from BotStatus.razor: ApexCharts and MudBlazor both define Color and Size. *@
+<ApexChart @ref="_chart" TItem="HourlyEventCountDto" Options="_options" Height="@ChartHeight">
+    <ApexPointSeries TItem="HourlyEventCountDto" Items="Hours" Name="@L["BotStatus_EventsSeries"]" SeriesType="SeriesType.Bar"
+                     XValue="h => HourLabel(h.HourStart)" YValue="h => h.Count" />
+</ApexChart>
+
+@code {
+    private const int ChartHeight = 280;
+
+    private readonly ApexChartOptions<HourlyEventCountDto> _options = ApexChartDefaults.Create<HourlyEventCountDto>();
+    private ApexChart<HourlyEventCountDto>? _chart;
+    private IReadOnlyList<HourlyEventCountDto>? _shown;
+
+    /// <summary>The hours to show, oldest first (<see cref="BotStatusDto.EventsPerHour"/>).</summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyList<HourlyEventCountDto> Hours { get; set; } = [];
+
+    protected override void OnInitialized()
+    {
+        _options.PlotOptions = new PlotOptions { Bar = new PlotOptionsBar { BorderRadius = 2 } };
+        _options.Xaxis.Labels.HideOverlappingLabels = true;
+        _options.Xaxis.Labels.Rotate = 0;
+    }
+
+    // The chart keeps the series it was first rendered with; the hours of a refresh need an explicit update.
+    protected override async Task OnParametersSetAsync()
+    {
+        var changed = _shown is not null && !ReferenceEquals(_shown, Hours);
+        _shown = Hours;
+        if (changed && _chart is not null)
+        {
+            await _chart.UpdateSeriesAsync(animate: false);
+        }
+    }
+
+    /// <summary>The hour's start as Zurich clock time, e.g. <c>14</c>.</summary>
+    private static string HourLabel(DateTimeOffset hourStart) =>
+        TimeZoneInfo.ConvertTime(hourStart, UiTime.Zone).ToString("HH", UiCulture.Culture);
+}

@@ -1,0 +1,174 @@
+@page "/admin"
+@using Apollo.Web.Client.Contracts
+@using Apollo.Web.Client.Pages.Admin.Status
+@implements IAsyncDisposable
+@inject IBotStatusClient Client
+@inject TimeProvider Time
+@inject IStringLocalizer<Strings> L
+
+@*
+    Bot-Status (#31, scope §7.2): the "data is being collected" proof. The bot writes a heartbeat every 30 s (#24);
+    this page reads the latest one and reloads it every 30 s while it is open.
+*@
+<PageTitle>@L["PageTitle", L["Nav_BotStatus"]]</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-6">
+    <div class="d-flex flex-wrap align-center justify-space-between gap-2 mb-4">
+        <div>
+            <MudText Typo="Typo.h1">@L["Nav_BotStatus"]</MudText>
+            @if (_status is not null)
+            {
+                <MudText Typo="Typo.body2" Class="apollo-bot-checked mud-text-secondary">@L["BotStatus_CheckedAt", UiTime.FormatTimeWithSeconds(_status.CheckedAt)]</MudText>
+            }
+        </div>
+        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Outlined.Refresh" OnClick="LoadAsync" Class="apollo-bot-refresh">@L["BotStatus_Refresh"]</MudButton>
+    </div>
+
+    @if (_failed)
+    {
+        <MudAlert Severity="Severity.Error" Class="apollo-bot-load-failed mb-4">@L["BotStatus_LoadFailed"]</MudAlert>
+    }
+
+    @if (_status is null)
+    {
+        @if (!_failed)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        }
+    }
+    else if (_status.LastHeartbeatAt is not { } lastHeartbeatAt)
+    {
+        <MudPaper Elevation="0" Class="apollo-section-card">
+            <EmptyState Icon="@Icons.Material.Outlined.SmartToy" Title="@L["BotStatus_NoHeartbeat_Title"]" Explanation="@L["BotStatus_NoHeartbeat_Text"]" />
+        </MudPaper>
+    }
+    else
+    {
+        @if (_status.IsStale)
+        {
+            <MudAlert Severity="Severity.Warning" Class="apollo-bot-stale mb-4">
+                <strong>@L["BotStatus_Stale_Title", UiTime.FormatSince(lastHeartbeatAt, _status.CheckedAt), L.Ago(lastHeartbeatAt, _status.CheckedAt)]</strong>
+                <div>@L["BotStatus_Stale_Text"]</div>
+            </MudAlert>
+        }
+        else if (!_status.Connected)
+        {
+            <MudAlert Severity="Severity.Error" Class="apollo-bot-offline mb-4">
+                <strong>@L["BotStatus_Offline_Title"]</strong>
+                <div>@L["BotStatus_Offline_Text"]</div>
+            </MudAlert>
+        }
+
+        <MudGrid Spacing="3">
+            <MudItem xs="12" sm="6" md="3">
+                <StatTile Label="@L["BotStatus_Connection"]" Icon="@Icons.Material.Outlined.Link"
+                          SubText="@L["BotStatus_LastHeartbeat", UiTime.FormatTimeWithSeconds(lastHeartbeatAt)]">
+                    <ValueContent>
+                        <span class="apollo-bot-connection @ConnectionClass">@ConnectionText</span>
+                    </ValueContent>
+                </StatTile>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <StatTile Label="@L["BotStatus_Latency"]" Icon="@Icons.Material.Outlined.Speed" Value="@_status.GatewayLatencyMs" Unit="@L["BotStatus_LatencyUnit"]" />
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                @if (_status.LastEventAt is { } lastEventAt)
+                {
+                    <StatTile Label="@L["BotStatus_LastEvent"]" Icon="@Icons.Material.Outlined.Bolt" SubText="@UiTime.FormatSince(lastEventAt, _status.CheckedAt)">
+                        <ValueContent>@L.Ago(lastEventAt, _status.CheckedAt)</ValueContent>
+                    </StatTile>
+                }
+                else
+                {
+                    <StatTile Label="@L["BotStatus_LastEvent"]" Icon="@Icons.Material.Outlined.Bolt" SubText="@L["BotStatus_NoEventYet"]" />
+                }
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <StatTile Label="@L["BotStatus_OpenVoiceSessions"]" Icon="@Icons.Material.Outlined.Headset" Value="@_status.OpenVoiceSessions" />
+            </MudItem>
+            <MudItem xs="12">
+                <SectionCard Title="@L["BotStatus_EventsPerHour"]">
+                    <Action>
+                        <MudText Typo="Typo.body2" Class="mud-text-secondary">@L["BotStatus_Last24Hours"]</MudText>
+                    </Action>
+                    <ChildContent>
+                        <EventsPerHourChart Hours="_status.EventsPerHour" />
+                    </ChildContent>
+                </SectionCard>
+            </MudItem>
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    /// <summary>How often the page reloads the status; the bot writes a heartbeat as often (#24).</summary>
+    public static readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(30);
+
+    private readonly CancellationTokenSource _stop = new();
+    private PeriodicTimer? _timer;
+    private BotStatusDto? _status;
+    private bool _failed;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        _timer = new PeriodicTimer(RefreshInterval, Time);
+        _ = RefreshPeriodicallyAsync(_timer, _stop.Token);
+    }
+
+    private async Task RefreshPeriodicallyAsync(PeriodicTimer timer, CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                await InvokeAsync(async () =>
+                {
+                    await LoadAsync();
+                    StateHasChanged();
+                });
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The page was left.
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _status = await Client.GetStatusAsync(_stop.Token);
+            _failed = false;
+        }
+        catch (HttpRequestException)
+        {
+            // The last status stays on screen; the next tick tries again.
+            _failed = true;
+        }
+    }
+
+    /// <summary>While the heartbeat is stale, the last reported state is only a guess.</summary>
+    private string ConnectionText => (_status!.IsStale, _status.Connected) switch
+    {
+        (true, true) => L["BotStatus_ConnectedUnsure"],
+        (true, false) => L["BotStatus_DisconnectedUnsure"],
+        (false, true) => L["BotStatus_Connected"],
+        (false, false) => L["BotStatus_Disconnected"],
+    };
+
+    private string ConnectionClass => _status switch
+    {
+        { IsStale: true } => "mud-warning-text",
+        { Connected: true } => "mud-success-text",
+        _ => "mud-error-text",
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        await _stop.CancelAsync();
+        _timer?.Dispose();
+        _stop.Dispose();
+    }
+}
