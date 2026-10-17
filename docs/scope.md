@@ -107,6 +107,7 @@ Settings and tracking tables (#14): `role_settings` with its append-only audit l
 - **Threads** are stored with their own `channel_id` and a `thread_parent_id`. Stats roll them up to the parent channel by default. Fluxer has threads with a parent reference too (verified in #9), so `thread_parent_id` is filled on both platforms.
 - **Time zone:** all day and hour bucketing uses `Europe/Zurich`. Raw timestamps are stored in UTC.
 - **Deleted messages** keep their create event and get a delete event added. Recaps count what was sent.
+- **Messages (#15):** `kind` is stored as `Create`, `Edit` or `Delete`. Content metadata (`length` … `content_parts`) is computed in memory by `MessageMetadata.From` (`Apollo.Domain`) and is `NULL` on delete rows; `reply_to_user_id` is set on create rows only, and `message_mentions` is written on create only, so an edit that adds a mention updates the counts of its edit row but not the mention graph. `length` counts characters (an emoji is one), `word_count` the words of the text part (links, mentions and emoji removed). An edit or delete without an author takes it from the message's create row; without one (message older than the bot, or its author untracked) nothing is stored. Embed-only updates and system messages are not recorded.
 
 ### 5.1.1 Who is tracked: the tracking role
 
