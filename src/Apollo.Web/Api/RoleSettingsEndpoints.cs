@@ -72,7 +72,7 @@ public static class RoleSettingsEndpoints
             [.. overview.Roles.Select(r => new SettingsRoleDto(r.Id, r.Name ?? string.Empty, r.Color, r.Position, r.IsDeleted, r.MemberCount))],
             overview.TrackingRoleId,
             overview.MemberAccessRoleIds,
-            ToMode(overview.Mode),
+            overview.Mode.ToDto(),
             BotPermissionCheck.Evaluate(overview.Bot, trackingRole)));
     }
 
@@ -201,12 +201,4 @@ public static class RoleSettingsEndpoints
     private static Guid AdminId(HttpContext http) =>
         ApolloPrincipal.ReadSession(http.User)?.UserId
             ?? throw new InvalidOperationException("The admin policy let a request without a session principal through.");
-
-    private static RoleSettingsMode ToMode(TrackingMode mode) => mode switch
-    {
-        TrackingMode.NoTrackingRole => RoleSettingsMode.NoTrackingRole,
-        TrackingMode.TrackingRole => RoleSettingsMode.Active,
-        TrackingMode.TrackingRoleDeleted => RoleSettingsMode.TrackingRoleDeleted,
-        _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, "Unknown tracking mode."),
-    };
 }

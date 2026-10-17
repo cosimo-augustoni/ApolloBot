@@ -68,14 +68,23 @@ public sealed class RoleSettingsQuery(ApolloDbContext db)
                 .ToListAsync(cancellationToken))
             .ToHashSet();
 
-        var trackingRoleId = await db.RoleSettings.AsNoTracking()
-            .Where(s => s.GuildId == guildId && s.Platform == platform && s.Purpose == RoleSettingPurpose.Tracking)
-            .Select(s => (Guid?)s.RoleId)
-            .SingleOrDefaultAsync(cancellationToken);
-        var trackingSettings = await LoadTrackingSettingsAsync(trackingRoleId, cancellationToken);
+        var trackingSettings = await LoadTrackingSettingsAsync(await LoadTrackingRoleIdAsync(guildId, platform, cancellationToken), cancellationToken);
         var tracked = await LoadTrackedAsync(guildId, trackingSettings, cancellationToken);
 
         return new RolePreview(holders.Count, holders.Count(id => !tracked.Contains(id)), tracked.Count(id => !holders.Contains(id)));
+    }
+
+    /// <summary>
+    /// How many current, non-bot members the bot's gate tracks with the current tracking role setting and how many it
+    /// does not (the admin data page, #32).
+    /// </summary>
+    public async Task<MemberTracking> GetMemberTrackingAsync(Guid guildId, PlatformKind platform, CancellationToken cancellationToken)
+    {
+        var trackingSettings = await LoadTrackingSettingsAsync(await LoadTrackingRoleIdAsync(guildId, platform, cancellationToken), cancellationToken);
+        var members = await db.GuildMembers.AsNoTracking().CountAsync(m => m.GuildId == guildId && m.LeftAt == null && !m.IsBot, cancellationToken);
+        var tracked = (await LoadTrackedAsync(guildId, trackingSettings, cancellationToken)).Count;
+
+        return new MemberTracking(tracked, members - tracked, TrackingRule.ModeOf(trackingSettings));
     }
 
     /// <summary>The <paramref name="take"/> newest changes, newest first.</summary>
@@ -99,6 +108,12 @@ public sealed class RoleSettingsQuery(ApolloDbContext db)
         db.MemberRoles.AsNoTracking()
             .Where(r => r.GuildId == guildId
                 && db.GuildMembers.Any(m => m.GuildId == guildId && m.UserId == r.UserId && m.LeftAt == null && !m.IsBot));
+
+    private Task<Guid?> LoadTrackingRoleIdAsync(Guid guildId, PlatformKind platform, CancellationToken cancellationToken) =>
+        db.RoleSettings.AsNoTracking()
+            .Where(s => s.GuildId == guildId && s.Platform == platform && s.Purpose == RoleSettingPurpose.Tracking)
+            .Select(s => (Guid?)s.RoleId)
+            .SingleOrDefaultAsync(cancellationToken);
 
     private async Task<TrackingSettings> LoadTrackingSettingsAsync(Guid? trackingRoleId, CancellationToken cancellationToken)
     {
