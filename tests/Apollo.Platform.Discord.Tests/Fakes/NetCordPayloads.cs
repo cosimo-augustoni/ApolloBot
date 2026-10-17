@@ -72,6 +72,9 @@ internal static class NetCordPayloads
     public static GuildUserRemoveEventArgs GuildUserRemove(ulong guildId, ulong userId) =>
         new(new JsonGuildUserRemoveEventArgs { GuildId = guildId, User = new JsonUser { Id = userId, Username = "alice" } }, Rest);
 
+    public static GuildBanEventArgs GuildBan(ulong guildId, ulong userId) =>
+        new(new JsonGuildBanEventArgs { GuildId = guildId, User = new JsonUser { Id = userId, Username = "alice" } }, Rest);
+
     public static VoiceState VoiceState(
         ulong guildId,
         ulong userId,
