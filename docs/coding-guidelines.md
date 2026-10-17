@@ -86,6 +86,7 @@ Mocking rule of thumb: **mock only at the edges we don't own** (platform, OAuth 
 - Timescale objects are defined via CmdScale fluent APIs. Raw SQL goes in a migration only with a comment explaining why the package can't do it.
 - Raw event tables are **append-only**. Updates are allowed only for closing sessions (`ended_at`) and privacy operations.
 - All timestamps are `timestamptz` and stored as UTC. Bucketing uses the `Europe/Zurich` time zone in SQL.
+- Explicit transactions (`BeginTransactionAsync`) are fine: the context has no retrying execution strategy (scope.md D17). Code that should survive a transient error retries on its own. Tests of transactional code run on the runtime registration (`TimescaleFixture.CreateApplicationBuilder()`), not only on `CreateDbContext()`.
 
 ## 7. Git & PR conventions
 

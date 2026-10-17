@@ -380,6 +380,7 @@ Alongside the template, the repo gets a **`CLAUDE.md`** with build and test comm
 | D12 | Development style | TDD (red → green → refactor), see [coding-guidelines.md](coding-guidelines.md) |
 | D13 | Test stack | xUnit v3, Shouldly, NSubstitute (edges only), Testcontainers (Timescale image), bUnit, Aspire.Hosting.Testing |
 | D16 | Member area layout | Magazine page without a drawer: header with logo, period switch and avatar menu; themed chapters; recap covers instead of a recaps list; admins reach `/admin` from the avatar menu. Picked over a bento grid and a timeline in the #27 wireframe review (§7.2) |
+| D17 | DB retries | Aspire's EF retry strategy is off (`AddApolloDbContext` sets `DisableRetry`), because it rejects the explicit transactions the bot uses. Code that needs a retry does it itself (tracking gate reload, voice startup close, `DatabaseMigrator`) instead of wrapping each transaction in `CreateExecutionStrategy()` ([#77](https://github.com/cosimo-augustoni/ApolloBot/issues/77)) |
 
 ## 12. Open questions
 
