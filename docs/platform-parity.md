@@ -130,7 +130,8 @@ What the findings mean for the platform abstraction and the recorders. Each item
   there is nothing to register.
 - **#21, #23:** reply texts (German) must read well in a DM as well as in an ephemeral reply. #21's texts are whole
   sentences that never refer to "this message" or the command; the tracking role comes from the gate
-  (`ITrackingGate.TrackingRole`, the role on the bot's own platform), so a Fluxer bot switches its own tracking role.
+  (`ITrackingGate.TrackingRole`, the role on the bot's own platform), so a Fluxer bot switches its own tracking role. #23's reply is one sentence with the `/me` link, built from
+  `Apollo:Links:PublicWebUrl` like the privacy footer, so it reads the same as a DM.
 - **Built in #20** (`Apollo.Platform.Abstractions/Commands`): `CommandInvocation`, `ButtonInvocation`, `CommandReply`
   with `ReplyVisibility`, `ReplyButton`, `CommandDefinition` (merged by name with `CommandDefinition.Combine`), and the
   contracts `ICommandHandler`, `IButtonHandler`, `ICommandRouter`. Button ids are `ButtonId` (`prefix:owner[:argument]`,

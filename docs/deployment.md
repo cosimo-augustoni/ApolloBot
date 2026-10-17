@@ -31,7 +31,7 @@ All values are read by the AppHost. Secrets are listed by name only and are neve
 | `PgAdminPassword` | **secret** parameter | pgAdmin login password | as above |
 | `PgAdminDataPath` | parameter | Host directory for pgAdmin (mounted at `/var/lib/pgadmin`) | as above |
 | `PgAdminPort` | parameter | Host port that publishes pgAdmin | as above |
-| `PublicWebUrl` | parameter | Public address of the website, the reverse-proxy URL in front of `apollo-web`, e.g. `https://apollo.example.ch`. Passed to `bot` as `Apollo__Links__PublicWebUrl`; the bot builds its links from it (privacy page `/datenschutz` in every command reply). Aspire only knows the internal address `http://apollo-web:80`, so the public one has to be given here | as above |
+| `PublicWebUrl` | parameter | Public address of the website, the reverse-proxy URL in front of `apollo-web`, e.g. `https://apollo.example.ch`. Passed to `bot` as `Apollo__Links__PublicWebUrl`; the bot builds its links from it (privacy page `/datenschutz` in every command reply, the member page `/me` in the `/apollo stats` reply). Aspire only knows the internal address `http://apollo-web:80`, so the public one has to be given here | as above |
 | `DiscordOAuthClientId` | parameter | Client ID of the Discord application used for the web login; becomes `Apollo__Platform__Discord__OAuth__ClientId` on `apollo-web` | as above |
 | `DiscordOAuthClientSecret` | **secret** parameter | Its client secret; becomes `Apollo__Platform__Discord__OAuth__ClientSecret` on `apollo-web` | as above |
 
