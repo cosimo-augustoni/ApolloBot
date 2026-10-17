@@ -279,6 +279,45 @@ namespace Apollo.Data.Migrations
                     b.ToTable("user_platform_ids", (string)null);
                 });
 
+            modelBuilder.Entity("Apollo.Data.Membership.MembershipEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<Guid>("GuildId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("guild_id");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("kind");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id", "OccurredAt");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("GuildId", "UserId", "Kind", "OccurredAt");
+
+                    b.ToTable("membership_events", (string)null);
+
+                    b
+                        .HasAnnotation("TimescaleDB:IsHypertable", true)
+                        .HasAnnotation("TimescaleDB:TimeColumnName", "OccurredAt");
+                });
+
             modelBuilder.Entity("Apollo.Data.Messages.MessageEvent", b =>
                 {
                     b.Property<long>("Id")
@@ -902,6 +941,21 @@ namespace Apollo.Data.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Apollo.Data.Membership.MembershipEvent", b =>
+                {
+                    b.HasOne("Apollo.Data.Identity.Guild", null)
+                        .WithMany()
+                        .HasForeignKey("GuildId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Apollo.Data.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
