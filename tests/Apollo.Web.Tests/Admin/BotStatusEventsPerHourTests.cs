@@ -131,13 +131,24 @@ public sealed class BotStatusEventsPerHourTests(TimescaleFixture fixture) : Time
             case EventTable.Message:
                 db.MessageEvents.Add(new MessageEvent
                 {
-                    GuildId = guildId, UserId = userId, ChannelId = channelId, OccurredAt = at, MessageExtId = "m", Kind = MessageEventKind.Create,
+                    GuildId = guildId,
+                    UserId = userId,
+                    ChannelId = channelId,
+                    OccurredAt = at,
+                    MessageExtId = "m",
+                    Kind = MessageEventKind.Create,
                 });
                 break;
             case EventTable.Reaction:
                 db.ReactionEvents.Add(new ReactionEvent
                 {
-                    GuildId = guildId, UserId = userId, ChannelId = channelId, OccurredAt = at, MessageExtId = "m", EmojiName = "👍", Kind = ReactionEventKind.Add,
+                    GuildId = guildId,
+                    UserId = userId,
+                    ChannelId = channelId,
+                    OccurredAt = at,
+                    MessageExtId = "m",
+                    EmojiName = "👍",
+                    Kind = ReactionEventKind.Add,
                 });
                 break;
             case EventTable.Membership:
@@ -149,7 +160,12 @@ public sealed class BotStatusEventsPerHourTests(TimescaleFixture fixture) : Time
             case EventTable.Presence:
                 db.PresenceActivitySessions.Add(new PresenceActivitySession
                 {
-                    GuildId = guildId, UserId = userId, OccurredAt = at, EndedAt = at.AddMinutes(1), ActivityType = PresenceActivityType.Playing, ActivityName = "Factorio",
+                    GuildId = guildId,
+                    UserId = userId,
+                    OccurredAt = at,
+                    EndedAt = at.AddMinutes(1),
+                    ActivityType = PresenceActivityType.Playing,
+                    ActivityName = "Factorio",
                 });
                 break;
             default:
