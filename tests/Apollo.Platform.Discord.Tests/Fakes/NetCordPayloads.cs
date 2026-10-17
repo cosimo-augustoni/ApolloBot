@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using NetCord;
 using NetCord.Gateway;
+using NetCord.Gateway.JsonModels;
 using NetCord.Gateway.JsonModels.EventArgs;
 using NetCord.JsonModels;
 using NetCord.Rest;
@@ -70,6 +71,27 @@ internal static class NetCordPayloads
 
     public static GuildUserRemoveEventArgs GuildUserRemove(ulong guildId, ulong userId) =>
         new(new JsonGuildUserRemoveEventArgs { GuildId = guildId, User = new JsonUser { Id = userId, Username = "alice" } }, Rest);
+
+    public static VoiceState VoiceState(
+        ulong guildId,
+        ulong userId,
+        ulong? channelId,
+        bool selfMute = false,
+        bool selfDeaf = false,
+        bool streaming = false,
+        bool video = false,
+        bool serverMute = false) => new(new JsonVoiceState
+        {
+            GuildId = guildId,
+            UserId = userId,
+            ChannelId = channelId,
+            SessionId = $"session-{userId}",
+            IsSelfMuted = selfMute,
+            IsSelfDeafened = selfDeaf,
+            SelfStreamExists = streaming,
+            SelfVideoExists = video,
+            IsMuted = serverMute,
+        }, guildId, Rest);
 
     public static Message DirectMessage(ulong authorId) => new(Parse<JsonMessage>($$"""
         {
