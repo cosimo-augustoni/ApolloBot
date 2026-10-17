@@ -197,13 +197,13 @@ public sealed class MembershipRecorderTests(TimescaleFixture fixture) : Timescal
     }
 
     [Fact]
-    public async Task Join_WhenAnAdministratorJoinsInBootstrapMode_ShouldStoreOneJoinRow()
+    public async Task Join_WhenAnAdministratorJoinsWithoutATrackingRole_ShouldStoreNothing()
     {
         await using var host = await HostAsync(trackingRole: false);
 
         await host.RaiseAsync(Joined(Member(_dave, _admin)).Build());
 
-        (await EventsAsync(host)).ShouldHaveSingleItem().Kind.ShouldBe(MembershipEventKind.Join);
+        (await EventsAsync(host)).ShouldBeEmpty();
     }
 
     [Fact]

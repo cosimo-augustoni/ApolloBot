@@ -27,16 +27,19 @@ public sealed class TrackingGateTests(TimescaleFixture fixture) : TimescaleTest(
     private static readonly TimeSpan _later = TimeSpan.FromMinutes(5);
 
     [Fact]
-    public async Task Gate_WhenNoTrackingRowExists_ShouldTrackAdministratorsOnly()
+    public async Task Gate_WhenNoTrackingRowExists_ShouldTrackNobodyNotEvenAdministratorsAndLogAWarning()
     {
         await using var host = new TrackingHost(Fixture);
 
         await host.SyncAsync(Snapshot());
 
-        host.Gate.Mode.ShouldBe(TrackingMode.Bootstrap);
-        host.Gate.IsTracked(await host.UserIdAsync(_bob)).ShouldBeTrue();
+        host.Gate.Mode.ShouldBe(TrackingMode.NoTrackingRole);
+        host.Gate.IsTracked(await host.UserIdAsync(_bob)).ShouldBeFalse();
         host.Gate.IsTracked(await host.UserIdAsync(_alice)).ShouldBeFalse();
         host.Gate.IsTracked(await host.UserIdAsync(_carol)).ShouldBeFalse();
+        (await host.PeriodsAsync()).ShouldBeEmpty();
+        host.Lifecycle.All.ShouldBeEmpty();
+        host.Logs.GetSnapshot().ShouldContain(r => r.Level == LogLevel.Warning && r.Message.StartsWith("No tracking role", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -81,10 +84,10 @@ public sealed class TrackingGateTests(TimescaleFixture fixture) : TimescaleTest(
 
         await host.SyncAsync(Snapshot());
 
-        host.Gate.Mode.ShouldBe(TrackingMode.TrackingRoleCleared);
+        host.Gate.Mode.ShouldBe(TrackingMode.NoTrackingRole);
         host.Gate.IsTracked(await host.UserIdAsync(_alice)).ShouldBeFalse();
         host.Gate.IsTracked(await host.UserIdAsync(_bob)).ShouldBeFalse();
-        host.Logs.GetSnapshot().ShouldContain(r => r.Level == LogLevel.Warning && r.Message.Contains("was removed"));
+        host.Logs.GetSnapshot().ShouldContain(r => r.Level == LogLevel.Warning && r.Message.StartsWith("No tracking role", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -107,7 +110,7 @@ public sealed class TrackingGateTests(TimescaleFixture fixture) : TimescaleTest(
         before.IsTracked(alice).ShouldBeTrue();
         before.TryGetTrackedUserId(_alice).ShouldBe(alice);
         var after = host.Gate.Current;
-        after.Mode.ShouldBe(TrackingMode.TrackingRoleCleared);
+        after.Mode.ShouldBe(TrackingMode.NoTrackingRole);
         after.TrackingRole.ShouldBeNull();
         after.IsTracked(alice).ShouldBeFalse();
         after.TryGetTrackedUserId(_alice).ShouldBeNull();
@@ -145,7 +148,7 @@ public sealed class TrackingGateTests(TimescaleFixture fixture) : TimescaleTest(
     }
 
     [Fact]
-    public async Task TrackingRole_InBootstrapMode_ShouldBeNull()
+    public async Task TrackingRole_WhenNoTrackingRowExists_ShouldBeNull()
     {
         await using var host = new TrackingHost(Fixture);
 
@@ -178,7 +181,7 @@ public sealed class TrackingGateTests(TimescaleFixture fixture) : TimescaleTest(
 
         await host.SyncAsync(Snapshot());
 
-        host.Gate.Mode.ShouldBe(TrackingMode.TrackingRoleCleared);
+        host.Gate.Mode.ShouldBe(TrackingMode.NoTrackingRole);
         host.Gate.TrackingRole.ShouldBeNull();
     }
 
@@ -314,24 +317,22 @@ public sealed class TrackingGateTests(TimescaleFixture fixture) : TimescaleTest(
     }
 
     [Fact]
-    public async Task Reload_WhenTrackingRowIsInsertedInBootstrapMode_ShouldSwitchToTheRoleHoldersAfter30Seconds()
+    public async Task Reload_WhenTrackingRowIsInsertedWithoutATrackingRole_ShouldStartTrackingTheRoleHoldersAfter30Seconds()
     {
         await using var host = new TrackingHost(Fixture);
         await host.SyncAsync(Snapshot());
-        var (alice, bob) = (await host.UserIdAsync(_alice), await host.UserIdAsync(_bob));
-        host.Lifecycle.Clear();
+        var alice = await host.UserIdAsync(_alice);
         await host.StartReloaderAsync();
         await host.SeedRoleSettingAsync(new RoleSettingBuilder().ForRole(_statistik));
 
         host.Time.Advance(TimeSpan.FromSeconds(30));
-        await TrackingHost.WaitUntilAsync(() => host.Lifecycle.All.Count == 2, "the reload switched to the tracking role");
+        await TrackingHost.WaitUntilAsync(() => host.Lifecycle.All.Count == 1, "the reload switched to the tracking role");
 
         host.Gate.Mode.ShouldBe(TrackingMode.TrackingRole);
-        host.Lifecycle.Stopped.ShouldBe([bob]);
+        host.Lifecycle.Stopped.ShouldBeEmpty();
         host.Lifecycle.Started.ShouldBe([alice]);
-        var periods = await host.PeriodsAsync();
-        periods.Single(p => p.UserId == bob).To.ShouldBe(TestTime.Now + TimeSpan.FromSeconds(30));
-        var alicePeriod = periods.Single(p => p.UserId == alice);
+        var alicePeriod = (await host.PeriodsAsync()).ShouldHaveSingleItem();
+        alicePeriod.UserId.ShouldBe(alice);
         alicePeriod.From.ShouldBe(TestTime.Now + TimeSpan.FromSeconds(30));
         alicePeriod.To.ShouldBeNull();
     }
@@ -346,7 +347,7 @@ public sealed class TrackingGateTests(TimescaleFixture fixture) : TimescaleTest(
 
         host.Time.Advance(TimeSpan.FromSeconds(29));
         await Task.Delay(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
-        host.Gate.Mode.ShouldBe(TrackingMode.Bootstrap);
+        host.Gate.Mode.ShouldBe(TrackingMode.NoTrackingRole);
 
         host.Time.Advance(TimeSpan.FromSeconds(1));
         await TrackingHost.WaitUntilAsync(() => host.Gate.Mode == TrackingMode.TrackingRole, "the reload after 30 s ran");
@@ -405,17 +406,61 @@ public sealed class TrackingGateTests(TimescaleFixture fixture) : TimescaleTest(
     }
 
     [Fact]
-    public async Task Startup_InBootstrapMode_ShouldLogTheModeAsAStructuredWarning()
+    public async Task Startup_WhenAnAdministratorHasAnOpenPeriodAndNoTrackingRowExists_ShouldCloseItAndNotTrackThem()
+    {
+        // An Administrator tracked before the bootstrap fallback was removed (#62) still has an open period.
+        await using var host = new TrackingHost(Fixture);
+        var bob = await host.InScopeAsync(async (db, ids) =>
+        {
+            var ct = TestContext.Current.CancellationToken;
+            var guildId = await ids.ResolveGuildAsync(TestPlatform.Guild, ct);
+            var bobId = await ids.ResolveUserAsync(_bob, ct);
+            db.TrackingPeriods.Add(new TrackingPeriod { GuildId = guildId, UserId = bobId, From = TestTime.Now.AddDays(-2) });
+            await db.SaveChangesAsync(ct);
+            return bobId;
+        });
+        host.Time.Advance(_later);
+
+        await host.SyncAsync(Snapshot());
+
+        host.Gate.Mode.ShouldBe(TrackingMode.NoTrackingRole);
+        host.Gate.IsTracked(bob).ShouldBeFalse();
+        var period = (await host.PeriodsAsync()).ShouldHaveSingleItem();
+        period.UserId.ShouldBe(bob);
+        period.To.ShouldBe(TestTime.Now + _later);
+        host.Lifecycle.Started.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Startup_WhenNoTrackingRowExists_ShouldLogTheModeAsAStructuredWarning()
     {
         await using var host = new TrackingHost(Fixture);
 
         await host.SyncAsync(Snapshot());
 
-        var record = host.Logs.GetSnapshot().Where(r => r.Message.StartsWith("Bootstrap mode", StringComparison.Ordinal)).ShouldHaveSingleItem();
+        var record = host.Logs.GetSnapshot().Where(r => r.Message.StartsWith("No tracking role", StringComparison.Ordinal)).ShouldHaveSingleItem();
         record.Level.ShouldBe(LogLevel.Warning);
-        record.Message.ShouldContain("until a tracking role is set (temporary, #62)");
+        record.Message.ShouldContain("nobody is tracked, Administrators included, until a tracking role is set");
         record.StructuredState!.ShouldContain(kv => kv.Key == "Platform" && kv.Value == nameof(PlatformKind.Discord));
         record.StructuredState!.ShouldContain(kv => kv.Key == "{OriginalFormat}");
+    }
+
+    [Fact]
+    public async Task Reload_WhenTheTrackingRowIsRemoved_ShouldLogTheNoTrackingRoleWarningOnce()
+    {
+        await using var host = await HostInTrackingRoleModeAsync();
+        host.Logs.GetSnapshot().ShouldNotContain(r => r.Message.StartsWith("No tracking role", StringComparison.Ordinal));
+        await host.InScopeAsync(async (db, _) =>
+        {
+            db.RoleSettings.RemoveRange(db.RoleSettings);
+            return await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        });
+
+        await host.SyncAsync(Snapshot());
+        await host.SyncAsync(Snapshot());
+
+        host.Logs.GetSnapshot().Where(r => r.Message.StartsWith("No tracking role", StringComparison.Ordinal)).ShouldHaveSingleItem()
+            .Level.ShouldBe(LogLevel.Warning);
     }
 
     [Fact]
@@ -480,18 +525,17 @@ public sealed class TrackingGateTests(TimescaleFixture fixture) : TimescaleTest(
     [Fact]
     public async Task ReleaseUntrackedMark_WhenTheRuleStillTracksTheUser_ShouldTrackThemAgainAtOnceWithAFreshPeriod()
     {
-        await using var host = new TrackingHost(Fixture);
-        await host.SyncAsync(Snapshot());
-        var (guild, bob) = (await GuildIdAsync(host), await host.UserIdAsync(_bob));
-        await Gate(host).MarkUntrackedAsync(guild, bob, TestContext.Current.CancellationToken);
+        await using var host = await HostInTrackingRoleModeAsync();
+        var (guild, alice) = (await GuildIdAsync(host), await host.UserIdAsync(_alice));
+        await Gate(host).MarkUntrackedAsync(guild, alice, TestContext.Current.CancellationToken);
         host.Lifecycle.Clear();
         host.Time.Advance(_later);
 
-        await Gate(host).ReleaseUntrackedMarkAsync(guild, bob, TestContext.Current.CancellationToken);
+        await Gate(host).ReleaseUntrackedMarkAsync(guild, alice, TestContext.Current.CancellationToken);
 
-        host.Gate.IsTracked(bob).ShouldBeTrue();
-        host.Lifecycle.Started.ShouldBe([bob]);
-        (await host.PeriodsAsync()).Where(p => p.UserId == bob && p.To == null).ShouldHaveSingleItem().From.ShouldBe(TestTime.Now + _later);
+        host.Gate.IsTracked(alice).ShouldBeTrue();
+        host.Lifecycle.Started.ShouldBe([alice]);
+        (await host.PeriodsAsync()).Where(p => p.UserId == alice && p.To == null).ShouldHaveSingleItem().From.ShouldBe(TestTime.Now + _later);
     }
 
     [Fact]

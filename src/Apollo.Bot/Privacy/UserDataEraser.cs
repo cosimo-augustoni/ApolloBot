@@ -1,7 +1,6 @@
 using Apollo.Bot.Tracking;
 using Apollo.Data;
 using Apollo.Data.Identity;
-using Apollo.Domain.Tracking;
 using Apollo.Platform.Abstractions;
 
 namespace Apollo.Bot.Privacy;
@@ -21,7 +20,7 @@ namespace Apollo.Bot.Privacy;
 /// <item>
 /// Only then is the tracking role removed: after a failed deletion the member keeps their role and their data as before,
 /// and after a successful one recording does not resume. The gate's mark ends once the role removal is synced (the
-/// echoed member update). Without a role to remove (bootstrap mode, tracking not set up, the member does not hold it) or
+/// echoed member update). Without a role to remove (tracking not set up, the member does not hold it) or
 /// when the platform refuses the removal, the deletion fails or is cancelled, the mark ends right away and the gate
 /// tracks whoever the rule tracks, from a new tracking period. Only the deletion that added the mark ends it.
 /// </item>
@@ -103,9 +102,7 @@ internal sealed partial class UserDataEraser(
         exception is OperationCanceledException && cancellationToken.IsCancellationRequested;
 
     private static UserDataErasureOutcome WithoutRoleRemoval(ITrackingView view) =>
-        view.TrackingRole is not null ? UserDataErasureOutcome.Deleted
-        : view.Mode == TrackingMode.Bootstrap ? UserDataErasureOutcome.DeletedInBootstrapMode // TEMPORARY: removed by #62
-        : UserDataErasureOutcome.DeletedNotSetUp;
+        view.TrackingRole is not null ? UserDataErasureOutcome.Deleted : UserDataErasureOutcome.DeletedNotSetUp;
 
     private async Task EraseRowsAsync(Guid guildId, Guid userId, CancellationToken cancellationToken)
     {

@@ -52,7 +52,7 @@ public sealed class TrackingOffCommandHandlerTests(TimescaleFixture fixture) : T
     }
 
     [Fact]
-    public async Task Off_InBootstrapMode_ShouldSayNotSetUpAndMakeNoRoleCall()
+    public async Task Off_WhenNoTrackingRoleIsSet_ShouldSayNotSetUpToAnAdministratorAndMakeNoRoleCall()
     {
         await using var host = Create(Fixture);
         await host.SyncAsync(Snapshot());

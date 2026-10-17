@@ -158,7 +158,7 @@ internal sealed partial class TrackingGate(
 
     /// <summary>
     /// Ends the mark of <see cref="MarkUntrackedAsync"/> and re-evaluates the member at once: a user the rule still
-    /// tracks (bootstrap mode, or a tracking role that could not be removed) is tracked again from now, with a new period.
+    /// tracks (a tracking role that could not be removed) is tracked again from now, with a new period.
     /// </summary>
     public async Task ReleaseUntrackedMarkAsync(Guid guildId, Guid userId, CancellationToken cancellationToken)
     {
@@ -297,8 +297,8 @@ internal sealed partial class TrackingGate(
     {
         switch (snapshot.Mode)
         {
-            case TrackingMode.Bootstrap: // TEMPORARY: removed by #62
-                LogBootstrapMode(platform.Platform);
+            case TrackingMode.NoTrackingRole:
+                LogNoTrackingRole(platform.Platform);
                 break;
             case TrackingMode.TrackingRole:
                 LogTrackingRole(snapshot.TrackingRoleName, platform.Platform);
@@ -306,25 +306,19 @@ internal sealed partial class TrackingGate(
             case TrackingMode.TrackingRoleDeleted:
                 LogTrackingRoleDeleted(snapshot.TrackingRoleName, platform.Platform);
                 break;
-            case TrackingMode.TrackingRoleCleared:
-                LogTrackingRoleCleared(platform.Platform);
-                break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(snapshot), snapshot.Mode, "Unknown tracking mode.");
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Bootstrap mode: tracking Administrators on {Platform} until a tracking role is set (temporary, #62)")]
-    private partial void LogBootstrapMode(PlatformKind platform);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "No tracking role on {Platform}: nobody is tracked, Administrators included, until a tracking role is set")]
+    private partial void LogNoTrackingRole(PlatformKind platform);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Tracking role {RoleName} on {Platform}: tracking its holders")]
     private partial void LogTrackingRole(string? roleName, PlatformKind platform);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Tracking role {RoleName} on {Platform} was deleted: nobody is tracked until a new tracking role is set")]
     private partial void LogTrackingRoleDeleted(string? roleName, PlatformKind platform);
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Tracking role on {Platform} was removed: nobody is tracked, Administrators included, until a tracking role is set")]
-    private partial void LogTrackingRoleCleared(PlatformKind platform);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "{Hook} hook {Handler} failed for user {UserId}")]
     private partial void LogHookFailed(Exception exception, string hook, string handler, Guid userId);

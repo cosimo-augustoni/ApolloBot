@@ -19,19 +19,14 @@ else
     <div class="d-flex flex-column gap-4">
         @switch (_settings.Mode)
         {
-            case RoleSettingsMode.Bootstrap: @* TEMPORARY: removed by #62 *@
-                <MudAlert Severity="Severity.Info" Class="apollo-settings-bootstrap">
-                    <strong>@L["Settings_Bootstrap_Title"]</strong> @L["Settings_Bootstrap_Text"]
+            case RoleSettingsMode.NoTrackingRole:
+                <MudAlert Severity="Severity.Warning" Class="apollo-settings-no-role">
+                    <strong>@L["Settings_NoTrackingRole_Title"]</strong> @L["Settings_NoTrackingRole_Text"]
                 </MudAlert>
                 break;
             case RoleSettingsMode.TrackingRoleDeleted:
                 <MudAlert Severity="Severity.Error" Class="apollo-settings-deleted">
                     <strong>@L["Settings_Deleted_Title", Platform]</strong> @L["Settings_Deleted_Text"]
-                </MudAlert>
-                break;
-            case RoleSettingsMode.TrackingRoleCleared:
-                <MudAlert Severity="Severity.Warning" Class="apollo-settings-cleared">
-                    <strong>@L["Settings_Cleared_Title"]</strong> @L["Settings_Cleared_Text"]
                 </MudAlert>
                 break;
         }

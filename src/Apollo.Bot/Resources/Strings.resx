@@ -27,7 +27,7 @@
   </data>
   <data name="Tracking_NotSetUp" xml:space="preserve">
     <value>Tracking ist noch nicht eingerichtet.</value>
-    <comment>/apollo tracking on|off while no tracking role is configured (bootstrap, deleted or cleared role), scope §5.4</comment>
+    <comment>/apollo tracking on|off while no tracking role is configured (none set, or the role was deleted), scope §5.4; also the status and privacy delete replies in that state</comment>
   </data>
   <data name="Tracking_On" xml:space="preserve">
     <value>Ab jetzt werden deine Aktivitäten erfasst: Nachrichten-Metadaten, Voice-Zeit, Reaktionen und Spiele. Nachrichteninhalte werden nie gespeichert.</value>
@@ -64,10 +64,6 @@
   <data name="Status_TurnOnHint" xml:space="preserve">
     <value>Mit `/apollo tracking on` kannst du die Erfassung einschalten.</value>
     <comment>/apollo tracking status, member who is not tracked while a tracking role is set up</comment>
-  </data>
-  <data name="Status_NotSetUpBootstrap" xml:space="preserve">
-    <value>Tracking ist noch nicht eingerichtet: Bis eine Tracking-Rolle festgelegt ist, werden nur Admins erfasst.</value>
-    <comment>/apollo tracking status in bootstrap mode (scope §5.1.1). TEMPORARY: removed by #62</comment>
   </data>
   <data name="Status_DataHeading" xml:space="preserve">
     <value>Gespeicherte Einträge von dir:</value>
@@ -123,11 +119,7 @@
   </data>
   <data name="Privacy_DeletedNotSetUp" xml:space="preserve">
     <value>Deine Daten wurden gelöscht. Tracking ist noch nicht eingerichtet.</value>
-    <comment>/apollo privacy delete, after the confirm: data deleted, no tracking role (deleted or cleared), nobody is tracked</comment>
-  </data>
-  <data name="Privacy_DeletedInBootstrapMode" xml:space="preserve">
-    <value>Deine Daten wurden gelöscht. Tracking ist noch nicht eingerichtet: Bis eine Tracking-Rolle festgelegt ist, werden Admins weiterhin erfasst.</value>
-    <comment>/apollo privacy delete, after the confirm in bootstrap mode. TEMPORARY: removed by #62</comment>
+    <comment>/apollo privacy delete, after the confirm: data deleted, no tracking role (none set, or the role was deleted), nobody is tracked</comment>
   </data>
   <data name="Privacy_DeleteFailed" xml:space="preserve">
     <value>Das hat nicht geklappt: Deine Daten konnten nicht gelöscht werden, es wurde nichts gelöscht. Bitte versuche es später noch einmal.</value>

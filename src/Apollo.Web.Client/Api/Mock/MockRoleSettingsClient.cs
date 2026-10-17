@@ -3,8 +3,8 @@ using Apollo.Web.Client.Contracts;
 namespace Apollo.Web.Client.Api.Mock;
 
 /// <summary>
-/// <see cref="IRoleSettingsClient"/> without a host, for the prototype and bUnit tests: one Discord guild in bootstrap
-/// mode with roles like the wireframe's. Writes change the in-memory state and add history entries; the preview adds up
+/// <see cref="IRoleSettingsClient"/> without a host, for the prototype and bUnit tests: one Discord guild without a
+/// tracking role, with roles like the wireframe's. Writes change the in-memory state and add history entries; the preview adds up
 /// role member counts (the real host counts distinct members). Tests set <see cref="Platforms"/>,
 /// <see cref="Settings"/> and <see cref="History"/> before rendering.
 /// </summary>
@@ -17,16 +17,13 @@ public sealed class MockRoleSettingsClient(TimeProvider time) : IRoleSettingsCli
     public static readonly Guid Admin = Guid.Parse("00000000-0000-0000-0000-0000000000a5");
     public static readonly Guid Alt = Guid.Parse("00000000-0000-0000-0000-0000000000a6");
 
-    /// <summary>The members tracked in bootstrap mode (the Administrators).</summary>
-    public const int Administrators = 3;
-
     public List<string> Platforms { get; set; } = ["Discord"];
 
     /// <summary>The settings of every platform in <see cref="Platforms"/>.</summary>
     public RoleSettingsDto Settings { get; set; } = new(
         "Discord",
         [
-            new SettingsRoleDto(Admin, "Admin", 0xE74C3C, 7, IsDeleted: false, MemberCount: Administrators),
+            new SettingsRoleDto(Admin, "Admin", 0xE74C3C, 7, IsDeleted: false, MemberCount: 3),
             new SettingsRoleDto(Moderation, "Moderation", 0x9B59B6, 6, IsDeleted: false, MemberCount: 5),
             new SettingsRoleDto(Statistik, "Statistik", 0x3498DB, 5, IsDeleted: false, MemberCount: 168),
             new SettingsRoleDto(Mitglied, "Mitglied", 0x2ECC71, 4, IsDeleted: false, MemberCount: 187),
@@ -35,7 +32,7 @@ public sealed class MockRoleSettingsClient(TimeProvider time) : IRoleSettingsCli
         ],
         TrackingRoleId: null,
         MemberAccessRoleIds: [Mitglied, Stammgast],
-        RoleSettingsMode.Bootstrap,
+        RoleSettingsMode.NoTrackingRole,
         new BotPermissionCheckDto(CanManageRoles: true, IsAboveTrackingRole: null));
 
     /// <summary>The change history, newest first.</summary>
@@ -60,12 +57,7 @@ public sealed class MockRoleSettingsClient(TimeProvider time) : IRoleSettingsCli
     public Task<RolePreviewDto> GetPreviewAsync(string platform, IReadOnlyCollection<Guid> roleIds, CancellationToken cancellationToken)
     {
         var members = Settings.Roles.Where(r => !r.IsDeleted && roleIds.Contains(r.Id)).Sum(r => r.MemberCount);
-        var trackedNow = Settings.Mode switch
-        {
-            RoleSettingsMode.Bootstrap => Administrators,
-            RoleSettingsMode.Active => Role(Settings.TrackingRoleId!.Value).MemberCount,
-            _ => 0,
-        };
+        var trackedNow = Settings.Mode == RoleSettingsMode.Active ? Role(Settings.TrackingRoleId!.Value).MemberCount : 0;
         var unchanged = Settings.Mode == RoleSettingsMode.Active && roleIds.SequenceEqual([Settings.TrackingRoleId!.Value]);
         return Task.FromResult(unchanged ? new RolePreviewDto(members, 0, 0) : new RolePreviewDto(members, members, trackedNow));
     }
@@ -90,7 +82,7 @@ public sealed class MockRoleSettingsClient(TimeProvider time) : IRoleSettingsCli
         Settings = Settings with
         {
             TrackingRoleId = roleId,
-            Mode = roleId is null ? RoleSettingsMode.TrackingRoleCleared : RoleSettingsMode.Active,
+            Mode = roleId is null ? RoleSettingsMode.NoTrackingRole : RoleSettingsMode.Active,
             BotPermissions = Settings.BotPermissions with { IsAboveTrackingRole = roleId is null ? null : true },
         };
         AddHistory(changes);

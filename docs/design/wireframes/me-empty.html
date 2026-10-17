@@ -42,7 +42,7 @@
       <p>Apollo zählt nur bei Mitgliedern mit, die das wollen. Schreib <code>/apollo tracking on</code> auf dem Server, und ab dann füllt sich diese Seite mit deinen Zahlen.</p>
       <p><a href="privacy.html">Was wird erfasst?</a></p>
     </section>
-    <section class="mv-empty" data-states="bootstrap">
+    <section class="mv-empty" data-states="no-role">
       <div class="mv-empty-art"></div>
       <h1>Tracking ist noch nicht eingerichtet</h1>
       <p>Die Admins haben noch keine Tracking-Rolle festgelegt. Sobald das passiert, kannst du mit <code>/apollo tracking on</code> starten.</p>
@@ -57,12 +57,12 @@
       <h2>Annotations</h2>
       <div class="wf-states"><strong>Page state:</strong>
         <a href="#untracked" data-state-link>Nicht erfasst</a>
-        <a href="#bootstrap" data-state-link>Bootstrap-Modus</a>
+        <a href="#no-role" data-state-link>Nicht eingerichtet</a>
         <a href="#new" data-state-link>Erfasst, noch leer</a>
       </div>
       <ul>
         <li>Shown on <code>/me</code> instead of the magazine when the member has no stored data at all. A member who was tracked before sees their old data plus the friendly card (<a href="me-overview.html#paused">me-overview.html#paused</a>).</li>
-        <li>States: no tracking role ("Für dich werden keine Daten erfasst", scope §5.1.1), bootstrap mode, tracked but nothing recorded yet.</li>
+        <li>States: no tracking role ("Für dich werden keine Daten erfasst", scope §5.1.1), tracking not set up (no tracking role, so nobody is tracked), tracked but nothing recorded yet.</li>
         <li>No web button to start tracking: only <code>/apollo</code> commands (scope §3, §5.4). The period switch is disabled here.</li>
         <li>Member shell (scope D16): no drawer. Header = Apollo logo (home), period switch ("Oktober 2026 ▾": running month, past months and years, Benutzerdefiniert) and avatar menu (Privatsphäre, Datenschutz, Abmelden; "Admin" only for admins, leads to <a href="admin-status.html">/admin</a>).</li>
         <li>Menus are <code>&lt;details&gt;</code> here so they work without JS; real pages use MudMenu.</li>

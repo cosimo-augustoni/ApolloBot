@@ -5,8 +5,7 @@ namespace Apollo.Data.Tracking;
 
 /// <summary>
 /// One entry of the append-only <c>role_setting_changes</c> audit log, written by a trigger on <c>role_settings</c>.
-/// It is the source of the admin history (#33) and tells whether a tracking role was ever configured, which ends the
-/// Administrator bootstrap for good (scope §5.1.1; that check is removed by #62).
+/// It is the source of the admin history (#33).
 /// </summary>
 public sealed class RoleSettingChange
 {

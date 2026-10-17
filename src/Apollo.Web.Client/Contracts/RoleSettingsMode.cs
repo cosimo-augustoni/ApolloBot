@@ -6,9 +6,9 @@ namespace Apollo.Web.Client.Contracts;
 [JsonConverter(typeof(JsonStringEnumConverter<RoleSettingsMode>))]
 public enum RoleSettingsMode
 {
-    /// <summary>No tracking role was ever set: Administrators are tracked. TEMPORARY: removed by #62.</summary>
-    [JsonStringEnumMemberName("bootstrap")]
-    Bootstrap,
+    /// <summary>No tracking role is set: nobody is tracked, Administrators included.</summary>
+    [JsonStringEnumMemberName("noTrackingRole")]
+    NoTrackingRole,
 
     /// <summary>A tracking role is set and exists: exactly its holders are tracked.</summary>
     [JsonStringEnumMemberName("active")]
@@ -17,8 +17,4 @@ public enum RoleSettingsMode
     /// <summary>The tracking role was deleted on the platform: nobody is tracked.</summary>
     [JsonStringEnumMemberName("trackingRoleDeleted")]
     TrackingRoleDeleted,
-
-    /// <summary>The tracking role was cleared after one had been set: nobody is tracked.</summary>
-    [JsonStringEnumMemberName("trackingRoleCleared")]
-    TrackingRoleCleared,
 }

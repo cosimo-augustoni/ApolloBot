@@ -7,8 +7,8 @@ public enum UserDataErasureOutcome
 {
     /// <summary>
     /// Nothing was deleted: the deletion failed and was rolled back. The member's open voice and presence sessions and
-    /// their tracking period were already closed; if the rule still tracks them (they hold the tracking role, or are an
-    /// Administrator in bootstrap mode), they are tracked again from a new period.
+    /// their tracking period were already closed; if the rule still tracks them (they hold the tracking role), they are
+    /// tracked again from a new period.
     /// </summary>
     Failed,
 
@@ -28,14 +28,8 @@ public enum UserDataErasureOutcome
     DeletedButRoleKept,
 
     /// <summary>
-    /// The data was deleted; no tracking role is set up (deleted, cleared, or before the first guild sync), so none was
+    /// The data was deleted; no tracking role is set up (none set, deleted, or before the first guild sync), so none was
     /// removed and nobody is tracked.
     /// </summary>
     DeletedNotSetUp,
-
-    /// <summary>
-    /// The data was deleted in bootstrap mode: no role was removed, and an Administrator stays tracked. TEMPORARY:
-    /// removed by #62.
-    /// </summary>
-    DeletedInBootstrapMode,
 }

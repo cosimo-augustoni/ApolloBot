@@ -80,7 +80,7 @@ public sealed class TrackingStatusCommandHandlerTests(TimescaleFixture fixture) 
     }
 
     [Fact]
-    public async Task Status_InBootstrapMode_ShouldReportTheGateResultAndThatTrackingIsNotSetUp()
+    public async Task Status_WhenNoTrackingRoleIsSet_ShouldSayNotTrackedAndNotSetUpToAdministratorsToo()
     {
         await using var host = Create(Fixture);
         await host.SyncAsync(Snapshot());
@@ -88,18 +88,14 @@ public sealed class TrackingStatusCommandHandlerTests(TimescaleFixture fixture) 
         var admin = await host.RunAsync(Bob, "apollo tracking status");
         var member = await host.RunAsync(Carol, "apollo tracking status");
 
-        admin.Body().ShouldBe(
+        const string Expected =
             """
-            Für dich werden seit dem 15.01.2026 Daten erfasst. Tracking ist noch nicht eingerichtet: Bis eine Tracking-Rolle festgelegt ist, werden nur Admins erfasst.
+            Für dich werden keine Daten erfasst. Tracking ist noch nicht eingerichtet.
 
             Es sind keine Daten von dir gespeichert.
-            """.ReplaceLineEndings("\n"));
-        member.Body().ShouldBe(
-            """
-            Für dich werden keine Daten erfasst. Tracking ist noch nicht eingerichtet: Bis eine Tracking-Rolle festgelegt ist, werden nur Admins erfasst.
-
-            Es sind keine Daten von dir gespeichert.
-            """.ReplaceLineEndings("\n"));
+            """;
+        admin.Body().ShouldBe(Expected.ReplaceLineEndings("\n"));
+        member.Body().ShouldBe(Expected.ReplaceLineEndings("\n"));
     }
 
     [Fact]

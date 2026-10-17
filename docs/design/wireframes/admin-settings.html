@@ -6,7 +6,7 @@
   <title>Einstellungen · Apollo wireframe</title>
   <link rel="stylesheet" href="wireframes.css">
 </head>
-<body data-default-state="bootstrap">
+<body data-default-state="no-role">
   <input type="checkbox" id="wf-nav" class="wf-nav-toggle">
   <header class="wf-appbar">
     <label for="wf-nav" class="wf-hamburger" title="Navigation öffnen">☰</label>
@@ -42,9 +42,9 @@
         <button class="wf-tab" role="tab" aria-selected="false" aria-controls="tab-fluxer">Fluxer</button>
       </div>
       <div id="tab-discord" role="tabpanel">
-        <div class="wf-alert" data-states="bootstrap">
-          <div><strong>Bootstrap-Modus</strong>
-            <p>Es ist keine Tracking-Rolle festgelegt. Apollo erfasst zurzeit nur Mitglieder mit der Administrator-Berechtigung. Sobald du eine Rolle festlegst, endet der Bootstrap-Modus endgültig.</p></div>
+        <div class="wf-alert" data-states="no-role">
+          <div><strong>Keine Tracking-Rolle festgelegt: niemand wird erfasst</strong>
+            <p>Apollo erfasst zurzeit keine Daten, auch nicht von Administratoren. Lege eine Tracking-Rolle fest, damit ihre Mitglieder erfasst werden.</p></div>
         </div>
         <div class="wf-alert" data-states="hierarchy">
           <div><strong>Apollo kann die Tracking-Rolle nicht vergeben</strong>
@@ -60,7 +60,7 @@
             <div class="wf-field">
               <label>Rolle</label>
               <span class="wf-select" data-states="ok hierarchy"><span class="wf-swatch"></span>Statistik · 168 Mitglieder</span>
-              <span class="wf-select" data-states="bootstrap">Keine Rolle festgelegt</span>
+              <span class="wf-select" data-states="no-role">Keine Rolle festgelegt</span>
               <span class="wf-select" data-states="deleted"><span class="wf-swatch"></span>Statistik (gelöscht)</span>
               <span class="wf-field-help">Mitglieder mit dieser Rolle werden erfasst. Sie schalten die Rolle mit <code>/apollo tracking on|off</code> selbst um.</span>
             </div>
@@ -72,7 +72,7 @@
                 <li style="--w: 10%"><span><span class="wf-swatch"></span> Moderation</span><span class="wf-num">5 Mitglieder</span></li>
               </ul>
             </div>
-            <p style="margin-top: 12px"><strong data-states="ok hierarchy">168 Mitglieder werden erfasst</strong><strong data-states="bootstrap">Zurzeit: 3 Administratoren werden erfasst</strong><strong data-states="deleted">0 Mitglieder werden erfasst</strong></p>
+            <p style="margin-top: 12px"><strong data-states="ok hierarchy">168 Mitglieder werden erfasst</strong><strong data-states="no-role deleted">0 Mitglieder werden erfasst</strong></p>
             <p class="wf-stat-sub" data-states="ok">Bot-Berechtigungen geprüft: «Rollen verwalten» vorhanden, Bot-Rolle steht über «Statistik».</p>
             <div class="wf-toolbar"><span class="wf-btn wf-primary">Speichern</span><span class="wf-btn">Abbrechen</span></div>
           </section>
@@ -97,7 +97,7 @@
               <tbody>
                 <tr><td data-label="Zeitpunkt">02.10.2026 20:14</td><td data-label="Geändert von">Anna</td><td data-label="Änderung">Zugriffsrolle hinzugefügt: Stammgast</td></tr>
                 <tr><td data-label="Zeitpunkt">01.09.2026 18:02</td><td data-label="Geändert von">Anna</td><td data-label="Änderung">Zugriffsrolle hinzugefügt: Mitglied</td></tr>
-                <tr><td data-label="Zeitpunkt">01.09.2026 17:55</td><td data-label="Geändert von">Anna</td><td data-label="Änderung">Tracking-Rolle festgelegt: Statistik (vorher: keine, Bootstrap-Modus)</td></tr>
+                <tr><td data-label="Zeitpunkt">01.09.2026 17:55</td><td data-label="Geändert von">Anna</td><td data-label="Änderung">Tracking-Rolle festgelegt: Statistik</td></tr>
               </tbody>
             </table>
           </section>
@@ -114,7 +114,7 @@
         <h2>Annotations</h2>
         <div class="wf-states"><strong>Page state:</strong>
           <a href="#ok" data-state-link>Eingerichtet</a>
-          <a href="#bootstrap" data-state-link>Bootstrap-Modus</a>
+          <a href="#no-role" data-state-link>Keine Tracking-Rolle</a>
           <a href="#hierarchy" data-state-link>Hierarchie-Warnung</a>
           <a href="#deleted" data-state-link>Rolle gelöscht</a>
         </div>
@@ -122,7 +122,7 @@
           <li>One tab per platform; each setting is stored per (guild, platform) (scope §5.1.2). The Fluxer tab has the same layout as Discord once the adapter exists.</li>
           <li>Selectable roles come from the role sync. Options show role colour (swatch) and member count. Deleted roles are not offered; a deleted current role is shown as "(gelöscht)".</li>
           <li>Live preview under each select ("X Mitglieder werden erfasst" / "X Mitglieder können sich anmelden") updates while picking, before saving. Changing the tracking role asks for confirmation when members would stop being tracked ("12 Mitglieder werden nicht mehr erfasst").</li>
-          <li>States: Bootstrap banner while no tracking role is set; hierarchy/permission warning when the bot lacks Manage Roles or sits below the tracking role (checked on page load); deleted-role warning (no Administrator fallback).</li>
+          <li>States: "no tracking role" warning while none is set (never set, or cleared): nobody is tracked, Administrators included (scope §5.1.1); hierarchy/permission warning when the bot lacks Manage Roles or sits below the tracking role (checked on page load); deleted-role warning (no Administrator fallback either).</li>
           <li>Changes apply without restart: the bot reloads role settings every 30 s. After saving show "Gespeichert. Gilt innerhalb von 30 Sekunden."</li>
           <li>Admin access is not a setting (always the Administrator permission), so it does not appear here.</li>
           <li>Change history: last 20 changes, newest first, with who and when.</li>
