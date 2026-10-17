@@ -118,4 +118,12 @@ public sealed class DiscordGatewaySetupTests
 
         DiscordHost.GatewayHandlers(host).ShouldContain(handler => handler is DiscordVoiceStateHandler);
     }
+
+    [Fact]
+    public void AddDiscordPlatform_ShouldMapReactionEvents()
+    {
+        using var host = DiscordHost.Build(DiscordHost.ValidSettings());
+
+        DiscordHost.GatewayHandlers(host).ShouldContain(handler => handler is DiscordReactionHandler);
+    }
 }
