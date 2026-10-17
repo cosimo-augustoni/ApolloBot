@@ -40,7 +40,7 @@ dotnet run --project src/Apollo.AppHost              # local stack + Aspire dash
 | `src/Apollo.Stats` | Date-range stats queries and recap builders |
 | `src/Apollo.Web` | ASP.NET Core host: API, auth (`Auth/`: BFF cookie session, `/auth/*`), serves the WASM client |
 | `src/Apollo.Web.Client` | Blazor WASM UI (German) |
-| `tests/Apollo.Testing` | Shared test helpers: `TimescaleFixture`, `TestDataBuilder<,>`, `TestTime`; `Data/`: `GuildBuilder`, `UserBuilder`, `ChannelBuilder`, `RoleBuilder`, `RoleSettingBuilder` (seed through `IPlatformIdResolver`); `Platform/`: `FakeChatPlatform`, `TestPlatform`, event and snapshot builders |
+| `tests/Apollo.Testing` | Shared test helpers: `TimescaleFixture` (`CreateDbContext`, `CreateApplicationBuilder` for the runtime registration), `TestDataBuilder<,>`, `TestTime`; `Data/`: `GuildBuilder`, `UserBuilder`, `ChannelBuilder`, `RoleBuilder`, `RoleSettingBuilder` (seed through `IPlatformIdResolver`); `Platform/`: `FakeChatPlatform`, `TestPlatform`, event and snapshot builders |
 | `tests/Apollo.Domain.Tests` | Pure unit tests |
 | `tests/Apollo.Platform.Abstractions.Tests` | `PlatformRef`, event contract rules, dispatcher, `FakeChatPlatform` self-tests |
 | `tests/Apollo.Bot.Tests` | Recorders against `FakeChatPlatform` + Testcontainers DB |
@@ -72,6 +72,9 @@ public sealed class VoiceSessionRecorderTests(TimescaleFixture fixture) : Timesc
 ```
 
 - The reset deletes rows in schema `public` (not `__EFMigrationsHistory`). Continuous aggregates are not reset: refresh them after seeding.
+- `Fixture.CreateDbContext()` builds a plain context. Code with explicit transactions must also be tested on the runtime
+  registration: `Fixture.CreateApplicationBuilder()` returns a builder with `AddApolloDbContext()` applied; add your
+  services to its `Services` (see `SyncHost`, `TrackingHost`).
 - Need an unmigrated database? Use `[Collection<TimescaleCollection>]` and `fixture.NewDatabaseConnectionString()`.
 - Test data: builders derived from `TestDataBuilder<TBuilder, T>`. Time: `TestTime.CreateProvider()` (fixed UTC "now", `Europe/Zurich` local zone).
 
@@ -115,6 +118,7 @@ dotnet ef migrations add <DescriptiveName> --project src/Apollo.Data --startup-p
 - Works without a running AppHost (`ApolloDbContextFactory`). Generated files under `src/Apollo.Data/Migrations/` are excluded from style rules (`src/Apollo.Data/.editorconfig`).
 - Event tables are hypertables: composite key `(Id, OccurredAt)`, `IsHypertable(x => x.OccurredAt)`, no unique index without `occurred_at` ([ADR 0001](docs/adr/0001-timescale-ef.md)).
 - Services register the context with `builder.AddApolloDbContext()`. Only `Apollo.MigrationService` migrates; bot and web call `WaitForMigrationsAsync()` outside Development.
+- The context has no retrying execution strategy (scope.md D17), so `BeginTransactionAsync` works; retry in code where needed.
 
 - One migration per issue, with a descriptive name (`AddVoiceSessions`). Never edit a migration that has been merged.
 - Timescale objects (hypertables, continuous aggregates, policies) via CmdScale fluent APIs. Raw SQL only with a comment explaining why.
