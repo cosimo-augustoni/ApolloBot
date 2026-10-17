@@ -9,7 +9,8 @@ public sealed record MessageMetadata
     public static MessageMetadata Empty { get; } = new();
 
     /// <summary>
-    /// The length in characters (text elements, so an emoji counts as one).
+    /// The length in characters as people see them: an emoji (unicode or custom) and a user, role or channel mention
+    /// each count as one; links and all other text keep their characters (text elements).
     /// </summary>
     public int Length { get; init; }
 

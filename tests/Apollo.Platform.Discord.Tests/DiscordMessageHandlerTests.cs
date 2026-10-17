@@ -47,7 +47,7 @@ public sealed class DiscordMessageHandlerTests
             () => created.MentionedUsers.ShouldBe([Ref(BobId)]));
         created.Metadata.ShouldBe(new MessageMetadata
         {
-            Length = 41,
+            Length = 33,
             WordCount = 2,
             AttachmentCount = 2,
             EmbedCount = 1,

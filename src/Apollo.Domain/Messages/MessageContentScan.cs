@@ -42,15 +42,25 @@ internal sealed partial class MessageContentScan
         var hasLink = false;
         var emojiCount = 0;
 
+        // Custom emoji and mentions show as one name or icon, so each counts as one character; markup is plain ASCII.
+        var markupOverhead = 0;
+
         var rest = Markup().Replace(content, match =>
         {
             if (match.Groups["user"].Success)
             {
                 userMentions.Add(match.Groups["user"].Value);
+                markupOverhead += match.Length - 1;
             }
             else if (match.Groups["role"].Success)
             {
                 roleMentions.Add(match.Groups["role"].Value);
+                markupOverhead += match.Length - 1;
+            }
+            else if (match.Groups["channel"].Success)
+            {
+                hasLink = true;
+                markupOverhead += match.Length - 1;
             }
             else if (match.Groups["everyone"].Success)
             {
@@ -64,6 +74,7 @@ internal sealed partial class MessageContentScan
             else if (match.Groups["emoji"].Success)
             {
                 emojiCount++;
+                markupOverhead += match.Length - 1;
             }
             else
             {
@@ -86,14 +97,14 @@ internal sealed partial class MessageContentScan
             }
             else
             {
-                hasText |= !string.IsNullOrWhiteSpace(element);
+                hasText |= !string.IsNullOrWhiteSpace(element) && !IsFormatting(element);
                 text.Append(element);
             }
         }
 
         return new MessageContentScan
         {
-            Length = new StringInfo(content).LengthInTextElements,
+            Length = new StringInfo(content).LengthInTextElements - markupOverhead,
             WordCount = text.ToString()
                 .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
                 .Count(word => word.Any(char.IsLetterOrDigit)),
@@ -113,7 +124,7 @@ internal sealed partial class MessageContentScan
     /// </summary>
     private static bool IsEmoji(string element)
     {
-        if (element.Contains('⃣', StringComparison.Ordinal) || element.Contains('️', StringComparison.Ordinal))
+        if (element.Contains('\u20E3', StringComparison.Ordinal) || element.Contains('\uFE0F', StringComparison.Ordinal))
         {
             return true;
         }
@@ -123,15 +134,23 @@ internal sealed partial class MessageContentScan
             or (>= 0x2B00 and <= 0x2BFF);
     }
 
-    // Order matters: a custom emoji or mention is markup in angle brackets, a URL may be wrapped in them to hide its embed.
+    /// <summary>
+    /// Discord formatting characters (bold, italics, underline, strikethrough, spoiler, code, quote): not text.
+    /// </summary>
+    private static bool IsFormatting(string element) => element is "*" or "_" or "~" or "|" or "`" or ">";
+
+    // Order matters: a custom emoji or mention is markup in angle brackets, a URL may be wrapped in them to hide its
+    // embed. A URL stops before formatting characters and keeps brackets only in balanced pairs, as in
+    // ".../Apollo_(program)"; a trailing underscore or punctuation is not part of it. Brackets right around a link
+    // belong to the link. @everyone and @here are case-sensitive whole words, as Discord pings them.
     [GeneratedRegex("""
         <a?:\w+:(?<emoji>\d+)>
         | <@!?(?<user>\d+)>
         | <@&(?<role>\d+)>
-        | <\#\d+>
-        | <https?://[^\s>]+>
-        | https?://[^\s<]+
-        | (?<everyone>@everyone|@here)
-        """, RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
+        | (?<channel><\#\d+>)
+        | [(\[]? <(?i:https?)://[^\s>]+> [)\]]?
+        | [(\[]? (?i:https?):// (?: [^\s<>*~|`()\[\]] | \([^\s<>*~|`()]*\) )+ (?<![_.,:;!?'"]) [)\]]?
+        | (?<everyone>(?<!\w)@(?:everyone|here)(?!\w))
+        """, RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant)]
     private static partial Regex Markup();
 }
