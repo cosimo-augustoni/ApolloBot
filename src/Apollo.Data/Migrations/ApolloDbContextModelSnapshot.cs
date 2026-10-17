@@ -432,6 +432,74 @@ namespace Apollo.Data.Migrations
                         .HasAnnotation("TimescaleDB:TimeColumnName", "OccurredAt");
                 });
 
+            modelBuilder.Entity("Apollo.Data.Reactions.ReactionEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<Guid>("ChannelId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("channel_id");
+
+                    b.Property<string>("EmojiCustomId")
+                        .HasColumnType("text")
+                        .HasColumnName("emoji_custom_id");
+
+                    b.Property<string>("EmojiName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("emoji_name");
+
+                    b.Property<Guid>("GuildId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("guild_id");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("kind");
+
+                    b.Property<Guid?>("MessageAuthorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("message_author_id");
+
+                    b.Property<string>("MessageExtId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("message_ext_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id", "OccurredAt");
+
+                    b.HasIndex("ChannelId");
+
+                    b.HasIndex("MessageAuthorId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("GuildId", "MessageExtId");
+
+                    b.ToTable("reaction_events", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_reaction_events_unicode_emoji", "emoji_custom_id IS NOT NULL OR emoji_name <> ''");
+                        });
+
+                    b
+                        .HasAnnotation("TimescaleDB:IsHypertable", true)
+                        .HasAnnotation("TimescaleDB:TimeColumnName", "OccurredAt");
+                });
+
             modelBuilder.Entity("Apollo.Data.Status.BotStatus", b =>
                 {
                     b.Property<long>("Id")
@@ -885,6 +953,32 @@ namespace Apollo.Data.Migrations
                     b.HasOne("Apollo.Data.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("MentionedUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Apollo.Data.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Apollo.Data.Reactions.ReactionEvent", b =>
+                {
+                    b.HasOne("Apollo.Data.Identity.Channel", null)
+                        .WithMany()
+                        .HasForeignKey("ChannelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Apollo.Data.Identity.Guild", null)
+                        .WithMany()
+                        .HasForeignKey("GuildId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Apollo.Data.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("MessageAuthorId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Apollo.Data.Identity.User", null)

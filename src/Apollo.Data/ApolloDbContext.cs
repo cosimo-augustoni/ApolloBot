@@ -2,6 +2,7 @@ using Apollo.Data.DataProtection;
 using Apollo.Data.Guilds;
 using Apollo.Data.Identity;
 using Apollo.Data.Messages;
+using Apollo.Data.Reactions;
 using Apollo.Data.Status;
 using Apollo.Data.Tracking;
 using Apollo.Data.Voice;
@@ -58,6 +59,8 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
 
     public DbSet<VoiceStateSegment> VoiceStateSegments => Set<VoiceStateSegment>();
 
+    public DbSet<ReactionEvent> ReactionEvents => Set<ReactionEvent>();
+
     /// <summary>The web host's data protection keys (<c>PersistKeysToDbContext</c>).</summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
@@ -81,6 +84,7 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
         TrackingModel.Configure(modelBuilder);
         MessageModel.Configure(modelBuilder);
         VoiceModel.Configure(modelBuilder);
+        ReactionModel.Configure(modelBuilder);
         DataProtectionModel.Configure(modelBuilder);
     }
 }
