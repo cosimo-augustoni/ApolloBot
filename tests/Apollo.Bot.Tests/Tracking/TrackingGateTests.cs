@@ -500,9 +500,26 @@ public sealed class TrackingGateTests(TimescaleFixture fixture) : TimescaleTest(
         await using var host = await HostInTrackingRoleModeAsync();
         var (guild, carol) = (await GuildIdAsync(host), await host.UserIdAsync(_carol));
 
-        await Gate(host).MarkUntrackedAsync(guild, carol, TestContext.Current.CancellationToken);
+        var mark = await Gate(host).MarkUntrackedAsync(guild, carol, TestContext.Current.CancellationToken);
 
+        mark.ShouldBe(UntrackedMark.NotTracked);
         host.Gate.IsTracked(carol).ShouldBeFalse();
+        host.Lifecycle.All.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task MarkUntracked_WhenTheUserIsMarkedAlready_ShouldSayItIsAnotherMarkAndCallNoHook()
+    {
+        await using var host = await HostInTrackingRoleModeAsync();
+        var (guild, alice) = (await GuildIdAsync(host), await host.UserIdAsync(_alice));
+        var first = await Gate(host).MarkUntrackedAsync(guild, alice, TestContext.Current.CancellationToken);
+        host.Lifecycle.Clear();
+
+        var second = await Gate(host).MarkUntrackedAsync(guild, alice, TestContext.Current.CancellationToken);
+
+        first.ShouldBe(UntrackedMark.Added);
+        second.ShouldBe(UntrackedMark.AlreadyMarked);
+        host.Gate.IsTracked(alice).ShouldBeFalse();
         host.Lifecycle.All.ShouldBeEmpty();
     }
 

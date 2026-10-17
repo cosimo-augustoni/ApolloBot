@@ -6,7 +6,9 @@ namespace Apollo.Bot.Privacy;
 public enum UserDataErasureOutcome
 {
     /// <summary>
-    /// Nothing was deleted: the deletion failed and was rolled back. Tracking is as before.
+    /// Nothing was deleted: the deletion failed and was rolled back. The member's open voice and presence sessions and
+    /// their tracking period were already closed; if the rule still tracks them (they hold the tracking role, or are an
+    /// Administrator in bootstrap mode), they are tracked again from a new period.
     /// </summary>
     Failed,
 

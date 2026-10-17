@@ -117,17 +117,26 @@ internal sealed partial class TrackingGate(
     /// (#22): the period closes and the <see cref="ITrackingLifecycleHandler.TrackingStoppedAsync"/> hooks run, as for any
     /// loss of tracking, so events on their way are dropped. The mark ends by itself once a rebuild or member
     /// re-evaluation finds the rule no longer tracks the user (the removal of their tracking role is synced), or with
-    /// <see cref="ReleaseUntrackedMarkAsync"/>.
+    /// <see cref="ReleaseUntrackedMarkAsync"/>. A user who is not tracked is not marked. If storing the change fails, the
+    /// mark is not added.
     /// </summary>
-    public async Task MarkUntrackedAsync(Guid guildId, Guid userId, CancellationToken cancellationToken)
+    /// <returns>
+    /// Whether this call added the mark: only then may its caller release it, so a second deletion of the same user
+    /// never ends the mark of the first.
+    /// </returns>
+    public async Task<UntrackedMark> MarkUntrackedAsync(Guid guildId, Guid userId, CancellationToken cancellationToken)
     {
         await _rebuild.WaitAsync(cancellationToken);
         try
         {
-            _untracked.Add(userId);
+            if (_untracked.Contains(userId))
+            {
+                return UntrackedMark.AlreadyMarked;
+            }
+
             if (_snapshot is not { } current || current.GuildId != guildId || !current.Tracked.ContainsKey(userId))
             {
-                return;
+                return UntrackedMark.NotTracked;
             }
 
             var tracked = new Dictionary<Guid, PlatformRef>(current.Tracked);
@@ -138,6 +147,8 @@ internal sealed partial class TrackingGate(
                 new TrackingSnapshot(guildId, current.Settings, current.TrackingRoleName, current.TrackingRole, tracked),
                 userId,
                 cancellationToken);
+            _untracked.Add(userId);
+            return UntrackedMark.Added;
         }
         finally
         {

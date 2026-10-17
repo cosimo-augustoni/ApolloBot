@@ -1,3 +1,4 @@
+using Apollo.Bot.Privacy;
 using Apollo.Bot.Status;
 using Apollo.Bot.Tests.Tracking;
 using Apollo.Platform.Abstractions;
@@ -111,6 +112,49 @@ public sealed class UserDataEraserTests(TimescaleFixture fixture) : TimescaleTes
         reply.Body().ShouldBe(DeletedAndRoleRemoved);
         reply.Body().ShouldContain("`/apollo tracking on`");
         reply.Buttons.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Confirm_WhenConfirmedAgainBeforeTheRoleRemovalIsSynced_ShouldKeepTheMemberUntrackedWithoutNewRowsOrPeriod()
+    {
+        await using var host = CreatePrivacyHost(Fixture);
+        await host.SeedRoleSettingAsync(new RoleSettingBuilder().ForRole(Statistik));
+        host.Platform.WithVoiceState(new PlatformVoiceStateBuilder().ForUser(Alice).InChannel(_lounge).Build());
+        await host.SyncAsync(Snapshot());
+        host.Platform.HoldMemberUpdates();
+        await host.ConfirmDeleteAsync(Alice);
+        host.Time.Advance(_later);
+
+        var reply = await host.ConfirmDeleteAsync(Alice);
+
+        var alice = await host.UserIdAsync(Alice);
+        host.Gate.IsTracked(alice).ShouldBeFalse();
+        (await RowsAboutAsync(host, Alice)).ShouldAllBe(r => r.Value == 0);
+        reply.Body().ShouldBe(DeletedAndRoleRemoved);
+
+        await host.Platform.ReleaseMemberUpdatesAsync(TestContext.Current.CancellationToken);
+
+        host.Gate.IsTracked(alice).ShouldBeFalse();
+        (await RowsAboutAsync(host, Alice)).ShouldAllBe(r => r.Value == 0);
+    }
+
+    [Fact]
+    public async Task Erase_WhenCancelledAfterTheGateMark_ShouldReleaseTheMarkSoTheMemberIsTrackedAsBefore()
+    {
+        using var interceptor = new CancellingDeleteInterceptor();
+        await using var host = await CreatePrivacyHostInTrackingRoleModeAsync(Fixture, interceptor);
+        await SeedAsync(host, Alice, Bob);
+
+        await Should.ThrowAsync<OperationCanceledException>(() => host.InScopeAsync(async (_, _) =>
+        {
+            await using var scope = host.Services.CreateAsyncScope();
+            return await scope.ServiceProvider.GetRequiredService<IUserDataEraser>()
+                .EraseAsync(TestPlatform.Guild, Alice, interceptor.Source.Token);
+        }));
+
+        host.Gate.IsTracked(await host.UserIdAsync(Alice)).ShouldBeTrue();
+        (await RowsAboutAsync(host, Alice))["message_events"].ShouldBe(1);
+        host.Platform.RoleChanges.ShouldBeEmpty();
     }
 
     [Fact]
