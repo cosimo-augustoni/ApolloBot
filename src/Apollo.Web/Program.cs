@@ -1,5 +1,6 @@
 using ApexCharts;
 using Apollo.Data;
+using Apollo.Data.Tracking;
 using Apollo.Platform.Discord.Identity;
 using Apollo.Web.Api;
 using Apollo.Web.Auth;
@@ -15,6 +16,10 @@ builder.AddApolloDbContext();
 // BFF login (#29): session cookie with internal claims; the platform OAuth handlers live in the adapter projects.
 builder.Services.AddApolloAuthentication();
 builder.Services.AddDiscordIdentityProvider();
+
+// Admin settings page (#33): role settings of the configured guild per platform.
+builder.Services.AddScoped<RoleSettingsQuery>();
+builder.Services.AddScoped<RoleSettingsStore>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -73,6 +78,7 @@ app.MapRazorComponents<App>()
 
 app.MapAppInfoEndpoints();
 app.MapAdminEndpoints();
+app.MapRoleSettingsEndpoints();
 app.MapAuthEndpoints();
 app.MapDefaultEndpoints();
 
