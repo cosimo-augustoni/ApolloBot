@@ -102,4 +102,12 @@ public sealed class DiscordGatewaySetupTests
 
         DiscordHost.GatewayHandlers(host).ShouldContain(handler => handler is DiscordCommandRegistrar);
     }
+
+    [Fact]
+    public void AddDiscordPlatform_ShouldMapMessageEvents()
+    {
+        using var host = DiscordHost.Build(DiscordHost.ValidSettings());
+
+        DiscordHost.GatewayHandlers(host).ShouldContain(handler => handler is DiscordMessageHandler);
+    }
 }

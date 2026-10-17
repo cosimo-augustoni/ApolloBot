@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using NetCord;
 using NetCord.Gateway;
@@ -15,6 +17,8 @@ namespace Apollo.Platform.Discord.Tests.Fakes;
 internal static class NetCordPayloads
 {
     public static readonly RestClient Rest = new();
+
+    private static readonly DateTimeOffset _discordEpoch = new(2015, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
     private static readonly JsonSerializerOptions _gatewayJson = new() { NumberHandling = JsonNumberHandling.AllowReadingFromString };
 
@@ -75,6 +79,103 @@ internal static class NetCordPayloads
           "mentions": [], "mention_roles": [], "attachments": [], "embeds": []
         }
         """), null, null, Rest);
+
+    /// <summary>
+    /// A guild message as MESSAGE_CREATE / MESSAGE_UPDATE deliver it.
+    /// </summary>
+    /// <param name="guildId">The guild.</param>
+    /// <param name="id">The message id (a snowflake, so it also gives the creation time).</param>
+    /// <param name="authorId">The author.</param>
+    /// <param name="content">The text.</param>
+    /// <param name="channelId">The channel or thread.</param>
+    /// <param name="type">The message type (0 default, 19 reply, 7 member join, ...).</param>
+    /// <param name="bot">Whether the author is a bot.</param>
+    /// <param name="mentions">The ids in the payload's <c>mentions</c>.</param>
+    /// <param name="mentionRoles">The ids in the payload's <c>mention_roles</c>.</param>
+    /// <param name="mentionEveryone">The payload's <c>mention_everyone</c>.</param>
+    /// <param name="attachments">How many attachments.</param>
+    /// <param name="embeds">How many embeds.</param>
+    /// <param name="replyTo">For a reply: the replied-to message and its author (<c>null</c> author: no <c>referenced_message</c>).</param>
+    /// <param name="forwardOf">For a forward: the forwarded message.</param>
+    /// <param name="editedAt">The payload's <c>edited_timestamp</c>.</param>
+    public static Message GuildMessage(
+        ulong guildId,
+        ulong id,
+        ulong authorId,
+        string content = "hello",
+        ulong channelId = 500,
+        int type = 0,
+        bool bot = false,
+        ulong[]? mentions = null,
+        ulong[]? mentionRoles = null,
+        bool mentionEveryone = false,
+        int attachments = 0,
+        int embeds = 0,
+        (ulong MessageId, ulong? AuthorId)? replyTo = null,
+        ulong? forwardOf = null,
+        DateTimeOffset? editedAt = null)
+    {
+        var json = new JsonObject
+        {
+            ["id"] = id.ToString(CultureInfo.InvariantCulture),
+            ["channel_id"] = channelId.ToString(CultureInfo.InvariantCulture),
+            ["guild_id"] = guildId.ToString(CultureInfo.InvariantCulture),
+            ["type"] = type,
+            ["content"] = content,
+            ["timestamp"] = SnowflakeTime(id).ToString("O", CultureInfo.InvariantCulture),
+            ["edited_timestamp"] = editedAt?.ToString("O", CultureInfo.InvariantCulture),
+            ["author"] = new JsonObject { ["id"] = authorId.ToString(CultureInfo.InvariantCulture), ["username"] = "author", ["bot"] = bot },
+            ["tts"] = false,
+            ["pinned"] = false,
+            ["mention_everyone"] = mentionEveryone,
+            ["mentions"] = new JsonArray([.. (mentions ?? []).Select(m => (JsonNode)new JsonObject { ["id"] = m.ToString(CultureInfo.InvariantCulture), ["username"] = "user" })]),
+            ["mention_roles"] = new JsonArray([.. (mentionRoles ?? []).Select(r => (JsonNode)r.ToString(CultureInfo.InvariantCulture))]),
+            ["attachments"] = new JsonArray([.. Enumerable.Range(1, attachments).Select(a => (JsonNode)new JsonObject
+            {
+                ["id"] = a.ToString(CultureInfo.InvariantCulture), ["filename"] = "file.png", ["size"] = 1, ["url"] = "https://cdn.example.test/file.png", ["proxy_url"] = "https://cdn.example.test/file.png",
+            })]),
+            ["embeds"] = new JsonArray([.. Enumerable.Range(1, embeds).Select(_ => (JsonNode)new JsonObject { ["type"] = "rich" })]),
+        };
+
+        if (replyTo is { } reply)
+        {
+            json["message_reference"] = new JsonObject { ["type"] = 0, ["message_id"] = reply.MessageId.ToString(CultureInfo.InvariantCulture), ["channel_id"] = channelId.ToString(CultureInfo.InvariantCulture) };
+            if (reply.AuthorId is { } replyAuthor)
+            {
+                json["referenced_message"] = JsonNode.Parse(GuildMessageJson(guildId, reply.MessageId, replyAuthor, channelId));
+            }
+        }
+
+        if (forwardOf is { } forwarded)
+        {
+            json["message_reference"] = new JsonObject { ["type"] = 1, ["message_id"] = forwarded.ToString(CultureInfo.InvariantCulture), ["channel_id"] = channelId.ToString(CultureInfo.InvariantCulture) };
+        }
+
+        return new(Parse<JsonMessage>(json.ToJsonString()), null, null, Rest);
+    }
+
+    public static MessageDeleteEventArgs MessageDelete(ulong guildId, ulong messageId, ulong channelId = 500) =>
+        new(new JsonMessageDeleteEventArgs { GuildId = guildId, ChannelId = channelId, MessageId = messageId });
+
+    public static MessageDeleteBulkEventArgs MessageDeleteBulk(ulong guildId, ulong channelId, params ulong[] messageIds) =>
+        new(new JsonMessageDeleteBulkEventArgs { GuildId = guildId, ChannelId = channelId, MessageIds = messageIds });
+
+    /// <summary>
+    /// The snowflake Discord would give an object created at <paramref name="createdAt"/>.
+    /// </summary>
+    public static ulong Snowflake(DateTimeOffset createdAt, ulong sequence = 1) =>
+        ((ulong)(createdAt - _discordEpoch).TotalMilliseconds << 22) | sequence;
+
+    private static DateTimeOffset SnowflakeTime(ulong id) => _discordEpoch.AddMilliseconds(id >> 22);
+
+    private static string GuildMessageJson(ulong guildId, ulong id, ulong authorId, ulong channelId) => $$"""
+        {
+          "id": "{{id}}", "channel_id": "{{channelId}}", "guild_id": "{{guildId}}", "type": 0, "content": "earlier",
+          "timestamp": "{{SnowflakeTime(id):O}}", "author": { "id": "{{authorId}}", "username": "author" },
+          "tts": false, "pinned": false, "mention_everyone": false,
+          "mentions": [], "mention_roles": [], "attachments": [], "embeds": []
+        }
+        """;
 
     public static ReadyEventArgs Ready() => new(Parse<JsonReadyEventArgs>("""
         {

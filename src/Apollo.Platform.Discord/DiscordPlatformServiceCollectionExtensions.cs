@@ -48,6 +48,7 @@ public static class DiscordPlatformServiceCollectionExtensions
         services.AddGatewayHandler<DiscordMemberHandler>(ServiceLifetime.Singleton);
         services.AddGatewayHandler<DiscordRoleHandler>(ServiceLifetime.Singleton);
         services.AddGatewayHandler<DiscordChannelHandler>(ServiceLifetime.Singleton);
+        services.AddGatewayHandler<DiscordMessageHandler>(ServiceLifetime.Singleton);
 
         services.AddSingleton<IChatPlatform, DiscordChatPlatform>();
 
