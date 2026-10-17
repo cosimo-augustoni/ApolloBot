@@ -9,7 +9,7 @@ namespace Apollo.Platform.Discord;
 /// snapshot the guild state sync (#13) reconciles against.
 /// </summary>
 /// <remarks>NetCord's gateway handlers carry no cancellation token, so dispatching is not cancellable.</remarks>
-internal sealed class DiscordGuildHandler(DiscordEventMapper mapper, TimeProvider timeProvider) : IGuildCreateGatewayHandler
+internal sealed class DiscordGuildHandler(DiscordEventMapper mapper, GatewayClient gateway, TimeProvider timeProvider) : IGuildCreateGatewayHandler
 {
     public ValueTask HandleAsync(GuildCreateEventArgs arg)
     {
@@ -24,6 +24,7 @@ internal sealed class DiscordGuildHandler(DiscordEventMapper mapper, TimeProvide
             OccurredAt: timeProvider.GetUtcNow(),
             Name: guild.Name,
             Owner: DiscordIds.ToRef(guild.OwnerId),
+            Bot: DiscordIds.ToRef(gateway.Id),
             Roles: [.. DiscordSnapshots.RolesWithoutEveryone(guild).Select(DiscordSnapshots.ToRole)],
             Channels: [.. guild.Channels.Values.Concat(guild.ActiveThreads.Values).Select(DiscordSnapshots.ToChannel)],
             Members: [.. guild.Users.Values.Select(user => DiscordSnapshots.ToMember(user, guild))],

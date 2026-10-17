@@ -10,6 +10,8 @@ public sealed class PlatformGuildAvailableBuilder : PlatformEventBuilder<Platfor
 
     public PlatformGuildAvailableBuilder OwnedBy(PlatformRef owner) => With(e => e with { Owner = owner });
 
+    public PlatformGuildAvailableBuilder WithBot(PlatformRef bot) => With(e => e with { Bot = bot });
+
     public PlatformGuildAvailableBuilder WithRoles(params PlatformRole[] roles) => With(e => e with { Roles = roles });
 
     public PlatformGuildAvailableBuilder WithChannels(params PlatformChannel[] channels) => With(e => e with { Channels = channels });
@@ -25,6 +27,7 @@ public sealed class PlatformGuildAvailableBuilder : PlatformEventBuilder<Platfor
         OccurredAt: TestTime.Now,
         Name: "Apollo Test Guild",
         Owner: TestPlatform.User("owner"),
+        Bot: TestPlatform.User("bot"),
         Roles: [new PlatformRoleBuilder().Build()],
         Channels: [new PlatformChannelBuilder().Build()],
         Members: [new PlatformMemberBuilder().Build()],

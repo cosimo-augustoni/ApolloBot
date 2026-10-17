@@ -37,8 +37,8 @@ public sealed class DiscordGuildHandlerTests : IDisposable
         snapshot.Owner.ShouldBe(Ref(42));
         snapshot.Roles.ShouldBe(
         [
-            new PlatformRole(Ref(7), "Statistik", 2, IsAdministrator: false, IsManaged: false, Color: 0x3498DB),
-            new PlatformRole(Ref(8), "Admin", 3, IsAdministrator: true, IsManaged: false, Color: null),
+            new PlatformRole(Ref(7), "Statistik", 2, IsAdministrator: false, ManagesRoles: false, IsManaged: false, Color: 0x3498DB),
+            new PlatformRole(Ref(8), "Admin", 3, IsAdministrator: true, ManagesRoles: false, IsManaged: false, Color: null),
         ], ignoreOrder: true);
         snapshot.Channels.Select(c => (c.Channel, c.Type, c.Category, c.ThreadParent)).ShouldBe(
         [
@@ -47,6 +47,22 @@ public sealed class DiscordGuildHandlerTests : IDisposable
             (Ref(16), PlatformChannelType.Thread, null, Ref(11)),
         ], ignoreOrder: true);
         snapshot.Members.Select(m => (m.User, m.Roles.Count)).ShouldBe([(Ref(42), 2), (Ref(43), 0)], ignoreOrder: true);
+    }
+
+    [Fact]
+    public async Task GuildCreate_ShouldReportTheBotsOwnUserAndWhichRolesManageRoles()
+    {
+        var guild = CachedGuild(new DiscordGuildBuilder()
+            .OwnedBy(42)
+            .WithRole(7, "Statistik", position: 2)
+            .WithRole(9, "Apollo", position: 4, permissions: Permissions.ManageRoles, managed: true));
+
+        await Handler().HandleAsync(new GuildCreateEventArgs(DiscordHost.GuildId, guild));
+
+        var snapshot = _harness.Dispatcher.Events.ShouldHaveSingleItem().ShouldBeOfType<PlatformGuildAvailable>();
+        snapshot.Bot.ShouldBe(Ref(DiscordHost.BotUserId));
+        snapshot.Roles.Single(r => r.Role == Ref(9)).ManagesRoles.ShouldBeTrue();
+        snapshot.Roles.Single(r => r.Role == Ref(7)).ManagesRoles.ShouldBeFalse();
     }
 
     [Fact]
@@ -77,5 +93,5 @@ public sealed class DiscordGuildHandlerTests : IDisposable
         return _gateway.Client.Cache.Guilds[guildId];
     }
 
-    private DiscordGuildHandler Handler() => new(_harness.Mapper, _harness.Time);
+    private DiscordGuildHandler Handler() => new(_harness.Mapper, (_gateway ??= new TestGateway()).Client, _harness.Time);
 }

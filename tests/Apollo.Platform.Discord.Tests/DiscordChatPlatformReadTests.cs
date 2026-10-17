@@ -189,9 +189,9 @@ public sealed class DiscordChatPlatformReadTests : IDisposable
 
         roles.ShouldBe(
         [
-            new PlatformRole(Ref(7), "Statistik", 2, IsAdministrator: false, IsManaged: false, Color: null),
-            new PlatformRole(Ref(8), "Admin", 3, IsAdministrator: true, IsManaged: false, Color: null),
-            new PlatformRole(Ref(9), "Apollo", 4, IsAdministrator: false, IsManaged: true, Color: null),
+            new PlatformRole(Ref(7), "Statistik", 2, IsAdministrator: false, ManagesRoles: false, IsManaged: false, Color: null),
+            new PlatformRole(Ref(8), "Admin", 3, IsAdministrator: true, ManagesRoles: false, IsManaged: false, Color: null),
+            new PlatformRole(Ref(9), "Apollo", 4, IsAdministrator: false, ManagesRoles: false, IsManaged: true, Color: null),
         ], ignoreOrder: true);
     }
 

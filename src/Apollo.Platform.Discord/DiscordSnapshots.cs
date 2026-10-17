@@ -26,6 +26,7 @@ internal static class DiscordSnapshots
         Name: role.Name,
         Position: role.RawPosition,
         IsAdministrator: role.Permissions.HasFlag(Permissions.Administrator),
+        ManagesRoles: role.Permissions.HasFlag(Permissions.ManageRoles),
         IsManaged: role.Managed,
         Color: role.Colors.PrimaryColor.RawValue is var color and not 0 ? color : null);
 
