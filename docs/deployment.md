@@ -141,6 +141,7 @@ Service settings with a default (not AppHost parameters):
 |---|---|---|
 | `Apollo:Data:MigrationWaitTimeout` (`Apollo__Data__MigrationWaitTimeout`) | `00:05:00` | How long `bot` and `apollo-web` wait at startup for pending migrations before they exit (see below). Validated at startup: 1 second to 1 day |
 | `Apollo:Web:Auth:RevalidationInterval` (`Apollo__Web__Auth__RevalidationInterval`) | `00:05:00` | How long `apollo-web` trusts the access claims in a session cookie before it reads the synced guild state and the user's last logout again ([Admin access](#admin-access)). Validated at startup: 1 second to 1 day |
+| `Apollo:Web:BotStatus:StaleAfter` (`Apollo__Web__BotStatus__StaleAfter`) | `00:02:00` | How old the bot's latest heartbeat may be before the *Bot-Status* page (`/admin`) warns "Kein Lebenszeichen vom Bot" ([Is the bot collecting?](#day-to-day-operations)). Validated at startup: 1 minute to 1 day |
 
 ### Environment of each service
 
@@ -162,8 +163,8 @@ stack sets no `DOTNET_ENVIRONMENT`), so `appsettings.Development.json` and user-
 | `HTTP_PORTS` | `apollo-web` | AppHost: `80`, the port the reverse proxy targets |
 | `ASPNETCORE_FORWARDEDHEADERS_ENABLED` | `apollo-web` | Set by Aspire (`true`) |
 
-`Apollo__Platform__Discord__Connect`, `Apollo__Data__MigrationWaitTimeout` and `Apollo__Web__Auth__RevalidationInterval`
-are not set and keep their defaults.
+`Apollo__Platform__Discord__Connect`, `Apollo__Data__MigrationWaitTimeout`, `Apollo__Web__Auth__RevalidationInterval`
+and `Apollo__Web__BotStatus__StaleAfter` are not set and keep their defaults.
 `db` gets `POSTGRES_PASSWORD` from `db-password`, `pgadmin` its `PgAdmin*` parameters.
 
 ## Web login (Discord OAuth)
@@ -360,9 +361,10 @@ there: host `db`, port `5432`, user `postgres`, password `db-password`, database
    send the forwarded headers ([Web login](#web-login-discord-oauth)). `docker service logs apollo_apollo-web` shows no
    `fail:` lines, and one `Admin access on Discord: the Administrator permission in guild <id>` line with the
    `DiscordGuildId` value.
-6. **Admin access follows the Administrator permission.** Logged in as an Administrator, `<PublicWebUrl>/api/admin/session`
-   returns your user as JSON with `"isAdmin": true`, and `<PublicWebUrl>/admin` opens. With an account without the
-   permission, `/api/admin/session` returns 403 and `/admin` shows "Kein Zugriff".
+6. **Admin access follows the Administrator permission.** Logged in as an Administrator,
+   `<PublicWebUrl>/api/admin/bot-status` returns 200 with the bot status as JSON, and `<PublicWebUrl>/admin` opens the
+   *Bot-Status* page: *Verbunden*, a heartbeat a few seconds old and no warning. With an account without the
+   permission, `/api/admin/bot-status` returns 403 and `/admin` shows "Kein Zugriff".
 7. **Set the tracking role** (first deploy only). Until now nobody is tracked, and no `tracking_periods` row is open.
    Create the role on Discord if it doesn't exist (e.g. "Statistik"), below the bot's own role, and give it to the
    members who should be recorded (yourself included, if you want to be). Then, as an Administrator, open
@@ -446,7 +448,11 @@ The latest task should show `Complete`; earlier `Failed` tasks are restarts afte
 
 **Rerun migrations** without other changes: `docker service update --force apollo_migrationservice`.
 
-**Is the bot collecting?** The bot appends a heartbeat row to `bot_status` every 30 s, connected or not (#24). In pgAdmin:
+**Is the bot collecting?** The *Bot-Status* page (`<PublicWebUrl>/admin`, #31) shows the latest heartbeat, the gateway
+latency, the last event, the open voice sessions and the events recorded per hour over the last 24 hours, and reloads
+every 30 s. It warns "Kein Lebenszeichen vom Bot seit …" when the latest heartbeat is older than
+`Apollo:Web:BotStatus:StaleAfter` (2 minutes) and "Der Bot ist nicht verbunden" when the bot runs but its gateway is
+down. The bot appends a heartbeat row to `bot_status` every 30 s, connected or not (#24). In pgAdmin:
 
 ```sql
 SELECT occurred_at, connected, gateway_latency_ms, last_event_at, open_voice_sessions
