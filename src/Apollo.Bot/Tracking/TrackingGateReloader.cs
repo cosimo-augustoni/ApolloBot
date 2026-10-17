@@ -3,7 +3,7 @@ namespace Apollo.Bot.Tracking;
 /// <summary>
 /// Reloads the <see cref="TrackingGate"/> every <see cref="Interval"/>, so role setting changes (#33, or rows inserted
 /// by hand in M1) apply without a restart (scope §5.1.2). Does nothing before the first guild sync. A failed reload is
-/// logged and the next tick tries again.
+/// logged and the next tick tries again, also when it was the reload right after a sync and no snapshot exists yet.
 /// </summary>
 internal sealed partial class TrackingGateReloader(TrackingGate gate, TimeProvider timeProvider, ILogger<TrackingGateReloader> logger)
     : BackgroundService
