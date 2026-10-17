@@ -14,19 +14,7 @@ internal sealed class TrackingHistory(ApolloDbContext db)
     /// Whether the user had a tracking period that covers <paramref name="at"/>; both ends are inclusive.
     /// </summary>
     public Task<bool> WasTrackedAtAsync(Guid guildId, Guid userId, DateTimeOffset at, CancellationToken cancellationToken) =>
-        WasTrackedBetweenAsync(guildId, userId, at, at, cancellationToken);
-
-    /// <summary>
-    /// Whether the user had a tracking period that overlaps <paramref name="from"/> to <paramref name="to"/>; both ends
-    /// are inclusive.
-    /// </summary>
-    public Task<bool> WasTrackedBetweenAsync(
-        Guid guildId,
-        Guid userId,
-        DateTimeOffset from,
-        DateTimeOffset to,
-        CancellationToken cancellationToken) =>
         db.TrackingPeriods.AnyAsync(
-            p => p.GuildId == guildId && p.UserId == userId && p.From <= to && (p.To == null || p.To >= from),
+            p => p.GuildId == guildId && p.UserId == userId && p.From <= at && (p.To == null || p.To >= at),
             cancellationToken);
 }
