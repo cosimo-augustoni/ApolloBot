@@ -211,7 +211,7 @@ public sealed class AuthEndpointsTests(ApolloWebApplicationFactory factory) : IC
         using var http = factory.CreateHttpsClient();
         await SignInAsync(http);
 
-        using var response = await http.GetAsync(new Uri("/api/admin/session", UriKind.Relative), Ct);
+        using var response = await http.GetAsync(new Uri("/api/admin/bot-status", UriKind.Relative), Ct);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         response.Headers.Location.ShouldBeNull();
