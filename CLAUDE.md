@@ -150,8 +150,9 @@ dotnet ef migrations add <DescriptiveName> --project src/Apollo.Data --startup-p
 
 Neutral model in `Apollo.Platform.Abstractions/Commands` (#20); handlers never see NetCord types or interaction concepts.
 
-1. Definition: `services.AddCommandDefinition(new CommandDefinition("apollo", …) { Groups = …, Subcommands = … })`.
-   Each feature adds its own part of `apollo`; definitions with the same name are merged. Descriptions are German.
+1. Definition: `services.AddCommandDefinition(new CommandDefinition(ApolloCommand.Name, ApolloCommand.Description) { Groups = …, Subcommands = … })`.
+   Each feature adds its own part of `apollo`; definitions with the same name are merged, and the first part gives the
+   description, so every part uses the shared `ApolloCommand` constants (`Apollo.Bot/Commands`). Descriptions are German.
 2. Handler in `Apollo.Bot`: implement `ICommandHandler` (its `Path`, e.g. `apollo tracking status`) and register it with
    `services.AddCommandHandler<THandler>()` (scoped). Return a `CommandReply`; it is private by default
    (`CommandReply.Private(text)`). The router adds the privacy footer and turns exceptions into a generic German error.

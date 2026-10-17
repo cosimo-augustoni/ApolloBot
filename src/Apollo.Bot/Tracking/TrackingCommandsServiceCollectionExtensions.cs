@@ -8,7 +8,7 @@ public static class TrackingCommandsServiceCollectionExtensions
     /// <summary>
     /// The <c>apollo tracking</c> part of the <c>apollo</c> command (#21, scope §5.4).
     /// </summary>
-    public static readonly CommandDefinition Definition = new("apollo", "ApolloBot: deine Statistik und Datenerfassung")
+    public static readonly CommandDefinition Definition = new(ApolloCommand.Name, ApolloCommand.Description)
     {
         Groups =
         [

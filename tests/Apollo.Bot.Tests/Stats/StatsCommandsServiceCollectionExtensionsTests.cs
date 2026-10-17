@@ -31,4 +31,24 @@ public sealed class StatsCommandsServiceCollectionExtensionsTests
             ["apollo tracking on", "apollo tracking off", "apollo tracking status", "apollo stats"],
             ignoreOrder: true);
     }
+
+    [Fact]
+    public void Definition_ShouldUseTheSharedApolloNameAndDescriptionLikeTheTrackingCommands()
+    {
+        CommandDefinition[] parts = [TrackingCommandsServiceCollectionExtensions.Definition, StatsCommandsServiceCollectionExtensions.Definition];
+
+        parts.ShouldAllBe(part => part.Name == ApolloCommand.Name && part.Description == ApolloCommand.Description);
+    }
+
+    [Fact]
+    public void Definition_WhenCombinedInEitherOrder_ShouldKeepTheSharedApolloDescription()
+    {
+        var trackingFirst = CommandDefinition.Combine(
+            [TrackingCommandsServiceCollectionExtensions.Definition, StatsCommandsServiceCollectionExtensions.Definition]);
+        var statsFirst = CommandDefinition.Combine(
+            [StatsCommandsServiceCollectionExtensions.Definition, TrackingCommandsServiceCollectionExtensions.Definition]);
+
+        trackingFirst.ShouldHaveSingleItem().Description.ShouldBe(ApolloCommand.Description);
+        statsFirst.ShouldHaveSingleItem().Description.ShouldBe(ApolloCommand.Description);
+    }
 }

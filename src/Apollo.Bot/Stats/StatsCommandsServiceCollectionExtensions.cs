@@ -8,7 +8,7 @@ public static class StatsCommandsServiceCollectionExtensions
     /// <summary>
     /// The <c>apollo stats</c> part of the <c>apollo</c> command (#23, scope D5).
     /// </summary>
-    public static readonly CommandDefinition Definition = new("apollo", "ApolloBot: deine Statistik und Datenerfassung")
+    public static readonly CommandDefinition Definition = new(ApolloCommand.Name, ApolloCommand.Description)
     {
         Subcommands = [new SubcommandDefinition("stats", "Link zu deinen Statistiken auf der Website")],
     };
