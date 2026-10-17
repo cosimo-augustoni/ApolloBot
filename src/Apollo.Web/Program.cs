@@ -29,6 +29,10 @@ builder.Services.AddOptions<BotStatusOptions>()
     .ValidateOnStart();
 builder.Services.AddScoped<BotStatusQuery>();
 
+// Admin data page (#32): event counts, tracked members and the raw event browser.
+builder.Services.AddScoped<DataOverviewQuery>();
+builder.Services.AddScoped<RawEventQuery>();
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
@@ -86,6 +90,7 @@ app.MapRazorComponents<App>()
 
 app.MapAppInfoEndpoints();
 app.MapBotStatusEndpoints();
+app.MapDataEndpoints();
 app.MapRoleSettingsEndpoints();
 app.MapAuthEndpoints();
 app.MapDefaultEndpoints();

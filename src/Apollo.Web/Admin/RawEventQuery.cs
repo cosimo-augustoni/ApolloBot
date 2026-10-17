@@ -24,6 +24,9 @@ public sealed class RawEventQuery(ApolloDbContext db, IEnumerable<IPlatformIdent
     /// <summary>The longest range a caller may ask for, so every query stays bounded in time (chunk exclusion).</summary>
     public static readonly TimeSpan MaxRange = TimeSpan.FromDays(366);
 
+    /// <summary>The most choices <see cref="SearchUsersAsync"/> and <see cref="SearchChannelsAsync"/> return.</summary>
+    public const int MaxSearchResults = 20;
+
     public async Task<RawEventPageDto> GetPageAsync(RawEventSearch search, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(search);
@@ -121,6 +124,40 @@ public sealed class RawEventQuery(ApolloDbContext db, IEnumerable<IPlatformIdent
                 cancellationToken),
             _ => throw new ArgumentOutOfRangeException(nameof(search), search.Type, "Unknown event type."),
         };
+    }
+
+    /// <summary>
+    /// Up to <see cref="MaxSearchResults"/> members of the configured guild, departed ones included (their events
+    /// stay), whose display name contains <paramref name="search"/> (any case), by name: the user filter's choices.
+    /// </summary>
+    public async Task<IReadOnlyList<EventUserDto>> SearchUsersAsync(string? search, CancellationToken cancellationToken)
+    {
+        var guilds = await ConfiguredGuilds.IdsAsync(db, providers, cancellationToken);
+        var term = (search ?? string.Empty).Trim().ToLowerInvariant();
+        return await db.Users.AsNoTracking()
+            .Where(u => u.DisplayName != null
+                && u.DisplayName.ToLower().Contains(term)
+                && db.GuildMembers.Any(m => m.UserId == u.Id && guilds.Contains(m.GuildId)))
+            .OrderBy(u => u.DisplayName)
+            .Take(MaxSearchResults)
+            .Select(u => new EventUserDto(u.Id, u.DisplayName))
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Up to <see cref="MaxSearchResults"/> channels and threads of the configured guild, deleted ones included, whose
+    /// name contains <paramref name="search"/> (any case), by name: the channel filter's choices.
+    /// </summary>
+    public async Task<IReadOnlyList<EventChannelDto>> SearchChannelsAsync(string? search, CancellationToken cancellationToken)
+    {
+        var guilds = await ConfiguredGuilds.IdsAsync(db, providers, cancellationToken);
+        var term = (search ?? string.Empty).Trim().ToLowerInvariant();
+        return await db.Channels.AsNoTracking()
+            .Where(c => c.Name != null && c.Name.ToLower().Contains(term) && guilds.Contains(c.GuildId))
+            .OrderBy(c => c.Name)
+            .Take(MaxSearchResults)
+            .Select(c => new EventChannelDto(c.Id, c.Name))
+            .ToListAsync(cancellationToken);
     }
 
     /// <summary>

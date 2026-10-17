@@ -1,3 +1,4 @@
+using Apollo.Data.Identity;
 using Apollo.Platform.Abstractions;
 using Apollo.Testing;
 using Apollo.Testing.Data;
@@ -5,6 +6,7 @@ using Apollo.Testing.Platform;
 using Apollo.Web.Admin;
 using Apollo.Web.Client.Contracts;
 using Apollo.Web.Tests.Auth;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Apollo.Web.Tests.Admin;
 
@@ -158,6 +160,49 @@ public sealed class RawEventQueryTests(TimescaleFixture fixture) : TimescaleTest
         (await SingleAsync(DataEventType.Reaction)).Reaction.ShouldBe(new ReactionEventDetailsDto("Add", "👍", IsCustomEmoji: false, MessageAuthor: null));
         (await SingleAsync(DataEventType.Membership)).Membership.ShouldBe(new MembershipEventDetailsDto("Join"));
         (await SingleAsync(DataEventType.PresenceActivity)).PresenceActivity.ShouldBe(new PresenceActivityDetailsDto("Playing", "Factorio", _to.AddMinutes(-55)));
+    }
+
+    [Fact]
+    public async Task SearchUsers_ShouldFindMembersOfTheGuildByName()
+    {
+        await using (var db = Fixture.CreateDbContext())
+        {
+            var ids = new PlatformIdResolver(db, new PlatformIdCache(), NullLogger<PlatformIdResolver>.Instance);
+            var guild = ApolloWebApplicationFactory.Guild;
+            await new GuildMemberBuilder().For(TestPlatform.User("alice"), guild).SeedAsync(db, ids, Ct);
+            await new GuildMemberBuilder().For(TestPlatform.User("albert"), guild).LeftAt(TestTime.Now).SeedAsync(db, ids, Ct);
+            await new GuildMemberBuilder().For(TestPlatform.User("bob"), guild).SeedAsync(db, ids, Ct);
+            await new GuildMemberBuilder().For(TestPlatform.User("alina"), new PlatformRef(PlatformKind.Discord, "333333333333333333")).SeedAsync(db, ids, Ct);
+        }
+
+        var alice = await Events.UserAsync(TestPlatform.User("alice"), "Alice");
+        var albert = await Events.UserAsync(TestPlatform.User("albert"), "Albert");
+        await Events.UserAsync(TestPlatform.User("bob"), "Bob");
+        await Events.UserAsync(TestPlatform.User("alina"), "Alina");
+
+        await using var context = Fixture.CreateDbContext();
+        var users = await new RawEventQuery(context, [new FakeIdentityProvider()]).SearchUsersAsync("AL", Ct);
+
+        users.ShouldBe([new EventUserDto(albert, "Albert"), new EventUserDto(alice, "Alice")]);
+    }
+
+    [Fact]
+    public async Task SearchChannels_ShouldFindChannelsOfTheGuildByName()
+    {
+        var general = await Events.ChannelAsync(EventSeeder.General, "allgemein");
+        var gaming = await Events.ChannelAsync(TestPlatform.Channel("gaming"), "gaming");
+        await Events.ChannelAsync(TestPlatform.Channel("memes"), "memes");
+        await using (var db = Fixture.CreateDbContext())
+        {
+            var ids = new PlatformIdResolver(db, new PlatformIdCache(), NullLogger<PlatformIdResolver>.Instance);
+            await new ChannelBuilder().For(TestPlatform.Channel("foreign"), new PlatformRef(PlatformKind.Discord, "333333333333333333")).Named("gaming-2")
+                .SeedAsync(db, ids, Ct);
+        }
+
+        await using var context = Fixture.CreateDbContext();
+        var channels = await new RawEventQuery(context, [new FakeIdentityProvider()]).SearchChannelsAsync("g", Ct);
+
+        channels.ShouldBe([new EventChannelDto(general, "allgemein"), new EventChannelDto(gaming, "gaming")]);
     }
 
     private async Task<RawEventDto> SingleAsync(DataEventType type) =>
