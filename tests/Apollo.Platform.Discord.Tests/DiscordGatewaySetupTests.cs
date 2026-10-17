@@ -128,6 +128,14 @@ public sealed class DiscordGatewaySetupTests
     }
 
     [Fact]
+    public void AddDiscordPlatform_ShouldMapPresenceUpdates()
+    {
+        using var host = DiscordHost.Build(DiscordHost.ValidSettings());
+
+        DiscordHost.GatewayHandlers(host).ShouldContain(handler => handler is DiscordPresenceHandler);
+    }
+
+    [Fact]
     public void AddDiscordPlatform_ShouldMapBanEvents()
     {
         using var host = DiscordHost.Build(DiscordHost.ValidSettings());

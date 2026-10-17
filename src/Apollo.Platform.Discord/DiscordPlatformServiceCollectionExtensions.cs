@@ -11,8 +11,8 @@ public static class DiscordPlatformServiceCollectionExtensions
 {
     /// <summary>
     /// Registers the Discord adapter: the NetCord gateway client (connected while the host runs), the event mapping
-    /// with its single-guild filter (connection, guild snapshot, members, roles, channels and threads, messages, voice
-    /// states, reactions), <see cref="IChatPlatform"/>, and the slash commands: the registered
+    /// with its single-guild filter (connection, guild snapshot, members, bans, roles, channels and threads, messages, voice
+    /// states, presences, reactions), <see cref="IChatPlatform"/>, and the slash commands: the registered
     /// <see cref="Abstractions.Commands.CommandDefinition"/>s become guild commands on READY, and interactions go to the
     /// <see cref="Abstractions.Commands.ICommandRouter"/>, which the host must register (the bot's <c>AddCommandRouting</c>).
     /// </summary>
@@ -51,6 +51,7 @@ public static class DiscordPlatformServiceCollectionExtensions
         services.AddGatewayHandler<DiscordChannelHandler>(ServiceLifetime.Singleton);
         services.AddGatewayHandler<DiscordMessageHandler>(ServiceLifetime.Singleton);
         services.AddGatewayHandler<DiscordVoiceStateHandler>(ServiceLifetime.Singleton);
+        services.AddGatewayHandler<DiscordPresenceHandler>(ServiceLifetime.Singleton);
         services.AddGatewayHandler<DiscordReactionHandler>(ServiceLifetime.Singleton);
 
         services.AddSingleton<IChatPlatform, DiscordChatPlatform>();
