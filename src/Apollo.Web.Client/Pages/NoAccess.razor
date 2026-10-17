@@ -1,0 +1,15 @@
+@page "/kein-zugriff"
+@inject IStringLocalizer<Strings> L
+
+@*
+    Signed in, but no policy grants the page (scope §6.2). Shown in place of a protected page by Routes.razor, and as
+    its own page when the host denies a full page load (the session cookie's access-denied path). The variants of the
+    wireframe that name the missing member access roles follow with the Member policy (#41).
+*@
+<PageTitle>@L["PageTitle", L["NoAccess_Title"]]</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="py-6">
+    <EmptyState Icon="@Icons.Material.Outlined.Lock" Title="@L["NoAccess_Title"]" Explanation="@L["NoAccess_Text"]">
+        <MudButton Href="" Variant="Variant.Filled" Color="Color.Primary" Class="mt-2">@L["NoAccess_Home"]</MudButton>
+    </EmptyState>
+</MudContainer>

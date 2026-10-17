@@ -1,3 +1,4 @@
+using Apollo.Platform.Abstractions;
 using Apollo.Platform.Abstractions.Identity;
 using Apollo.Platform.Discord.Identity;
 using Microsoft.AspNetCore.Authentication;
@@ -39,6 +40,28 @@ public sealed class DiscordIdentityRegistrationTests
     }
 
     [Fact]
+    public void AddDiscordIdentityProvider_ShouldGrantAccessThroughTheGuildTheBotRecords()
+    {
+        using var host = Build(ValidSettings());
+
+        var provider = host.Services.GetServices<IPlatformIdentityProvider>().ShouldHaveSingleItem();
+
+        provider.Guild.ShouldBe(new PlatformRef(PlatformKind.Discord, "111111111111111111"));
+    }
+
+    [Fact]
+    public void Start_WhenGuildIdIsMissing_ShouldFailWithValidationErrorNamingTheKey()
+    {
+        var settings = ValidSettings();
+        settings.Remove("Apollo:Platform:Discord:GuildId");
+        using var host = Build(settings);
+
+        var exception = Should.Throw<Exception>(() => host.Services.GetRequiredService<IStartupValidator>().Validate());
+
+        exception.ToString().ShouldContain("Apollo:Platform:Discord:GuildId is required");
+    }
+
+    [Fact]
     public async Task RemoteFailure_WhenUserCancelsAtDiscord_ShouldRedirectHomeInsteadOfFailing()
     {
         using var host = Build(ValidSettings());
@@ -73,6 +96,7 @@ public sealed class DiscordIdentityRegistrationTests
     {
         [$"{DiscordOAuthOptions.SectionName}:ClientId"] = "client-id",
         [$"{DiscordOAuthOptions.SectionName}:ClientSecret"] = "client-secret",
+        ["Apollo:Platform:Discord:GuildId"] = "111111111111111111",
     };
 
     private static IHost Build(IDictionary<string, string?> settings)

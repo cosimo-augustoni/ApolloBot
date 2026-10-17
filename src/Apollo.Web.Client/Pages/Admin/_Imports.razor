@@ -1,0 +1,5 @@
+@using Apollo.Web.Client.Auth
+@using Microsoft.AspNetCore.Authorization
+
+@* Every page in this folder is an admin page (#30): only the Admin policy opens it, on the client and on the host. *@
+@attribute [Authorize(Policy = ApolloPolicies.Admin)]

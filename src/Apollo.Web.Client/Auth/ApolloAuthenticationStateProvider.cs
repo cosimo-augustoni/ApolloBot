@@ -55,6 +55,12 @@ public sealed class ApolloAuthenticationStateProvider(IAuthClient authClient) : 
             claims.Add(new Claim(ApolloClaimTypes.AvatarUrl, user.AvatarUrl));
         }
 
+        // Only for showing or hiding pages: the host checks the admin claim of the session cookie on every API call.
+        if (user.IsAdmin)
+        {
+            claims.Add(new Claim(ApolloClaimTypes.Admin, "true"));
+        }
+
         return new ClaimsPrincipal(new ClaimsIdentity(claims, AuthenticationType, ApolloClaimTypes.DisplayName, ClaimTypes.Role));
     }
 }

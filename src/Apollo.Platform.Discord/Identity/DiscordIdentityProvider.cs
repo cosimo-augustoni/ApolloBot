@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using Apollo.Platform.Abstractions;
 using Apollo.Platform.Abstractions.Identity;
+using Microsoft.Extensions.Options;
 
 namespace Apollo.Platform.Discord.Identity;
 
@@ -10,7 +11,7 @@ namespace Apollo.Platform.Discord.Identity;
 /// <c>/users/@me</c>, maps it with <see cref="MapUser"/> and stores only <see cref="ToClaims"/> in the external
 /// cookie; <see cref="GetIdentity"/> reads them back.
 /// </summary>
-internal sealed class DiscordIdentityProvider : IPlatformIdentityProvider
+internal sealed class DiscordIdentityProvider(IOptions<DiscordLoginGuildOptions> options) : IPlatformIdentityProvider
 {
     public const string Scheme = "Discord";
 
@@ -20,6 +21,9 @@ internal sealed class DiscordIdentityProvider : IPlatformIdentityProvider
     public PlatformKind Platform => PlatformKind.Discord;
 
     public string SchemeName => Scheme;
+
+    public PlatformRef Guild { get; } = DiscordIds.ToRef(options.Value.GuildId
+        ?? throw new InvalidOperationException($"{DiscordLoginGuildOptions.SectionName}:GuildId is not configured."));
 
     /// <summary>Maps Discord's user object (<c>GET /users/@me</c>) to a neutral identity.</summary>
     public static PlatformIdentity MapUser(JsonElement user)

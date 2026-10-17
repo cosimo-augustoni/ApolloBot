@@ -51,14 +51,20 @@ var web = builder.AddProject<Apollo_Web>("apollo-web")
         service.Ports = [];
     });
 
+// The guild the bot records; the web host grants admin access by its Administrator permission there (#30). One
+// parameter for both, published only (in development each project's user-secrets hold it).
+var discordGuildId = builder.ExecutionContext.IsPublishMode ? builder.AddParameter("DiscordGuildId") : null;
+
 if (builder.ExecutionContext.IsPublishMode)
 {
     // The reverse proxy targets apollo-web:80.
     web.WithEndpoint("http", endpoint => endpoint.TargetPort = 80);
 
-    // Discord login (#29). In development the web project's user-secrets hold them instead (docs/deployment.md).
+    // Discord login (#29), and the guild whose Administrator permission grants admin access (#30). In development the
+    // web project's user-secrets hold them instead (docs/deployment.md).
     web.WithEnvironment("Apollo__Platform__Discord__OAuth__ClientId", builder.AddParameter("DiscordOAuthClientId"))
-        .WithEnvironment("Apollo__Platform__Discord__OAuth__ClientSecret", builder.AddParameter("DiscordOAuthClientSecret", secret: true));
+        .WithEnvironment("Apollo__Platform__Discord__OAuth__ClientSecret", builder.AddParameter("DiscordOAuthClientSecret", secret: true))
+        .WithEnvironment("Apollo__Platform__Discord__GuildId", discordGuildId!);
 
     AddPgAdmin(builder);
 }
@@ -71,7 +77,7 @@ if (builder.ExecutionContext.IsPublishMode)
 
     // The bot's Discord connection (#25). In development the bot project's user-secrets hold them (docs/deployment.md).
     bot.WithEnvironment("Apollo__Platform__Discord__Token", builder.AddParameter("DiscordBotToken", secret: true))
-        .WithEnvironment("Apollo__Platform__Discord__GuildId", builder.AddParameter("DiscordGuildId"));
+        .WithEnvironment("Apollo__Platform__Discord__GuildId", discordGuildId!);
 }
 else
 {

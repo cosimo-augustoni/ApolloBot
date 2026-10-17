@@ -32,6 +32,26 @@ public sealed class ApolloAuthenticationStateProviderTests
     }
 
     [Fact]
+    public async Task GetAuthenticationState_WhenUserIsAdmin_ShouldCarryAdminClaim()
+    {
+        var provider = new ApolloAuthenticationStateProvider(new FixedAuthClient(new CurrentUserDto(Guid.NewGuid(), "Discord", "Nelly", null, IsAdmin: true)));
+
+        var principal = (await provider.GetAuthenticationStateAsync()).User;
+
+        principal.FindAll(ApolloClaimTypes.Admin).Select(c => c.Value).ShouldBe(["true"]);
+    }
+
+    [Fact]
+    public async Task GetAuthenticationState_WhenUserIsNoAdmin_ShouldHaveNoAdminClaim()
+    {
+        var provider = new ApolloAuthenticationStateProvider(new FixedAuthClient(new CurrentUserDto(Guid.NewGuid(), "Discord", "Nelly", null, IsAdmin: false)));
+
+        var principal = (await provider.GetAuthenticationStateAsync()).User;
+
+        principal.HasClaim(c => c.Type == ApolloClaimTypes.Admin).ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task GetAuthenticationState_WhenAnonymous_ShouldNotBeAuthenticated()
     {
         var provider = new ApolloAuthenticationStateProvider(new FixedAuthClient(null));

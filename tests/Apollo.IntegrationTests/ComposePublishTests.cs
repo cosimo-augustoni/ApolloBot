@@ -189,6 +189,13 @@ public sealed class ComposePublishTests(ComposePublishFixture fixture) : IClassF
     }
 
     [Fact]
+    public void Publish_Web_ShouldGetTheGuildIdFromTheBotsParameter()
+    {
+        // Admin access is the Administrator permission in the guild the bot records (#30); without it web fails to start.
+        Scalar(Map(Service("apollo-web"), "environment"), "Apollo__Platform__Discord__GuildId").ShouldBe("${DISCORDGUILDID}");
+    }
+
+    [Fact]
     public void Publish_EnvFile_ShouldDeclarePgAdminPasswordAsSecretPlaceholder()
     {
         // Proves the password is a parameter that only lands in the git-ignored env file.

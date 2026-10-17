@@ -587,6 +587,21 @@ namespace Apollo.Data.Migrations
                         .HasAnnotation("TimescaleDB:TimeColumnName", "OccurredAt");
                 });
 
+            modelBuilder.Entity("Apollo.Data.Sessions.UserSignOut", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<DateTimeOffset>("SignedOutAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("signed_out_at");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("user_sign_outs", (string)null);
+                });
+
             modelBuilder.Entity("Apollo.Data.Status.BotStatus", b =>
                 {
                     b.Property<long>("Id")
@@ -1098,6 +1113,15 @@ namespace Apollo.Data.Migrations
                         .HasForeignKey("MessageAuthorId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("Apollo.Data.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Apollo.Data.Sessions.UserSignOut", b =>
+                {
                     b.HasOne("Apollo.Data.Identity.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")

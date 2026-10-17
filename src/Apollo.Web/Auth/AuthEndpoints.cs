@@ -1,3 +1,4 @@
+using Apollo.Data.Sessions;
 using Apollo.Platform.Abstractions.Identity;
 using Apollo.Web.Client.Contracts;
 using Microsoft.AspNetCore.Antiforgery;
@@ -90,11 +91,21 @@ public static class AuthEndpoints
         return TypedResults.LocalRedirect(ReturnUrl.LocalOrRoot(returnUrl));
     }
 
-    private static async Task<Results<NoContent, BadRequest>> LogoutAsync(HttpContext http, IAntiforgery antiforgery)
+    /// <summary>
+    /// Deletes the session cookie and stores the logout time (#30): a copy of this or any other session cookie of the
+    /// user that was issued before it is rejected at its next access check (<see cref="AccessRevalidator"/>).
+    /// </summary>
+    private static async Task<Results<NoContent, BadRequest>> LogoutAsync(
+        HttpContext http, IAntiforgery antiforgery, UserSignOuts signOuts, TimeProvider time, CancellationToken cancellationToken)
     {
         if (!await antiforgery.IsRequestValidAsync(http))
         {
             return TypedResults.BadRequest();
+        }
+
+        if (ApolloPrincipal.ReadSession(http.User) is { } session)
+        {
+            await signOuts.RecordAsync(session.UserId, time.GetUtcNow(), cancellationToken);
         }
 
         await http.SignOutAsync(AuthSchemes.Session);

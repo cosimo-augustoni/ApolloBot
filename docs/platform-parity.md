@@ -153,7 +153,7 @@ What the findings mean for the platform abstraction and the recorders. Each item
 | Voice sessions | #16 | Works, incl. mute/deaf/stream/video. Done in #16: the recorder's state machine treats a user as in voice while any connection is in a channel and follows their oldest connection in a channel (unit-tested; no Fluxer adapter yet). |
 | Membership | #18 | Works (join, leave, ban, unban). Done in #18: `MembershipRecorder` is platform-neutral; the Fluxer adapter must map ban add/remove to `PlatformMemberBanned` / `PlatformMemberUnbanned` (not checked yet: whether Fluxer also sends a member remove for a ban; without one a ban gets no `Leave` row). |
 | Threads | #15, #13 | Works. `thread_parent_id` is filled on Fluxer too, so the "Fluxer probably has no threads" note in scope §5.1 is out of date. |
-| Login | #29 (M6 for Fluxer) | Works with `identify`; Fluxer.Net already has an ASP.NET Core handler for `IPlatformIdentityProvider`. The Fluxer provider must sign in to the host's default sign-in scheme (the external cookie), turn `/v1/oauth2/userinfo` into the claims its `GetIdentity` reads, and set `UsePkce = true`. |
+| Login | #29 (M6 for Fluxer) | Works with `identify`; Fluxer.Net already has an ASP.NET Core handler for `IPlatformIdentityProvider`. The Fluxer provider must sign in to the host's default sign-in scheme (the external cookie), turn `/v1/oauth2/userinfo` into the claims its `GetIdentity` reads, set `UsePkce = true`, and expose the guild the bot records on Fluxer as `Guild` (web access is decided there, #30). |
 
 ### Open points that need a live Fluxer guild
 

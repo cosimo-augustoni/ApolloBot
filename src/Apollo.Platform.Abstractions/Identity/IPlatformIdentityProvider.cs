@@ -16,6 +16,12 @@ public interface IPlatformIdentityProvider
     string SchemeName { get; }
 
     /// <summary>
+    /// The guild the bot records on this platform (scope §4.3). Web access for a login with this provider is decided
+    /// by the user's membership and permissions there (scope §6.2).
+    /// </summary>
+    PlatformRef Guild { get; }
+
+    /// <summary>
     /// The identity in the principal this provider's scheme produced, or <see langword="null"/> when the principal
     /// does not carry one (e.g. it came from another scheme).
     /// </summary>

@@ -3,12 +3,15 @@ using System.Text.Json;
 using Apollo.Platform.Abstractions;
 using Apollo.Platform.Abstractions.Identity;
 using Apollo.Platform.Discord.Identity;
+using Microsoft.Extensions.Options;
 
 namespace Apollo.Platform.Discord.Tests.Identity;
 
 public sealed class DiscordIdentityProviderTests
 {
-    private readonly DiscordIdentityProvider _provider = new();
+    internal static readonly IOptions<DiscordLoginGuildOptions> Guild = Options.Create(new DiscordLoginGuildOptions { GuildId = 111111111111111111 });
+
+    private readonly DiscordIdentityProvider _provider = new(Guild);
 
     [Fact]
     public void MapUser_WhenDiscordUserJsonGiven_ShouldReturnPlatformIdentity()

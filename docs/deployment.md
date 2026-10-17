@@ -91,7 +91,7 @@ All values are read by the AppHost. Secrets are listed by name only and are neve
 | `DiscordOAuthClientId` | parameter | Client ID of the Discord application used for the web login; becomes `Apollo__Platform__Discord__OAuth__ClientId` on `apollo-web` | as above |
 | `DiscordOAuthClientSecret` | **secret** parameter | Its client secret; becomes `Apollo__Platform__Discord__OAuth__ClientSecret` on `apollo-web` | as above |
 | `DiscordBotToken` | **secret** parameter | The bot token ([Discord application](#discord-application), step 2); becomes `Apollo__Platform__Discord__Token` on `bot` | as above |
-| `DiscordGuildId` | parameter | ID of the one guild the bot records (step 4); becomes `Apollo__Platform__Discord__GuildId` on `bot` | as above |
+| `DiscordGuildId` | parameter | ID of the one guild the bot records (step 4); becomes `Apollo__Platform__Discord__GuildId` on `bot` and on `apollo-web`, where the Administrator permission in this guild grants admin access ([Admin access](#admin-access)) | as above |
 
 Set AppHost user-secrets with, for example:
 
@@ -137,6 +137,7 @@ Service settings with a default (not AppHost parameters):
 | Name | Default | What it is |
 |---|---|---|
 | `Apollo:Data:MigrationWaitTimeout` (`Apollo__Data__MigrationWaitTimeout`) | `00:05:00` | How long `bot` and `apollo-web` wait at startup for pending migrations before they exit (see below). Validated at startup: 1 second to 1 day |
+| `Apollo:Web:Auth:RevalidationInterval` (`Apollo__Web__Auth__RevalidationInterval`) | `00:05:00` | How long `apollo-web` trusts the access claims in a session cookie before it reads the synced guild state and the user's last logout again ([Admin access](#admin-access)). Validated at startup: 1 second to 1 day |
 
 ### Environment of each service
 
@@ -154,10 +155,12 @@ stack sets no `DOTNET_ENVIRONMENT`), so `appsettings.Development.json` and user-
 | `Apollo__Links__PublicWebUrl` | `bot` | `PublicWebUrl` parameter |
 | `Apollo__Platform__Discord__OAuth__ClientId` | `apollo-web` | `DiscordOAuthClientId` parameter |
 | `Apollo__Platform__Discord__OAuth__ClientSecret` | `apollo-web` | `DiscordOAuthClientSecret` secret parameter |
+| `Apollo__Platform__Discord__GuildId` | `apollo-web` | `DiscordGuildId` parameter, the same value as on `bot` |
 | `HTTP_PORTS` | `apollo-web` | AppHost: `80`, the port the reverse proxy targets |
 | `ASPNETCORE_FORWARDEDHEADERS_ENABLED` | `apollo-web` | Set by Aspire (`true`) |
 
-`Apollo__Platform__Discord__Connect` and `Apollo__Data__MigrationWaitTimeout` are not set and keep their defaults.
+`Apollo__Platform__Discord__Connect`, `Apollo__Data__MigrationWaitTimeout` and `Apollo__Web__Auth__RevalidationInterval`
+are not set and keep their defaults.
 `db` gets `POSTGRES_PASSWORD` from `db-password`, `pgadmin` its `PgAdmin*` parameters.
 
 ## Web login (Discord OAuth)
@@ -173,12 +176,14 @@ stops `apollo-web` with an error that names the key:
 |---|---|---|
 | `Apollo:Platform:Discord:OAuth:ClientId` (`Apollo__Platform__Discord__OAuth__ClientId`) | config | The application's client ID (developer portal, OAuth2 page). Production: AppHost parameter `DiscordOAuthClientId` |
 | `Apollo:Platform:Discord:OAuth:ClientSecret` (`Apollo__Platform__Discord__OAuth__ClientSecret`) | **secret** | The client secret. Production: AppHost secret parameter `DiscordOAuthClientSecret` |
+| `Apollo:Platform:Discord:GuildId` (`Apollo__Platform__Discord__GuildId`) | config | The guild the bot records, the same value the bot gets (`src/Apollo.Platform.Discord/Identity/DiscordLoginGuildOptions.cs`). Production: AppHost parameter `DiscordGuildId` |
 
 For local development, set them as user-secrets on the web project (the AppHost runs it in Development):
 
 ```bash
 dotnet user-secrets set "Apollo:Platform:Discord:OAuth:ClientId" "<client id>" --project src/Apollo.Web
 dotnet user-secrets set "Apollo:Platform:Discord:OAuth:ClientSecret" "<client secret>" --project src/Apollo.Web
+dotnet user-secrets set "Apollo:Platform:Discord:GuildId" "<guild id>" --project src/Apollo.Web
 ```
 
 **Redirect URI.** The callback path is fixed at `/signin-discord`; there is no setting for the redirect URL. Register
@@ -195,6 +200,22 @@ behind the proxy, so the proxy must send `X-Forwarded-Proto` (`https`) and `X-Fo
 invalid `redirect_uri`, and the `Secure` session cookie is set on what looks like an HTTP request. `apollo-web` trusts
 these headers from any sender. That is safe only because nothing but the proxy can reach it (no published host port,
 see below).
+
+### Admin access
+
+Admin access (`/admin` pages, `/api/admin/**`) is the **Administrator** permission in the configured guild, nothing
+else ([scope §6.2](scope.md#62-access-rules-based-on-discord-roles), D8): there is no allowlist and no setting. The web
+host reads it from `guild_members.is_administrator` (current members, the guild owner included), which the bot syncs.
+At startup `apollo-web` logs the rule, e.g. `Admin access on Discord: the Administrator permission in guild <id>, nothing
+else; access is re-checked every 00:05:00`.
+
+- **Revalidation.** The session cookie carries the result of the last check. After
+  `Apollo:Web:Auth:RevalidationInterval` (default 5 minutes) the next request checks again: a removed Administrator
+  permission takes effect within the bot's sync plus that interval, a new one without logging in again.
+- **Logout.** `/auth/logout` stores the logout time in `user_sign_outs`. Every session cookie of that user issued
+  before it, on any device and including a copied cookie, is rejected at its next check, so within the interval.
+- **No access.** A logged-in user without the permission who opens an admin page sees "Kein Zugriff"
+  (`/kein-zugriff`); an anonymous user is sent to the login.
 
 **Sessions across deploys.** The cookie keys (ASP.NET Core data protection, application name `Apollo`) are stored in
 the database table `data_protection_keys`, so logins survive restarts and redeploys. Deleting that table's rows logs
@@ -361,7 +382,11 @@ there: host `db`, port `5432`, user `postgres`, password `db-password`, database
    back to `<PublicWebUrl>/`. `<PublicWebUrl>/auth/me` now returns your user as JSON. An `invalid redirect_uri` from
    Discord means the redirect is not registered exactly as `<PublicWebUrl>/signin-discord`, or the reverse proxy doesn't
    send the forwarded headers ([Web login](#web-login-discord-oauth)). `docker service logs apollo_apollo-web` shows no
-   `fail:` lines.
+   `fail:` lines, and one `Admin access on Discord: the Administrator permission in guild <id>` line with the
+   `DiscordGuildId` value.
+9. **Admin access follows the Administrator permission.** Logged in as an Administrator, `<PublicWebUrl>/api/admin/session`
+   returns your user as JSON with `"isAdmin": true`, and `<PublicWebUrl>/admin` opens. With an account without the
+   permission, `/api/admin/session` returns 403 and `/admin` shows "Kein Zugriff".
 
 ## What the stack looks like
 

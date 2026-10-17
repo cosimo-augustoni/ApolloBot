@@ -1,8 +1,12 @@
 using Apollo.Data;
+using Apollo.Data.Guilds;
+using Apollo.Data.Sessions;
+using Apollo.Web.Client.Auth;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Apollo.Web.Auth;
 
@@ -11,14 +15,22 @@ public static class AuthServiceCollectionExtensions
     /// <summary>The data protection application name; keeps the key ring stable across container names and paths.</summary>
     public const string DataProtectionApplicationName = "Apollo";
 
+    /// <summary>
+    /// The client's "Kein Zugriff" page (<c>Pages/NoAccess.razor</c>). A full page load of a page whose policy the user
+    /// does not meet (e.g. <c>/admin</c> without the admin claim) is redirected here.
+    /// </summary>
+    public const string NoAccessPath = "/kein-zugriff";
+
     private static readonly TimeSpan _sessionLifetime = TimeSpan.FromDays(14);
     private static readonly TimeSpan _externalLoginLifetime = TimeSpan.FromMinutes(10);
 
     /// <summary>
     /// Registers the BFF cookie authentication (scope §6.1): the session cookie (HttpOnly, Secure, SameSite=Lax,
-    /// sliding), the temporary external cookie platform handlers sign in to, data protection keys in
-    /// <see cref="ApolloDbContext"/>, the antiforgery header for <c>/auth/logout</c> and the forwarded headers of the
-    /// reverse proxy. Platform identity providers are added separately.
+    /// sliding, its access claims re-checked by <see cref="AccessRevalidator"/> every
+    /// <see cref="WebAuthOptions.RevalidationInterval"/>), the <see cref="ApolloPolicies"/>, the temporary external
+    /// cookie platform handlers sign in to, data protection keys in <see cref="ApolloDbContext"/>, the antiforgery header
+    /// for <c>/auth/logout</c> and the forwarded headers of the reverse proxy. Platform identity providers are added
+    /// separately.
     /// </summary>
     public static IServiceCollection AddApolloAuthentication(this IServiceCollection services)
     {
@@ -36,9 +48,11 @@ public static class AuthServiceCollectionExtensions
                 options.ExpireTimeSpan = _sessionLifetime;
                 options.SlidingExpiration = true;
                 options.LoginPath = "/auth/login";
+                options.AccessDeniedPath = NoAccessPath;
                 options.ReturnUrlParameter = "returnUrl";
                 options.Events.OnRedirectToLogin = context => RedirectOrStatus(context, StatusCodes.Status401Unauthorized);
                 options.Events.OnRedirectToAccessDenied = context => RedirectOrStatus(context, StatusCodes.Status403Forbidden);
+                options.Events.OnValidatePrincipal = RevalidateAccessAsync;
             })
             .AddCookie(AuthSchemes.External, options =>
             {
@@ -50,7 +64,15 @@ public static class AuthServiceCollectionExtensions
                 options.SlidingExpiration = false;
             });
 
-        services.AddAuthorization();
+        services.AddAuthorization(options => options.AddApolloPolicies());
+        services.AddOptions<WebAuthOptions>()
+            .BindConfiguration(WebAuthOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddScoped<GuildAccessReader>();
+        services.AddScoped<UserSignOuts>();
+        services.AddScoped<AccessRevalidator>();
         services.AddScoped<SignInCompletion>();
         services.AddAntiforgery(options => options.HeaderName = "X-XSRF-TOKEN");
 
@@ -68,6 +90,25 @@ public static class AuthServiceCollectionExtensions
         });
 
         return services;
+    }
+
+    // Runs on every request with a session cookie. A refreshed principal is written back to the cookie, so the next
+    // check is one interval later; a rejected one (logged out since) ends the session and the request is anonymous.
+    private static async Task RevalidateAccessAsync(CookieValidatePrincipalContext context)
+    {
+        var revalidator = context.HttpContext.RequestServices.GetRequiredService<AccessRevalidator>();
+        var access = await revalidator.RevalidateAsync(context.Principal!, context.HttpContext.RequestAborted);
+        switch (access.Outcome)
+        {
+            case AccessRevalidationOutcome.Refreshed:
+                context.ReplacePrincipal(access.Principal!);
+                context.ShouldRenew = true;
+                break;
+            case AccessRevalidationOutcome.Rejected:
+                context.RejectPrincipal();
+                await context.HttpContext.SignOutAsync(AuthSchemes.Session);
+                break;
+        }
     }
 
     // API callers (the WASM client) need a status code, not a login page.
