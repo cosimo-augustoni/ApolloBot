@@ -183,6 +183,46 @@ internal static class NetCordPayloads
         new(new JsonMessageDeleteBulkEventArgs { GuildId = guildId, ChannelId = channelId, MessageIds = messageIds });
 
     /// <summary>
+    /// MESSAGE_REACTION_ADD. A unicode emoji has no <paramref name="emojiId"/>; a custom one has an id and usually a name.
+    /// </summary>
+    public static MessageReactionAddEventArgs ReactionAdd(
+        ulong guildId,
+        ulong channelId,
+        ulong messageId,
+        ulong userId,
+        string? emojiName,
+        ulong? emojiId = null,
+        ulong? messageAuthorId = null) =>
+        new(new JsonMessageReactionAddEventArgs
+        {
+            GuildId = guildId,
+            ChannelId = channelId,
+            MessageId = messageId,
+            UserId = userId,
+            Emoji = new JsonEmoji { Id = emojiId, Name = emojiName },
+            MessageAuthorId = messageAuthorId,
+        }, Rest);
+
+    /// <summary>
+    /// MESSAGE_REACTION_REMOVE: like the add payload, but Discord never sends the message author.
+    /// </summary>
+    public static MessageReactionRemoveEventArgs ReactionRemove(
+        ulong guildId,
+        ulong channelId,
+        ulong messageId,
+        ulong userId,
+        string? emojiName,
+        ulong? emojiId = null) =>
+        new(new JsonMessageReactionRemoveEventArgs
+        {
+            GuildId = guildId,
+            ChannelId = channelId,
+            MessageId = messageId,
+            UserId = userId,
+            Emoji = new JsonEmoji { Id = emojiId, Name = emojiName },
+        });
+
+    /// <summary>
     /// The snowflake Discord would give an object created at <paramref name="createdAt"/>.
     /// </summary>
     public static ulong Snowflake(DateTimeOffset createdAt, ulong sequence = 1) =>
