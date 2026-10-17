@@ -22,7 +22,11 @@
     </MudSelect>
     <MudText Typo="Typo.body2" Class="mud-text-secondary mt-1">@L["Settings_Tracking_Help"]</MudText>
 
-    @if (_preview is not null)
+    @if (_previewFailed)
+    {
+        <MudText Typo="Typo.body2" Color="Color.Error" Class="apollo-tracking-preview-error mt-3">@L["Settings_PreviewFailed"]</MudText>
+    }
+    else if (_preview is not null)
     {
         <MudText Typo="Typo.subtitle1" Class="apollo-tracking-preview mt-3">@PreviewText(_preview)</MudText>
     }
@@ -33,7 +37,7 @@
     }
 
     <div class="d-flex flex-wrap gap-2 mt-3">
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!Changed || _saving)" OnClick="SaveAsync" Class="apollo-tracking-save">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!Changed || _saving || _preview is null)" OnClick="SaveAsync" Class="apollo-tracking-save">
             @L["Settings_Save"]
         </MudButton>
         <MudButton Variant="Variant.Text" Disabled="@(!Changed || _saving)" OnClick="ResetAsync">@L["Settings_Cancel"]</MudButton>
@@ -54,6 +58,8 @@
     private RoleSettingsDto? _shown;
     private Guid? _selected;
     private RolePreviewDto? _preview;
+    private bool _previewFailed;
+    private int _previewRequest;
     private bool _saving;
 
     private bool Changed => _selected != Settings.TrackingRoleId;
@@ -72,10 +78,31 @@
         }
     }
 
+    /// <summary>
+    /// Selects the role and loads its preview. Until the preview is there, saving is off (the confirmation needs it);
+    /// an answer for an older selection is dropped.
+    /// </summary>
     private async Task SelectAsync(Guid? roleId)
     {
         _selected = roleId;
-        _preview = await Client.GetPreviewAsync(Platform, roleId is { } id ? [id] : [], CancellationToken.None);
+        _preview = null;
+        _previewFailed = false;
+        var request = ++_previewRequest;
+        try
+        {
+            var preview = await Client.GetPreviewAsync(Platform, roleId is { } id ? [id] : [], CancellationToken.None);
+            if (request == _previewRequest)
+            {
+                _preview = preview;
+            }
+        }
+        catch (HttpRequestException)
+        {
+            if (request == _previewRequest)
+            {
+                _previewFailed = true;
+            }
+        }
     }
 
     private Task ResetAsync() => SelectAsync(Settings.TrackingRoleId);
