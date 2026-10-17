@@ -7,6 +7,7 @@ using Apollo.Testing;
 using Apollo.Testing.Data;
 using Apollo.Testing.Platform;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 
@@ -178,6 +179,58 @@ public sealed class RoleSettingsStoreTests(TimescaleFixture fixture) : Timescale
         (await ChangesAsync(db)).Last().ChangedBy.ShouldBeNull();
     }
 
+    [Fact]
+    public async Task RoleSettingsStore_WhenAnotherAdminSetsATrackingRoleAtTheSameTime_ShouldReturnConflictAndKeepTheirs()
+    {
+        Guid guildId, adminId, statistik, mitglied;
+        await using (var setup = Fixture.CreateDbContext())
+        {
+            (guildId, adminId) = await SeedGuildAndAdminAsync(setup);
+            statistik = await SeedRoleAsync(setup, _statistik);
+            mitglied = await SeedRoleAsync(setup, _mitglied);
+        }
+
+        var interceptor = new CompetingWriteInterceptor(EntityState.Added, async () =>
+        {
+            await using var other = Fixture.CreateDbContext();
+            (await Store(other).SetTrackingRoleAsync(guildId, PlatformKind.Discord, mitglied, adminId, Ct)).ShouldBe(RoleSettingsWriteResult.Saved);
+        });
+        await using var db = CreateDbContext(interceptor);
+
+        var result = await Store(db).SetTrackingRoleAsync(guildId, PlatformKind.Discord, statistik, adminId, Ct);
+
+        result.ShouldBe(RoleSettingsWriteResult.Conflict);
+        await using var check = Fixture.CreateDbContext();
+        (await check.RoleSettings.AsNoTracking().ToListAsync(Ct)).ShouldHaveSingleItem().RoleId.ShouldBe(mitglied);
+        (await ChangesAsync(check)).ShouldHaveSingleItem().RoleId.ShouldBe(mitglied);
+    }
+
+    [Fact]
+    public async Task RoleSettingsStore_WhenAnotherAdminRemovesTheSameRoleAtTheSameTime_ShouldReturnConflict()
+    {
+        Guid guildId, adminId;
+        await using (var setup = Fixture.CreateDbContext())
+        {
+            (guildId, adminId) = await SeedGuildAndAdminAsync(setup);
+            var mitglied = await SeedRoleAsync(setup, _mitglied);
+            await Store(setup).SetMemberAccessRolesAsync(guildId, PlatformKind.Discord, [mitglied], adminId, Ct);
+        }
+
+        var interceptor = new CompetingWriteInterceptor(EntityState.Deleted, async () =>
+        {
+            await using var other = Fixture.CreateDbContext();
+            (await Store(other).SetMemberAccessRolesAsync(guildId, PlatformKind.Discord, [], adminId, Ct)).ShouldBe(RoleSettingsWriteResult.Saved);
+        });
+        await using var db = CreateDbContext(interceptor);
+
+        var result = await Store(db).SetMemberAccessRolesAsync(guildId, PlatformKind.Discord, [], adminId, Ct);
+
+        result.ShouldBe(RoleSettingsWriteResult.Conflict);
+        await using var check = Fixture.CreateDbContext();
+        (await check.RoleSettings.AnyAsync(Ct)).ShouldBeFalse();
+        (await ChangesAsync(check)).Select(c => c.Action).ShouldBe([RoleSettingAction.Added, RoleSettingAction.Removed]);
+    }
+
     public enum InvalidRole
     {
         Deleted,
@@ -187,6 +240,9 @@ public sealed class RoleSettingsStoreTests(TimescaleFixture fixture) : Timescale
     }
 
     private RoleSettingsStore Store(ApolloDbContext db) => new(db, _time);
+
+    private ApolloDbContext CreateDbContext(IInterceptor interceptor) =>
+        new(new DbContextOptionsBuilder<ApolloDbContext>(ApolloDbContext.CreateOptions(Fixture.ConnectionString)).AddInterceptors(interceptor).Options);
 
     private static async Task<(Guid GuildId, Guid AdminId)> SeedGuildAndAdminAsync(ApolloDbContext db)
     {

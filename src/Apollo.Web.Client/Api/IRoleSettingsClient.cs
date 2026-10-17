@@ -20,9 +20,11 @@ public interface IRoleSettingsClient
 
     /// <summary>Sets the tracking role; <see langword="null"/> clears it.</summary>
     /// <exception cref="RoleSettingsRejectedException">The host rejected the role (deleted, or not of this guild and platform).</exception>
+    /// <exception cref="RoleSettingsConflictException">Another admin saved the same settings at the same time; nothing was kept.</exception>
     Task SetTrackingRoleAsync(string platform, Guid? roleId, CancellationToken cancellationToken);
 
     /// <summary>Replaces the member access roles with <paramref name="roleIds"/>.</summary>
     /// <exception cref="RoleSettingsRejectedException">The host rejected a role (deleted, or not of this guild and platform).</exception>
+    /// <exception cref="RoleSettingsConflictException">Another admin saved the same settings at the same time; nothing was kept.</exception>
     Task SetMemberAccessRolesAsync(string platform, IReadOnlyCollection<Guid> roleIds, CancellationToken cancellationToken);
 }

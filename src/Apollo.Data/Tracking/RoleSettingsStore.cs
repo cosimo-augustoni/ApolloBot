@@ -2,6 +2,7 @@ using System.Globalization;
 using Apollo.Domain.Tracking;
 using Apollo.Platform.Abstractions;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Apollo.Data.Tracking;
 
@@ -63,6 +64,31 @@ public sealed class RoleSettingsStore(ApolloDbContext db, TimeProvider time)
             return RoleSettingsWriteResult.InvalidRole;
         }
 
+        try
+        {
+            await WriteAsync(guildId, platform, purpose, wanted, changedByUserId, cancellationToken);
+            return RoleSettingsWriteResult.Saved;
+        }
+        catch (DbUpdateException exception) when (exception is DbUpdateConcurrencyException || IsUniqueViolation(exception))
+        {
+            // Another admin saved the same settings at the same time: a row this write deletes was already gone, or the
+            // one-tracking-role index rejected the new row. The transaction rolled back; the caller reloads.
+            db.ChangeTracker.Clear();
+            return RoleSettingsWriteResult.Conflict;
+        }
+    }
+
+    private static bool IsUniqueViolation(DbUpdateException exception) =>
+        exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
+
+    private async Task WriteAsync(
+        Guid guildId,
+        PlatformKind platform,
+        RoleSettingPurpose purpose,
+        HashSet<Guid> wanted,
+        Guid changedByUserId,
+        CancellationToken cancellationToken)
+    {
         var now = time.GetUtcNow();
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
@@ -96,6 +122,5 @@ public sealed class RoleSettingsStore(ApolloDbContext db, TimeProvider time)
             }));
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        return RoleSettingsWriteResult.Saved;
     }
 }

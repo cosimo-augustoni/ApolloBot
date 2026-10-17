@@ -53,6 +53,11 @@ public sealed class HttpRoleSettingsClient(HttpClient http) : IRoleSettingsClien
             throw new RoleSettingsRejectedException($"PUT {path} was rejected.");
         }
 
+        if (response.StatusCode == HttpStatusCode.Conflict)
+        {
+            throw new RoleSettingsConflictException($"PUT {path} conflicted with another save.");
+        }
+
         // Any other 400 (e.g. a missing antiforgery token) is a failed save like any other error status.
         response.EnsureSuccessStatusCode();
     }

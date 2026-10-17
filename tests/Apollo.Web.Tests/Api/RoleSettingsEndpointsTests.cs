@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Apollo.Data;
 using Apollo.Data.Guilds;
 using Apollo.Data.Identity;
 using Apollo.Data.Tracking;
@@ -9,7 +10,9 @@ using Apollo.Testing;
 using Apollo.Testing.Data;
 using Apollo.Web.Client.Contracts;
 using Apollo.Web.Tests.Auth;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 
@@ -224,6 +227,28 @@ public sealed class RoleSettingsEndpointsTests(TimescaleFixture fixture) : Times
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         await using var db = Fixture.CreateDbContext();
         (await db.RoleSettings.AnyAsync(Ct)).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task PutTrackingRole_WhenAnotherAdminSavesAtTheSameTime_ShouldReturn409()
+    {
+        var seed = await SeedAsync();
+        var interceptor = new CompetingWriteInterceptor(EntityState.Added, async () =>
+        {
+            await using var other = Fixture.CreateDbContext();
+            await new RoleSettingsStore(other, _time).SetTrackingRoleAsync(seed.GuildId, PlatformKind.Discord, seed.Mitglied, seed.AdminId, Ct);
+        });
+        await using var factory = CreateFactory();
+        await using var withInterceptor = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(
+            services => services.ConfigureDbContext<ApolloDbContext>(options => options.AddInterceptors(interceptor))));
+        using var http = withInterceptor.CreateClient(new() { BaseAddress = ApolloWebApplicationFactory.BaseAddress, AllowAutoRedirect = false });
+        await SignInAsync(http);
+
+        using var response = await PutAsync(http, $"{SettingsPath}/tracking-role", new TrackingRoleRequest(seed.Statistik));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        await using var db = Fixture.CreateDbContext();
+        (await db.RoleSettings.AsNoTracking().SingleAsync(Ct)).RoleId.ShouldBe(seed.Mitglied);
     }
 
     [Fact]

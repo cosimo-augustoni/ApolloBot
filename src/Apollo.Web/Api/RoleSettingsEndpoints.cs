@@ -116,7 +116,7 @@ public static class RoleSettingsEndpoints
             .ToArray());
     }
 
-    private static async Task<Results<NoContent, NotFound, ValidationProblem>> PutTrackingRoleAsync(
+    private static async Task<Results<NoContent, NotFound, ValidationProblem, Conflict>> PutTrackingRoleAsync(
         string platform,
         TrackingRoleRequest request,
         HttpContext http,
@@ -134,7 +134,7 @@ public static class RoleSettingsEndpoints
         return ToResult(result, nameof(TrackingRoleRequest.RoleId));
     }
 
-    private static async Task<Results<NoContent, NotFound, ValidationProblem>> PutMemberAccessRolesAsync(
+    private static async Task<Results<NoContent, NotFound, ValidationProblem, Conflict>> PutMemberAccessRolesAsync(
         string platform,
         MemberAccessRolesRequest request,
         HttpContext http,
@@ -187,13 +187,16 @@ public static class RoleSettingsEndpoints
         return (guildId, kind);
     }
 
-    private static Results<NoContent, NotFound, ValidationProblem> ToResult(RoleSettingsWriteResult result, string field) =>
-        result == RoleSettingsWriteResult.Saved
-            ? TypedResults.NoContent()
-            : TypedResults.ValidationProblem(new Dictionary<string, string[]>
-            {
-                [field] = ["The role is unknown, deleted, or not a role of this guild on this platform."],
-            });
+    /// <summary>Saved: 204. An invalid role: 400 with a validation problem. Another admin saved at the same time: 409.</summary>
+    private static Results<NoContent, NotFound, ValidationProblem, Conflict> ToResult(RoleSettingsWriteResult result, string field) => result switch
+    {
+        RoleSettingsWriteResult.Saved => TypedResults.NoContent(),
+        RoleSettingsWriteResult.Conflict => TypedResults.Conflict(),
+        _ => TypedResults.ValidationProblem(new Dictionary<string, string[]>
+        {
+            [field] = ["The role is unknown, deleted, or not a role of this guild on this platform."],
+        }),
+    };
 
     private static Guid AdminId(HttpContext http) =>
         ApolloPrincipal.ReadSession(http.User)?.UserId

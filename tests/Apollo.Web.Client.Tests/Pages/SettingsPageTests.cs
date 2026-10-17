@@ -235,6 +235,39 @@ public sealed class SettingsPageTests : ApolloTestContext
     }
 
     [Fact]
+    public async Task SettingsPage_WhenAnotherAdminSavedTheAccessRolesAtTheSameTime_ShouldSayItAndReload()
+    {
+        _client.ConflictingSave = s => s with { MemberAccessRoleIds = [MockRoleSettingsClient.Admin] };
+        var page = RenderPage();
+        var select = page.WaitForComponent<MudSelect<Guid>>();
+        await page.InvokeAsync(() => select.Instance.SelectedValuesChanged.InvokeAsync([MockRoleSettingsClient.Moderation]));
+
+        page.Find(".apollo-access-save").Click();
+
+        page.WaitForAssertion(() => Snackbars().ShouldContain("Die Einstellungen wurden inzwischen geändert. Sie wurden neu geladen."));
+        page.WaitForAssertion(() => page.Find(".apollo-access-preview").TextContent.Trim().ShouldBe("3 Mitglieder haben Zugriff"));
+    }
+
+    [Fact]
+    public async Task SettingsPage_WhenAnotherAdminSavedTheTrackingRoleAtTheSameTime_ShouldSayItAndReload()
+    {
+        _client.ConflictingSave = s => s with { TrackingRoleId = MockRoleSettingsClient.Mitglied, Mode = RoleSettingsMode.Active };
+        var dialogs = Render<MudDialogProvider>();
+        var page = RenderPage();
+        var select = page.WaitForComponent<MudSelect<Guid?>>();
+        await page.InvokeAsync(() => select.Instance.ValueChanged.InvokeAsync(MockRoleSettingsClient.Statistik));
+        page.WaitForAssertion(() => page.Find(".apollo-tracking-preview").TextContent.ShouldContain("168"));
+
+        var saving = page.Find(".apollo-tracking-save").ClickAsync(new());
+        dialogs.WaitForAssertion(() => dialogs.FindAll("button").ShouldContain(b => b.TextContent.Trim() == "Bestätigen"));
+        await dialogs.FindAll("button").Single(b => b.TextContent.Trim() == "Bestätigen").ClickAsync(new());
+        await saving;
+
+        page.WaitForAssertion(() => Snackbars().ShouldContain("Die Einstellungen wurden inzwischen geändert. Sie wurden neu geladen."));
+        page.WaitForAssertion(() => page.Find(".apollo-tracking-preview").TextContent.Trim().ShouldBe("187 Mitglieder werden erfasst"));
+    }
+
+    [Fact]
     public void SettingsPage_SelectsShouldUseTheFullWidth()
     {
         var page = RenderPage();
@@ -242,6 +275,8 @@ public sealed class SettingsPageTests : ApolloTestContext
         page.WaitForComponent<MudSelect<Guid?>>().Instance.FullWidth.ShouldBeTrue();
         page.FindComponent<MudSelect<Guid>>().Instance.FullWidth.ShouldBeTrue();
     }
+
+    private List<string?> Snackbars() => [.. Services.GetRequiredService<ISnackbar>().ShownSnackbars.Select(s => s.Message)];
 
     private IRenderedComponent<Settings> RenderPage()
     {

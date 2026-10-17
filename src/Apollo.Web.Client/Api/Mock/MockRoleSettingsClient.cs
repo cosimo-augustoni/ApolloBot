@@ -45,6 +45,12 @@ public sealed class MockRoleSettingsClient(TimeProvider time) : IRoleSettingsCli
         new(new DateTimeOffset(2026, 9, 1, 16, 2, 0, TimeSpan.Zero), "Anna", RoleSettingKind.MemberAccess, RoleSettingChangeAction.Added, "Mitglied"),
     ];
 
+    /// <summary>
+    /// When set, the next write finds another admin's save first: it applies this change to <see cref="Settings"/>
+    /// and throws <see cref="RoleSettingsConflictException"/>, as the host answers 409.
+    /// </summary>
+    public Func<RoleSettingsDto, RoleSettingsDto>? ConflictingSave { get; set; }
+
     public Task<IReadOnlyList<string>> GetPlatformsAsync(CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<string>>([.. Platforms]);
 
@@ -69,6 +75,7 @@ public sealed class MockRoleSettingsClient(TimeProvider time) : IRoleSettingsCli
 
     public Task SetTrackingRoleAsync(string platform, Guid? roleId, CancellationToken cancellationToken)
     {
+        ThrowIfConflicting();
         var changes = new List<RoleSettingChangeDto>();
         if (Settings.TrackingRoleId is { } current && current != roleId)
         {
@@ -92,6 +99,7 @@ public sealed class MockRoleSettingsClient(TimeProvider time) : IRoleSettingsCli
 
     public Task SetMemberAccessRolesAsync(string platform, IReadOnlyCollection<Guid> roleIds, CancellationToken cancellationToken)
     {
+        ThrowIfConflicting();
         var current = Settings.MemberAccessRoleIds;
         AddHistory(
         [
@@ -100,6 +108,16 @@ public sealed class MockRoleSettingsClient(TimeProvider time) : IRoleSettingsCli
         ]);
         Settings = Settings with { MemberAccessRoleIds = [.. roleIds.Distinct()] };
         return Task.CompletedTask;
+    }
+
+    private void ThrowIfConflicting()
+    {
+        if (ConflictingSave is { } conflictingSave)
+        {
+            ConflictingSave = null;
+            Settings = conflictingSave(Settings);
+            throw new RoleSettingsConflictException("Another admin saved at the same time (mock).");
+        }
     }
 
     private SettingsRoleDto Role(Guid id) => Settings.Roles.Single(r => r.Id == id);
