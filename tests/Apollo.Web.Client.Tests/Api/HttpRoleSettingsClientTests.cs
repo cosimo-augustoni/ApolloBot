@@ -115,6 +115,19 @@ public sealed class HttpRoleSettingsClientTests
             () => new HttpRoleSettingsClient(handler.CreateClient()).SetMemberAccessRolesAsync("Discord", [_statistik], Ct));
     }
 
+    [Theory]
+    [InlineData("tracking-role")]
+    [InlineData("member-access-roles")]
+    public async Task Set_WhenAnotherAdminSavedAtTheSameTime_ShouldThrowRoleSettingsConflict(string setting)
+    {
+        var handler = new StubHttpMessageHandler(_antiforgery).Respond($"/api/admin/settings/Discord/{setting}", HttpStatusCode.Conflict);
+        var client = new HttpRoleSettingsClient(handler.CreateClient());
+
+        await Should.ThrowAsync<RoleSettingsConflictException>(() => setting == "tracking-role"
+            ? client.SetTrackingRoleAsync("Discord", _statistik, Ct)
+            : client.SetMemberAccessRolesAsync("Discord", [_statistik], Ct));
+    }
+
     [Fact]
     public async Task SetTrackingRole_WhenTheHostAnswers400WithoutAValidationProblem_ShouldFailAsAnHttpError()
     {

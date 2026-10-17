@@ -289,6 +289,10 @@
     <value>Eine Rolle gibt es nicht mehr. Die Einstellungen wurden neu geladen, es wurde nichts geändert.</value>
     <comment>Settings page: snackbar when the host rejects a role (deleted meanwhile)</comment>
   </data>
+  <data name="Settings_Conflict" xml:space="preserve">
+    <value>Die Einstellungen wurden inzwischen geändert. Sie wurden neu geladen.</value>
+    <comment>Settings page: snackbar when another admin saved at the same time (409); nothing of this save was kept</comment>
+  </data>
   <data name="Settings_Confirm_Title" xml:space="preserve">
     <value>Tracking-Rolle ändern?</value>
     <comment>Settings page: confirmation title when setting or changing the tracking role</comment>

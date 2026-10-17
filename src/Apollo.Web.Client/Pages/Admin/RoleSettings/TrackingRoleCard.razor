@@ -111,6 +111,10 @@
             await Client.SetTrackingRoleAsync(Platform, _selected, CancellationToken.None);
             Snackbar.Add(L["Settings_Saved"], Severity.Success);
         }
+        catch (RoleSettingsConflictException)
+        {
+            Snackbar.Add(L["Settings_Conflict"], Severity.Warning);
+        }
         catch (RoleSettingsRejectedException)
         {
             Snackbar.Add(L["Settings_Rejected"], Severity.Error);
