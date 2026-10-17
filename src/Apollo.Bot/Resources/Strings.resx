@@ -90,7 +90,7 @@
     <comment>/apollo tracking status: rows in presence_activity_sessions</comment>
   </data>
   <data name="Status_MembershipEvents" xml:space="preserve">
-    <value>- Beitritte und Austritte: {0}</value>
+    <value>- Beitritte, Austritte und Banns: {0}</value>
     <comment>/apollo tracking status: rows in membership_events (join, leave, ban, unban)</comment>
   </data>
   <data name="Status_NoData" xml:space="preserve">

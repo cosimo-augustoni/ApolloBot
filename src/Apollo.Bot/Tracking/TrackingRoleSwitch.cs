@@ -22,14 +22,16 @@ internal sealed partial class TrackingRoleSwitch(
     /// <param name="cancellationToken">Cancels the platform calls.</param>
     public async Task<CommandReply> SwitchAsync(CommandInvocation invocation, bool on, CancellationToken cancellationToken)
     {
-        if (gate.TrackingRole is not { } role)
+        // One view for the whole command, so the role and whether the member holds it come from the same snapshot.
+        var view = gate.Current;
+        if (view.TrackingRole is not { } role)
         {
             return Reply("Tracking_NotSetUp");
         }
 
         // With a tracking role, the gate tracks exactly its holders. Its snapshot comes from the full member sync, while
         // the platform's member reads may come from an incomplete gateway cache.
-        var holdsRole = gate.TryGetTrackedUserId(invocation.Member) is not null;
+        var holdsRole = view.TryGetTrackedUserId(invocation.Member) is not null;
         if (holdsRole == on)
         {
             return Reply(on ? "Tracking_AlreadyOn" : "Tracking_AlreadyOff");

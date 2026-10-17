@@ -37,7 +37,7 @@ public sealed class TrackingStatusCommandHandlerTests(TimescaleFixture fixture) 
             - Reaktionen: 1
             - Voice-Sitzungen: 3
             - Aktivitäten (z. B. Spiele): 1
-            - Beitritte und Austritte: 0
+            - Beitritte, Austritte und Banns: 0
             """.ReplaceLineEndings("\n"));
         reply.Text.ShouldEndWith($"{PublicWebUrl}/datenschutz");
     }
@@ -60,7 +60,7 @@ public sealed class TrackingStatusCommandHandlerTests(TimescaleFixture fixture) 
             - Reaktionen: 0
             - Voice-Sitzungen: 0
             - Aktivitäten (z. B. Spiele): 0
-            - Beitritte und Austritte: 2
+            - Beitritte, Austritte und Banns: 2
             """.ReplaceLineEndings("\n"));
     }
 
