@@ -4,6 +4,7 @@ using Apollo.Data.Identity;
 using Apollo.Data.Messages;
 using Apollo.Data.Status;
 using Apollo.Data.Tracking;
+using Apollo.Data.Voice;
 using CmdScale.EntityFrameworkCore.TimescaleDB;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -53,6 +54,10 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
 
     public DbSet<MessageMention> MessageMentions => Set<MessageMention>();
 
+    public DbSet<VoiceSession> VoiceSessions => Set<VoiceSession>();
+
+    public DbSet<VoiceStateSegment> VoiceStateSegments => Set<VoiceStateSegment>();
+
     /// <summary>The web host's data protection keys (<c>PersistKeysToDbContext</c>).</summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
@@ -75,6 +80,7 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
         StatusModel.Configure(modelBuilder);
         TrackingModel.Configure(modelBuilder);
         MessageModel.Configure(modelBuilder);
+        VoiceModel.Configure(modelBuilder);
         DataProtectionModel.Configure(modelBuilder);
     }
 }
