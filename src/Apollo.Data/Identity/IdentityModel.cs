@@ -52,11 +52,17 @@ internal static class IdentityModel
             entity.Property(x => x.Color).HasColumnName("color");
             entity.Property(x => x.Position).HasColumnName("position");
             entity.Property(x => x.IsAdministrator).HasColumnName("is_administrator");
+            entity.Property(x => x.ManagesRoles).HasColumnName("manages_roles");
             entity.Property(x => x.DeletedAt).HasColumnName("deleted_at");
             entity.HasOne<Guild>().WithMany().HasForeignKey(x => x.GuildId).OnDelete(DeleteBehavior.Restrict);
         });
 
         ConfigureMapping<GuildPlatformId, Guild>(modelBuilder, "guild_platform_ids", nameof(GuildPlatformId.GuildId), "guild_id");
+        modelBuilder.Entity<GuildPlatformId>(entity =>
+        {
+            entity.Property(x => x.BotUserId).HasColumnName("bot_user_id");
+            entity.HasOne<User>().WithMany().HasForeignKey(x => x.BotUserId).OnDelete(DeleteBehavior.Restrict);
+        });
         ConfigureMapping<UserPlatformId, User>(modelBuilder, "user_platform_ids", nameof(UserPlatformId.UserId), "user_id");
         ConfigureMapping<ChannelPlatformId, Channel>(modelBuilder, "channel_platform_ids", nameof(ChannelPlatformId.ChannelId), "channel_id");
         ConfigureMapping<RolePlatformId, Role>(modelBuilder, "role_platform_ids", nameof(RolePlatformId.RoleId), "role_id");

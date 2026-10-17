@@ -170,11 +170,17 @@ namespace Apollo.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("external_id");
 
+                    b.Property<Guid?>("BotUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("bot_user_id");
+
                     b.Property<Guid>("GuildId")
                         .HasColumnType("uuid")
                         .HasColumnName("guild_id");
 
                     b.HasKey("Platform", "ExternalId");
+
+                    b.HasIndex("BotUserId");
 
                     b.HasIndex("GuildId");
 
@@ -202,6 +208,10 @@ namespace Apollo.Data.Migrations
                     b.Property<bool>("IsAdministrator")
                         .HasColumnType("boolean")
                         .HasColumnName("is_administrator");
+
+                    b.Property<bool>("ManagesRoles")
+                        .HasColumnType("boolean")
+                        .HasColumnName("manages_roles");
 
                     b.Property<string>("Name")
                         .HasColumnType("text")
@@ -973,6 +983,11 @@ namespace Apollo.Data.Migrations
 
             modelBuilder.Entity("Apollo.Data.Identity.GuildPlatformId", b =>
                 {
+                    b.HasOne("Apollo.Data.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("BotUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Apollo.Data.Identity.Guild", null)
                         .WithMany()
                         .HasForeignKey("GuildId")
