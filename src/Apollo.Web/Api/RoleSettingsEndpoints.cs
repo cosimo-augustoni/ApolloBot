@@ -170,8 +170,15 @@ public static class RoleSettingsEndpoints
         RoleSettingsQuery query,
         CancellationToken cancellationToken)
     {
-        if (!Enum.TryParse<PlatformKind>(platform, ignoreCase: true, out var kind)
-            || providers.FirstOrDefault(p => p.Platform == kind) is not { } provider
+        // Names only: Enum.TryParse would also take "0" or "1" for a platform.
+        var name = Enum.GetNames<PlatformKind>().FirstOrDefault(n => string.Equals(n, platform, StringComparison.OrdinalIgnoreCase));
+        if (name is null)
+        {
+            return null;
+        }
+
+        var kind = Enum.Parse<PlatformKind>(name);
+        if (providers.FirstOrDefault(p => p.Platform == kind) is not { } provider
             || await query.FindSyncedGuildAsync(provider.Guild, cancellationToken) is not { } guildId)
         {
             return null;

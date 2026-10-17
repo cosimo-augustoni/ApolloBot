@@ -130,6 +130,8 @@ public sealed class RoleSettingsEndpointsTests(TimescaleFixture fixture) : Times
     [Theory]
     [InlineData("/api/admin/settings/Fluxer")]
     [InlineData("/api/admin/settings/Teams")]
+    [InlineData("/api/admin/settings/0")]
+    [InlineData("/api/admin/settings/1")]
     public async Task GetSettings_WhenThePlatformHasNoSyncedGuild_ShouldReturn404(string path)
     {
         await SeedAsync();
