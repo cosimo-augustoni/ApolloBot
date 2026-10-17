@@ -46,6 +46,7 @@ public static class DiscordPlatformServiceCollectionExtensions
         services.AddGatewayHandler(serviceProvider => serviceProvider.GetRequiredService<DiscordMemberDownloader>());
         services.AddGatewayHandler<DiscordGuildHandler>(ServiceLifetime.Singleton);
         services.AddGatewayHandler<DiscordMemberHandler>(ServiceLifetime.Singleton);
+        services.AddGatewayHandler<DiscordBanHandler>(ServiceLifetime.Singleton);
         services.AddGatewayHandler<DiscordRoleHandler>(ServiceLifetime.Singleton);
         services.AddGatewayHandler<DiscordChannelHandler>(ServiceLifetime.Singleton);
         services.AddGatewayHandler<DiscordMessageHandler>(ServiceLifetime.Singleton);
