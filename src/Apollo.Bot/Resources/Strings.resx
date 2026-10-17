@@ -25,4 +25,76 @@
     <value>Datenschutz: {0}</value>
     <comment>Last line of every reply; {0} is the URL of the privacy page</comment>
   </data>
+  <data name="Tracking_NotSetUp" xml:space="preserve">
+    <value>Tracking ist noch nicht eingerichtet.</value>
+    <comment>/apollo tracking on|off while no tracking role is configured (bootstrap, deleted or cleared role), scope §5.4</comment>
+  </data>
+  <data name="Tracking_On" xml:space="preserve">
+    <value>Ab jetzt werden deine Aktivitäten erfasst: Nachrichten-Metadaten, Voice-Zeit, Reaktionen und Spiele. Nachrichteninhalte werden nie gespeichert.</value>
+    <comment>/apollo tracking on: the tracking role was added</comment>
+  </data>
+  <data name="Tracking_AlreadyOn" xml:space="preserve">
+    <value>Die Erfassung ist für dich bereits eingeschaltet.</value>
+    <comment>/apollo tracking on: the member already holds the tracking role</comment>
+  </data>
+  <data name="Tracking_ChangeFailed" xml:space="preserve">
+    <value>Das hat nicht geklappt: Deine Tracking-Rolle konnte nicht geändert werden. Bitte versuche es später noch einmal oder melde dich bei einem Admin.</value>
+    <comment>/apollo tracking on|off: the platform refused the role change (e.g. missing Manage Roles or role hierarchy)</comment>
+  </data>
+  <data name="Tracking_Off" xml:space="preserve">
+    <value>Ab jetzt werden keine Daten mehr erfasst. Bereits erfasste Daten bleiben gespeichert. Mit `/apollo privacy delete` kannst du sie endgültig löschen.</value>
+    <comment>/apollo tracking off: the tracking role was removed. Exactly the text of scope §5.4</comment>
+  </data>
+  <data name="Tracking_AlreadyOff" xml:space="preserve">
+    <value>Für dich werden keine Daten erfasst. Mit `/apollo tracking on` kannst du die Erfassung einschalten.</value>
+    <comment>/apollo tracking off: the member does not hold the tracking role</comment>
+  </data>
+  <data name="Status_TrackedSince" xml:space="preserve">
+    <value>Für dich werden seit dem {0} Daten erfasst.</value>
+    <comment>/apollo tracking status, tracked member; {0} is the start of the open tracking period (date in Zurich)</comment>
+  </data>
+  <data name="Status_Tracked" xml:space="preserve">
+    <value>Für dich werden Daten erfasst.</value>
+    <comment>/apollo tracking status, tracked member without an open tracking period (only in a race with the gate)</comment>
+  </data>
+  <data name="Status_NotTracked" xml:space="preserve">
+    <value>Für dich werden keine Daten erfasst.</value>
+    <comment>/apollo tracking status, member who is not tracked</comment>
+  </data>
+  <data name="Status_TurnOnHint" xml:space="preserve">
+    <value>Mit `/apollo tracking on` kannst du die Erfassung einschalten.</value>
+    <comment>/apollo tracking status, member who is not tracked while a tracking role is set up</comment>
+  </data>
+  <data name="Status_NotSetUpBootstrap" xml:space="preserve">
+    <value>Tracking ist noch nicht eingerichtet: Bis eine Tracking-Rolle festgelegt ist, werden nur Admins erfasst.</value>
+    <comment>/apollo tracking status in bootstrap mode (scope §5.1.1). TEMPORARY: removed by #62</comment>
+  </data>
+  <data name="Status_DataHeading" xml:space="preserve">
+    <value>Gespeicherte Einträge von dir:</value>
+    <comment>/apollo tracking status: heading of the counts per event table, from all tracking periods</comment>
+  </data>
+  <data name="Status_Messages" xml:space="preserve">
+    <value>- Nachrichten: {0}</value>
+    <comment>/apollo tracking status: rows in message_events (sent, edited, deleted)</comment>
+  </data>
+  <data name="Status_Reactions" xml:space="preserve">
+    <value>- Reaktionen: {0}</value>
+    <comment>/apollo tracking status: rows in reaction_events (added, removed)</comment>
+  </data>
+  <data name="Status_VoiceSessions" xml:space="preserve">
+    <value>- Voice-Sitzungen: {0}</value>
+    <comment>/apollo tracking status: rows in voice_sessions</comment>
+  </data>
+  <data name="Status_PresenceSessions" xml:space="preserve">
+    <value>- Aktivitäten (z. B. Spiele): {0}</value>
+    <comment>/apollo tracking status: rows in presence_activity_sessions</comment>
+  </data>
+  <data name="Status_MembershipEvents" xml:space="preserve">
+    <value>- Beitritte und Austritte: {0}</value>
+    <comment>/apollo tracking status: rows in membership_events (join, leave, ban, unban)</comment>
+  </data>
+  <data name="Status_NoData" xml:space="preserve">
+    <value>Es sind keine Daten von dir gespeichert.</value>
+    <comment>/apollo tracking status: no rows in any event table</comment>
+  </data>
 </root>
