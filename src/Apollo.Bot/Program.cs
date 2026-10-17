@@ -18,6 +18,7 @@ builder.Services.AddDiscordPlatform();
 builder.Services.AddCommandRouting();
 builder.Services.AddGuildStateSync();
 builder.Services.AddTrackingGate();
+builder.Services.AddTrackingCommands();
 builder.Services.AddMessageRecording();
 builder.Services.AddVoiceRecording();
 builder.Services.AddPresenceRecording();
