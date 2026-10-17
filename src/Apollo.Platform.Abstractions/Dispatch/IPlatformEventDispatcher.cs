@@ -9,7 +9,8 @@ namespace Apollo.Platform.Abstractions.Dispatch;
 public interface IPlatformEventDispatcher
 {
     /// <summary>
-    /// Runs the handlers one after another in one new DI scope per event. A failing handler is logged and does not
+    /// Runs the handlers one after another, each in a new DI scope of its own, so a failing handler's scoped state
+    /// (e.g. a <c>DbContext</c> with pending changes) never reaches the next one. A failing handler is logged and does not
     /// stop the others; cancellation is not swallowed.
     /// </summary>
     Task DispatchAsync(PlatformEvent platformEvent, CancellationToken cancellationToken);

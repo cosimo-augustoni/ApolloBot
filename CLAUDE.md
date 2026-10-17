@@ -135,7 +135,7 @@ dotnet ef migrations add <DescriptiveName> --project src/Apollo.Data --startup-p
 3. Mapping from the NetCord event in `Apollo.Platform.Discord`, plus a mapping test in `Apollo.Platform.Discord.Tests`.
    The adapter delivers events with `IPlatformEventDispatcher.DispatchAsync`.
 4. Handler in `Apollo.Bot`: implement `IPlatformEventHandler<TEvent>`, register it with
-   `services.AddPlatformEventHandler<TEvent, THandler>()` (scoped, one DI scope per event), apply the tracking gate
+   `services.AddPlatformEventHandler<TEvent, THandler>()` (scoped, one DI scope per handler and event, so handlers never share a `DbContext`), apply the tracking gate
    (`ITrackingGate.IsTracked`; references to other users via `TryGetTrackedUserId`, which is `null` for untracked users).
    Test it against `FakeChatPlatform`: seed state with `With*`, deliver with `RaiseAsync`, assert `RoleChanges`.
    Turn every `PlatformRef` into an internal ID with `IPlatformIdResolver` (`Apollo.Data.Identity`): `Resolve*Async`
