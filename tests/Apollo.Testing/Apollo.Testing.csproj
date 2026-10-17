@@ -8,6 +8,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- TimescaleFixture.CreateApplicationBuilder: the context through the runtime registration (#77). -->
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
     <PackageReference Include="Npgsql" />
     <PackageReference Include="Respawn" />

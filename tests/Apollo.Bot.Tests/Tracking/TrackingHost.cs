@@ -10,7 +10,6 @@ using Apollo.Platform.Abstractions.Events;
 using Apollo.Testing;
 using Apollo.Testing.Data;
 using Apollo.Testing.Platform;
-using CmdScale.EntityFrameworkCore.TimescaleDB;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,7 +20,8 @@ using Microsoft.Extensions.Time.Testing;
 namespace Apollo.Bot.Tests.Tracking;
 
 /// <summary>
-/// The guild state sync and the tracking gate as the bot wires them, on the shared Timescale database and behind a
+/// The guild state sync and the tracking gate as the bot wires them, on the shared Timescale database with the runtime
+/// context registration (<see cref="TimescaleFixture.CreateApplicationBuilder"/>) and behind a
 /// <see cref="FakeChatPlatform"/>, with a <see cref="RecordingLifecycleHandler"/> (registered after any <c>configure</c>
 /// registrations) and fake logging. An optional <c>interceptor</c> joins every context. The reloader runs only after
 /// <see cref="StartReloaderAsync"/>.
@@ -33,20 +33,15 @@ internal sealed class TrackingHost : IAsyncDisposable
 
     public TrackingHost(TimescaleFixture fixture, Action<IServiceCollection>? configure = null, IInterceptor? interceptor = null)
     {
-        var services = new ServiceCollection();
+        var services = fixture.CreateApplicationBuilder().Services;
         services.AddFakeLogging();
         services.AddSingleton<TimeProvider>(Time);
         services.AddSingleton<IHostApplicationLifetime>(Lifetime);
-        services.AddDbContext<ApolloDbContext>(options =>
+        if (interceptor is not null)
         {
-            options.UseNpgsql(fixture.ConnectionString).UseTimescaleDb();
-            if (interceptor is not null)
-            {
-                options.AddInterceptors(interceptor);
-            }
-        });
-        services.AddSingleton<PlatformIdCache>();
-        services.AddScoped<IPlatformIdResolver, PlatformIdResolver>();
+            services.ConfigureDbContext<ApolloDbContext>(options => options.AddInterceptors(interceptor));
+        }
+
         services.AddPlatformEventDispatcher();
         services.AddSingleton(serviceProvider => new FakeChatPlatform(
             serviceProvider.GetRequiredService<IPlatformEventDispatcher>(),

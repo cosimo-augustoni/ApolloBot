@@ -7,8 +7,6 @@ using Apollo.Platform.Abstractions.Events;
 using Apollo.Testing;
 using Apollo.Testing.Data;
 using Apollo.Testing.Platform;
-using CmdScale.EntityFrameworkCore.TimescaleDB;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Time.Testing;
@@ -17,8 +15,9 @@ namespace Apollo.Bot.Tests.GuildState;
 
 /// <summary>
 /// The guild state sync as the bot wires it (<see cref="GuildStateServiceCollectionExtensions.AddGuildStateSync"/>),
-/// on the shared Timescale database and behind a <see cref="FakeChatPlatform"/>. Each host has its own
-/// <see cref="PlatformIdCache"/>, because Respawn empties the tables between tests.
+/// on the shared Timescale database with the runtime context registration
+/// (<see cref="TimescaleFixture.CreateApplicationBuilder"/>) and behind a <see cref="FakeChatPlatform"/>. Each host has
+/// its own <see cref="PlatformIdCache"/>, because Respawn empties the tables between tests.
 /// </summary>
 internal sealed class SyncHost : IAsyncDisposable
 {
@@ -26,13 +25,9 @@ internal sealed class SyncHost : IAsyncDisposable
 
     public SyncHost(TimescaleFixture fixture)
     {
-        var services = new ServiceCollection();
-        services.AddLogging();
+        var services = fixture.CreateApplicationBuilder().Services;
         services.AddSingleton<TimeProvider>(Time);
         services.AddSingleton<IHostApplicationLifetime>(Lifetime);
-        services.AddDbContext<ApolloDbContext>(options => options.UseNpgsql(fixture.ConnectionString).UseTimescaleDb());
-        services.AddSingleton<PlatformIdCache>();
-        services.AddScoped<IPlatformIdResolver, PlatformIdResolver>();
         services.AddPlatformEventDispatcher();
         services.AddSingleton(serviceProvider => new FakeChatPlatform(
             serviceProvider.GetRequiredService<IPlatformEventDispatcher>(),

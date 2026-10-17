@@ -1,5 +1,7 @@
 using Apollo.AppHost;
 using Apollo.Data;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
 using Respawn;
@@ -54,6 +56,24 @@ public sealed class TimescaleFixture : IAsyncLifetime
     /// A context on the migrated database. The caller disposes it.
     /// </summary>
     public ApolloDbContext CreateDbContext() => new(ApolloDbContext.CreateOptions(ConnectionString));
+
+    /// <summary>
+    /// An application builder with <see cref="ApolloDbContext"/> registered on the migrated database exactly as the
+    /// services register it at runtime (<see cref="ApolloDataExtensions.AddApolloDbContext{TBuilder}"/>: Aspire's Npgsql
+    /// integration with its settings and context pooling, plus the ID resolver). Use it for code whose behaviour depends
+    /// on that registration, such as explicit transactions; <see cref="CreateDbContext"/> stays the choice for plain DB
+    /// tests. Register test doubles (e.g. a <see cref="TimeProvider"/>) on <see cref="IHostApplicationBuilder.Services"/>.
+    /// </summary>
+    public HostApplicationBuilder CreateApplicationBuilder()
+    {
+        var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings { EnvironmentName = Environments.Production });
+        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            [$"ConnectionStrings:{ApolloDbContext.ConnectionName}"] = ConnectionString,
+        });
+        builder.AddApolloDbContext();
+        return builder;
+    }
 
     /// <summary>
     /// A connection string for a database on the same server that does not exist yet, as the MigrationService finds it
