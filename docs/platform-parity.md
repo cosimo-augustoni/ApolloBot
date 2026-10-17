@@ -123,7 +123,10 @@ What the findings mean for the platform abstraction and the recorders. Each item
   message. Handlers must not depend on a reply being attached to the invocation.
 - **#20 / #22: buttons need a text fallback.** `ReplyButton` cannot render on Fluxer. Give each button a text
   equivalent (a confirm sub-command with a one-time code) so `IButtonHandler` can be reached from both a button click
-  and a text command. `/apollo privacy delete` (#22) uses this for its confirmation.
+  and a text command. `/apollo privacy delete` (#22) uses this for its confirmation. Built in #22: the deletion lives in
+  `IUserDataEraser` (`Apollo.Bot/Privacy`), which the button handler only calls, so a Fluxer text confirm reaches the
+  same service. The confirm button id has no one-time code yet (`privacy-delete:<owner>`); M6 adds one with the text
+  confirm.
 - **#20: deferral is Discord-only.** Keep it inside the Discord adapter (3 s rule); the neutral model needs no
   "deferred" concept.
 - **#20: registration is Discord-only.** `CommandDefinition` is still useful on Fluxer for help text and parsing, but
