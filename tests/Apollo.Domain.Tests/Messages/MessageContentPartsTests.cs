@@ -76,6 +76,55 @@ public sealed class MessageContentPartsTests
         MessageContentParts.From("<#987>").ShouldBe(MessageContentParts.Link);
     }
 
+    [Theory]
+    [InlineData("||https://example.com||", MessageContentParts.Link)]
+    [InlineData("(https://example.com)", MessageContentParts.Link)]
+    [InlineData("[https://example.com]", MessageContentParts.Link)]
+    [InlineData("**<@1>**", MessageContentParts.Mention)]
+    [InlineData("> __~~*`<#2>`*~~__", MessageContentParts.Link)]
+    public void From_WhenOnlyFormattingSurroundsALinkOrMention_ShouldNotBeText(string content, MessageContentParts expected)
+    {
+        MessageContentParts.From(content).ShouldBe(expected);
+    }
+
+    [Theory]
+    [InlineData("**https://example.com**ok")]
+    [InlineData("||https://example.com||ok")]
+    [InlineData("(https://example.com)ok")]
+    public void From_WhenTextFollowsFormattingAfterALink_ShouldEndTheLinkBeforeTheFormatting(string content)
+    {
+        var metadata = MessageMetadata.From(content, attachmentCount: 0, embedCount: 0);
+
+        metadata.ContentParts.ShouldBe(MessageContentParts.Text | MessageContentParts.Link);
+        metadata.WordCount.ShouldBe(1);
+    }
+
+    [Fact]
+    public void From_WhenALinkContainsUnderscoresOrBrackets_ShouldKeepThemInTheLink()
+    {
+        MessageContentParts.From("https://en.wikipedia.org/wiki/Apollo_(program)").ShouldBe(MessageContentParts.Link);
+    }
+
+    [Theory]
+    [InlineData("x@here.com")]
+    [InlineData("@HEREford")]
+    [InlineData("@hereford")]
+    [InlineData("@Everyone")]
+    [InlineData("me@everyone.org")]
+    public void From_WhenEveryoneOrHereIsNotACaseSensitiveWholeWord_ShouldBeText(string content)
+    {
+        MessageContentParts.From(content).ShouldBe(MessageContentParts.Text);
+    }
+
+    [Theory]
+    [InlineData("**@here**", MessageContentParts.Mention)]
+    [InlineData("@here!", MessageContentParts.Mention | MessageContentParts.Text)]
+    [InlineData("hey @everyone", MessageContentParts.Mention | MessageContentParts.Text)]
+    public void From_WhenEveryoneOrHereIsAWholeWord_ShouldBeAMention(string content, MessageContentParts expected)
+    {
+        MessageContentParts.From(content).ShouldBe(expected);
+    }
+
     [Fact]
     public void From_WhenMessageIsEmpty_ShouldBeNone()
     {

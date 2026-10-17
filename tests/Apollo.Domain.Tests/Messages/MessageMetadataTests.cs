@@ -19,6 +19,20 @@ public sealed class MessageMetadataTests
     }
 
     [Theory]
+    [InlineData("<:apollo:112233445566778899>", 1)]
+    [InlineData("<a:dance:112233445566778899>", 1)]
+    [InlineData("hi <@123456789012345678>", 4)]
+    [InlineData("hi <@!123456789012345678>", 4)]
+    [InlineData("<@&123456789012345678>", 1)]
+    [InlineData("see <#123456789012345678>", 5)]
+    [InlineData("https://example.com", 19)]
+    [InlineData("@here", 5)]
+    public void From_ShouldCountCustomEmojiAndMentionsAsOneCharacterAndLinksInFull(string content, int expected)
+    {
+        MessageMetadata.From(content, attachmentCount: 0, embedCount: 0).Length.ShouldBe(expected);
+    }
+
+    [Theory]
     [InlineData("hello world", 2)]
     [InlineData("  hello,   big\nworld!  ", 3)]
     [InlineData("hi <@1> look https://example.com 😀 <:apollo:5>", 2)]
