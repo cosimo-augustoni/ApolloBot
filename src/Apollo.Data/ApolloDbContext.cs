@@ -1,6 +1,7 @@
 using Apollo.Data.DataProtection;
 using Apollo.Data.Guilds;
 using Apollo.Data.Identity;
+using Apollo.Data.Membership;
 using Apollo.Data.Messages;
 using Apollo.Data.Reactions;
 using Apollo.Data.Status;
@@ -61,6 +62,8 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
 
     public DbSet<ReactionEvent> ReactionEvents => Set<ReactionEvent>();
 
+    public DbSet<MembershipEvent> MembershipEvents => Set<MembershipEvent>();
+
     /// <summary>The web host's data protection keys (<c>PersistKeysToDbContext</c>).</summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
@@ -85,6 +88,7 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
         MessageModel.Configure(modelBuilder);
         VoiceModel.Configure(modelBuilder);
         ReactionModel.Configure(modelBuilder);
+        MembershipModel.Configure(modelBuilder);
         DataProtectionModel.Configure(modelBuilder);
     }
 }
