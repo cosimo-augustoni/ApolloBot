@@ -3,6 +3,7 @@ using Apollo.Data.Membership;
 using Apollo.Data.Messages;
 using Apollo.Data.Presence;
 using Apollo.Data.Reactions;
+using Apollo.Data.Tracking;
 using Apollo.Data.Voice;
 using Apollo.Domain.Presence;
 using Apollo.Platform.Abstractions;
@@ -20,7 +21,7 @@ namespace Apollo.Web.Tests.Admin;
 
 /// <summary>
 /// The events per hour of the admin bot status page (#31): rows of the raw event tables in the last 24
-/// <c>Europe/Zurich</c> hours, every hour present.
+/// <c>Europe/Zurich</c> hours, every hour present, split by table (#91).
 /// </summary>
 public sealed class BotStatusEventsPerHourTests(TimescaleFixture fixture) : TimescaleTest(fixture)
 {
@@ -49,10 +50,36 @@ public sealed class BotStatusEventsPerHourTests(TimescaleFixture fixture) : Time
 
         status.EventsPerHour.Count.ShouldBe(24);
         status.EventsPerHour.Select(h => h.HourStart).ShouldBe(Enumerable.Range(0, 24).Select(i => _firstHour.AddHours(i)));
-        status.EventsPerHour[^1].ShouldBe(new HourlyEventCountDto(_currentHour, 5));
-        status.EventsPerHour[^2].ShouldBe(new HourlyEventCountDto(_currentHour.AddHours(-1), 1));
-        status.EventsPerHour[0].ShouldBe(new HourlyEventCountDto(_firstHour, 1));
+        status.EventsPerHour[^1].Count.ShouldBe(5);
+        status.EventsPerHour[^2].Count.ShouldBe(1);
+        status.EventsPerHour[0].Count.ShouldBe(1);
         status.EventsPerHour.Skip(1).SkipLast(2).ShouldAllBe(h => h.Count == 0);
+    }
+
+    [Fact]
+    public async Task EventsPerHour_WhenEventsOfSeveralTypesInOneHour_ShouldSplitTheHourByTypeAddingUpToTheTotal()
+    {
+        _time.SetUtcNow(_now);
+        await SeedAsync(EventTable.Message, _currentHour.AddMinutes(1));
+        await SeedAsync(EventTable.Message, _currentHour.AddMinutes(2));
+        await SeedAsync(EventTable.Reaction, _currentHour.AddMinutes(5));
+        await SeedAsync(EventTable.Voice, _currentHour.AddMinutes(15));
+        await SeedAsync(EventTable.Presence, _currentHour.AddMinutes(19));
+        await SeedAsync(EventTable.Membership, _firstHour.AddMinutes(30));
+
+        var status = await QueryAsync();
+
+        status.EventsPerHour[^1].Types.ShouldBe(
+        [
+            new EventTypeCountDto(DataEventType.Message, 2),
+            new EventTypeCountDto(DataEventType.VoiceSession, 1),
+            new EventTypeCountDto(DataEventType.Reaction, 1),
+            new EventTypeCountDto(DataEventType.Membership, 0),
+            new EventTypeCountDto(DataEventType.PresenceActivity, 1),
+        ]);
+        status.EventsPerHour[0].CountOf(DataEventType.Membership).ShouldBe(1);
+        status.EventsPerHour.ShouldAllBe(h => h.Types.Count == 5 && h.Types.Sum(t => t.Count) == h.Count);
+        status.EventsPerHour.Sum(h => h.Count).ShouldBe(6);
     }
 
     [Fact]
@@ -104,7 +131,7 @@ public sealed class BotStatusEventsPerHourTests(TimescaleFixture fixture) : Time
     private async Task<BotStatusDto> QueryAsync()
     {
         await using var db = Fixture.CreateDbContext();
-        var query = new BotStatusQuery(db, [new FakeIdentityProvider()], Options.Create(new BotStatusOptions()), _time);
+        var query = new BotStatusQuery(db, [new FakeIdentityProvider()], new RoleSettingsQuery(db), Options.Create(new BotStatusOptions()), _time);
         return await query.GetAsync(Ct);
     }
 

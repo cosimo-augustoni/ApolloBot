@@ -473,9 +473,53 @@
     <value>Letzte 24 h</value>
     <comment>Bot status page: chart range</comment>
   </data>
-  <data name="BotStatus_EventsSeries" xml:space="preserve">
-    <value>Ereignisse</value>
-    <comment>Bot status page: chart series name</comment>
+  <data name="BotStatus_NoTrackingRole_Title" xml:space="preserve">
+    <value>Keine Tracking-Rolle festgelegt:</value>
+    <comment>Bot status page: info banner while no tracking role is set, bold start</comment>
+  </data>
+  <data name="BotStatus_NoTrackingRole_Text" xml:space="preserve">
+    <value>Es wird niemand erfasst.</value>
+    <comment>Bot status page: info banner while no tracking role is set, after the bold start</comment>
+  </data>
+  <data name="BotStatus_NoTrackingRole_Link" xml:space="preserve">
+    <value>Tracking-Rolle festlegen</value>
+    <comment>Bot status page: info banner link to the settings page</comment>
+  </data>
+  <data name="BotStatus_Offline_LastConnected" xml:space="preserve">
+    <value>Letzte Verbindung um {0}.</value>
+    <comment>Bot status page: disconnected alert; {0} is the time of the latest heartbeat that said connected (with the date if not today)</comment>
+  </data>
+  <data name="BotStatus_LatencyMean" xml:space="preserve">
+    <value>Mittel der letzten 5 min</value>
+    <comment>Bot status page: latency tile subtext; the value is the mean of the last 5 minutes</comment>
+  </data>
+  <data name="BotStatus_LastEvent_InChannel" xml:space="preserve">
+    <value>{0} in #{1}</value>
+    <comment>Bot status page: last event tile subtext; {0} is the event type (e.g. Nachricht), {1} the channel name</comment>
+  </data>
+  <data name="BotStatus_VoiceChannels_One" xml:space="preserve">
+    <value>In 1 Kanal</value>
+    <comment>Bot status page: open voice sessions tile subtext, all in one channel</comment>
+  </data>
+  <data name="BotStatus_VoiceChannels_Many" xml:space="preserve">
+    <value>In {0} Kanälen</value>
+    <comment>Bot status page: open voice sessions tile subtext; {0} is the number of channels (2 or more)</comment>
+  </data>
+  <data name="BotStatus_VoiceSessions_Member" xml:space="preserve">
+    <value>Mitglied</value>
+    <comment>Bot status page: open voice sessions table column</comment>
+  </data>
+  <data name="BotStatus_VoiceSessions_Channel" xml:space="preserve">
+    <value>Kanal</value>
+    <comment>Bot status page: open voice sessions table column</comment>
+  </data>
+  <data name="BotStatus_VoiceSessions_Since" xml:space="preserve">
+    <value>Seit</value>
+    <comment>Bot status page: open voice sessions table column, the start time</comment>
+  </data>
+  <data name="BotStatus_VoiceSessions_Empty" xml:space="preserve">
+    <value>Gerade ist niemand in einem Voice-Kanal.</value>
+    <comment>Bot status page: open voice sessions table without rows</comment>
   </data>
   <data name="Data_Table_Message" xml:space="preserve">
     <value>Nachrichten</value>

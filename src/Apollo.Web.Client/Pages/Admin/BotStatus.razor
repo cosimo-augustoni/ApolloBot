@@ -1,5 +1,6 @@
 @page "/admin"
 @using Apollo.Web.Client.Contracts
+@using Apollo.Web.Client.Pages.Admin.Events
 @using Apollo.Web.Client.Pages.Admin.Status
 @implements IAsyncDisposable
 @inject IBotStatusClient Client
@@ -7,8 +8,9 @@
 @inject IStringLocalizer<Strings> L
 
 @*
-    Bot-Status (#31, scope §7.2): the "data is being collected" proof. The bot writes a heartbeat every 30 s (#24);
-    this page reads the latest one and reloads it every 30 s while it is open.
+    Bot-Status (#31, #91, scope §7.2): the "data is being collected" proof. The bot writes a heartbeat every 30 s (#24);
+    this page reads the latest one with what the database says about the recorded data, and reloads it every 30 s while
+    it is open.
 *@
 <PageTitle>@L["PageTitle", L["Nav_BotStatus"]]</PageTitle>
 
@@ -27,6 +29,14 @@
     @if (_failed)
     {
         <MudAlert Severity="Severity.Error" Class="apollo-bot-load-failed mb-4">@L["BotStatus_LoadFailed"]</MudAlert>
+    }
+
+    @if (_status is { NoTrackingRole: true })
+    {
+        <MudAlert Severity="Severity.Info" Class="apollo-bot-no-tracking-role mb-4">
+            <strong>@L["BotStatus_NoTrackingRole_Title"]</strong> @L["BotStatus_NoTrackingRole_Text"]
+            <MudLink Href="/admin/settings">@L["BotStatus_NoTrackingRole_Link"]</MudLink>
+        </MudAlert>
     }
 
     @if (_status is null)
@@ -55,6 +65,10 @@
         {
             <MudAlert Severity="Severity.Error" Class="apollo-bot-offline mb-4">
                 <strong>@L["BotStatus_Offline_Title"]</strong>
+                @if (_status.LastConnectedAt is { } lastConnectedAt)
+                {
+                    <div>@L["BotStatus_Offline_LastConnected", UiTime.FormatSince(lastConnectedAt, _status.CheckedAt)]</div>
+                }
                 <div>@L["BotStatus_Offline_Text"]</div>
             </MudAlert>
         }
@@ -69,12 +83,13 @@
                 </StatTile>
             </MudItem>
             <MudItem xs="12" sm="6" md="3">
-                <StatTile Label="@L["BotStatus_Latency"]" Icon="@Icons.Material.Outlined.Speed" Value="@_status.GatewayLatencyMs" Unit="@L["BotStatus_LatencyUnit"]" />
+                <StatTile Label="@L["BotStatus_Latency"]" Icon="@Icons.Material.Outlined.Speed" Value="@_status.GatewayLatencyMeanMs" Unit="@L["BotStatus_LatencyUnit"]"
+                          SubText="@L["BotStatus_LatencyMean"]" />
             </MudItem>
             <MudItem xs="12" sm="6" md="3">
                 @if (_status.LastEventAt is { } lastEventAt)
                 {
-                    <StatTile Label="@L["BotStatus_LastEvent"]" Icon="@Icons.Material.Outlined.Bolt" SubText="@UiTime.FormatSince(lastEventAt, _status.CheckedAt)">
+                    <StatTile Label="@L["BotStatus_LastEvent"]" Icon="@Icons.Material.Outlined.Bolt" SubText="@LastEventText(lastEventAt)">
                         <ValueContent>@L.Ago(lastEventAt, _status.CheckedAt)</ValueContent>
                     </StatTile>
                 }
@@ -84,9 +99,10 @@
                 }
             </MudItem>
             <MudItem xs="12" sm="6" md="3">
-                <StatTile Label="@L["BotStatus_OpenVoiceSessions"]" Icon="@Icons.Material.Outlined.Headset" Value="@_status.OpenVoiceSessions" />
+                <StatTile Label="@L["BotStatus_OpenVoiceSessions"]" Icon="@Icons.Material.Outlined.Headset" Value="@_status.OpenVoiceSessions.Count"
+                          SubText="@VoiceChannelsText" />
             </MudItem>
-            <MudItem xs="12">
+            <MudItem xs="12" md="8">
                 <SectionCard Title="@L["BotStatus_EventsPerHour"]">
                     <Action>
                         <MudText Typo="Typo.body2" Class="mud-text-secondary">@L["BotStatus_Last24Hours"]</MudText>
@@ -94,6 +110,27 @@
                     <ChildContent>
                         <EventsPerHourChart Hours="_status.EventsPerHour" />
                     </ChildContent>
+                </SectionCard>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <SectionCard Title="@L["BotStatus_OpenVoiceSessions"]">
+                    @* Stacks into labelled rows below 600px, so nothing scrolls sideways at 360px. *@
+                    <MudTable T="OpenVoiceSessionDto" Items="_status.OpenVoiceSessions" Class="apollo-bot-voice-sessions" Dense="true" Elevation="0"
+                              Breakpoint="Breakpoint.Xs" RowClass="apollo-bot-voice-session">
+                        <HeaderContent>
+                            <MudTh>@L["BotStatus_VoiceSessions_Member"]</MudTh>
+                            <MudTh>@L["BotStatus_VoiceSessions_Channel"]</MudTh>
+                            <MudTh>@L["BotStatus_VoiceSessions_Since"]</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="@L["BotStatus_VoiceSessions_Member"]">@(context.MemberName ?? UiCulture.Placeholder)</MudTd>
+                            <MudTd DataLabel="@L["BotStatus_VoiceSessions_Channel"]">@(context.ChannelName ?? UiCulture.Placeholder)</MudTd>
+                            <MudTd DataLabel="@L["BotStatus_VoiceSessions_Since"]" Class="apollo-numeric">@UiTime.FormatSince(context.Since, _status.CheckedAt)</MudTd>
+                        </RowTemplate>
+                        <NoRecordsContent>
+                            <MudText Typo="Typo.body2" Class="mud-text-secondary">@L["BotStatus_VoiceSessions_Empty"]</MudText>
+                        </NoRecordsContent>
+                    </MudTable>
                 </SectionCard>
             </MudItem>
         </MudGrid>
@@ -177,6 +214,25 @@
             _loadsRunning--;
         }
     }
+
+    /// <summary>
+    /// What the newest recorded row was, e.g. "Nachricht in #allgemein"; before anything is recorded, when the bot last
+    /// received an event.
+    /// </summary>
+    private string LastEventText(DateTimeOffset lastEventAt) => _status!.LastRecordedEvent switch
+    {
+        { ChannelName: { } channel } recorded => L["BotStatus_LastEvent_InChannel", DataEventText.TypeName(L, recorded.Type), channel],
+        { } recorded => DataEventText.TypeName(L, recorded.Type),
+        null => UiTime.FormatSince(lastEventAt, _status.CheckedAt),
+    };
+
+    /// <summary>"In 2 Kanälen"; no subtext while nobody is in voice.</summary>
+    private string? VoiceChannelsText => _status!.OpenVoiceSessions.Select(s => s.ChannelId).Distinct().Count() switch
+    {
+        0 => null,
+        1 => L["BotStatus_VoiceChannels_One"].Value,
+        var channels => L["BotStatus_VoiceChannels_Many", channels].Value,
+    };
 
     /// <summary>While the heartbeat is stale, the last reported state is only a guess.</summary>
     private string ConnectionText => (_status!.IsStale, _status.Connected) switch

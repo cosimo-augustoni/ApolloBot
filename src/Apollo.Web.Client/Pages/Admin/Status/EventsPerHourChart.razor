@@ -1,11 +1,15 @@
 @using ApexCharts
 @using Apollo.Web.Client.Contracts
+@using Apollo.Web.Client.Pages.Admin.Events
 @inject IStringLocalizer<Strings> L
 
-@* Kept apart from BotStatus.razor: ApexCharts and MudBlazor both define Color and Size. *@
+@* Kept apart from BotStatus.razor: ApexCharts and MudBlazor both define Color and Size. One bar per Zurich hour, stacked by table. *@
 <ApexChart @ref="_chart" TItem="HourlyEventCountDto" Options="_options" Height="@ChartHeight">
-    <ApexPointSeries TItem="HourlyEventCountDto" Items="Hours" Name="@L["BotStatus_EventsSeries"]" SeriesType="SeriesType.Bar"
-                     XValue="h => HourLabel(h.HourStart)" YValue="h => h.Count" />
+    @foreach (var type in Types)
+    {
+        <ApexPointSeries TItem="HourlyEventCountDto" Items="Hours" Name="@DataEventText.TableLabel(L, type)" SeriesType="SeriesType.Bar"
+                         XValue="h => HourLabel(h.HourStart)" YValue="h => h.CountOf(type)" />
+    }
 </ApexChart>
 
 @code {
@@ -19,8 +23,12 @@
     [Parameter, EditorRequired]
     public IReadOnlyList<HourlyEventCountDto> Hours { get; set; } = [];
 
+    /// <summary>One series per counted table, in the order the host sends them.</summary>
+    private IEnumerable<DataEventType> Types => Hours.FirstOrDefault()?.Types.Select(t => t.Type) ?? [];
+
     protected override void OnInitialized()
     {
+        _options.Chart.Stacked = true;
         _options.PlotOptions = new PlotOptions { Bar = new PlotOptionsBar { BorderRadius = 2 } };
         _options.Xaxis.Labels.HideOverlappingLabels = true;
         _options.Xaxis.Labels.Rotate = 0;
