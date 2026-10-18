@@ -372,8 +372,9 @@ there: host `db`, port `5432`, user `postgres`, password `db-password`, database
    role under *Tracking-Rolle*, save and confirm. The page shows no bot permission warning (if it does, give the bot
    *Manage Roles* and move its role above the tracking role). Within 30 s the bot logs
    `Tracking role <name> on Discord: tracking its holders`.
-8. **Exactly the role holders are tracked.** The two counts are equal (every current member holding the tracking role
-   has an open tracking period, and nobody else has one):
+8. **Exactly the role holders are tracked.** `<PublicWebUrl>/admin/data` (*Daten*) shows the number of role holders
+   (bots not counted) under *Erfasste Mitglieder* and no "niemand wird erfasst" warning. In pgAdmin, the two counts are
+   equal (every current member holding the tracking role has an open tracking period, and nobody else has one):
 
    ```sql
    SELECT (SELECT count(*) FROM tracking_periods WHERE "to" IS NULL) AS tracked,
@@ -396,7 +397,9 @@ there: host `db`, port `5432`, user `postgres`, password `db-password`, database
    make anyone tracked), post a message, join a voice channel and react to a message, then run the query: all counts
    are 0 (if not, check that no role holder was active, and repeat). Then do the same with an account that holds the
    role and run it again within 5 minutes: each count is at least 1 (the voice session row appears on joining, with
-   `ended_at` empty until you leave). Rows hold internal IDs only, so the query output contains no personal data.
+   `ended_at` empty until you leave). Rows hold internal IDs only, so the query output contains no personal data. The
+   raw event browser on `<PublicWebUrl>/admin/data` (*Ereignisse durchsuchen*, type *Nachrichten*, *Voice-Sessions* or
+   *Reaktionen*) lists the same rows with names.
 10. **The `/apollo` commands reply privately.** In the guild, type `/apollo`: Discord offers `tracking on`,
     `tracking off`, `tracking status`, `privacy delete` and `stats`. Run `/apollo tracking status` with an account that
     holds the tracking role: Discord marks the reply as visible only to you (*Only you can see this* / *Nur für dich
@@ -458,6 +461,10 @@ down. The bot appends a heartbeat row to `bot_status` every 30 s, connected or n
 SELECT occurred_at, connected, gateway_latency_ms, last_event_at, open_voice_sessions
 FROM bot_status ORDER BY occurred_at DESC LIMIT 10;
 ```
+
+**What was recorded?** The *Daten* page (`<PublicWebUrl>/admin/data`, #32) shows the rows per event table and
+Europe/Zurich day over the last 30 days, the tracked and untracked members, and a raw event browser (type, member,
+channel, Von/Bis; without dates the last 24 hours) for checking single events. It reloads only on *Filtern*.
 
 No row for the last minute means the bot process is down or cannot write; rows with `connected = false` mean it runs but
 the gateway is disconnected. After 2 minutes of that the bot's `gateway` health check turns unhealthy and the bot logs

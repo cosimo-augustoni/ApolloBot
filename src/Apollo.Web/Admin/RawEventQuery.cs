@@ -37,7 +37,12 @@ public sealed class RawEventQuery(ApolloDbContext db, IEnumerable<IPlatformIdent
             DataEventType.Message => await PageAsync(
                 db.MessageEvents.Select(e => new Row<Data.Messages.MessageEvent>
                 {
-                    Id = e.Id, GuildId = e.GuildId, OccurredAt = e.OccurredAt, UserId = e.UserId, ChannelId = e.ChannelId, Event = e,
+                    Id = e.Id,
+                    GuildId = e.GuildId,
+                    OccurredAt = e.OccurredAt,
+                    UserId = e.UserId,
+                    ChannelId = e.ChannelId,
+                    Event = e,
                 }),
                 search,
                 guilds,
@@ -64,7 +69,12 @@ public sealed class RawEventQuery(ApolloDbContext db, IEnumerable<IPlatformIdent
             DataEventType.VoiceSession => await PageAsync(
                 db.VoiceSessions.Select(e => new Row<Data.Voice.VoiceSession>
                 {
-                    Id = e.Id, GuildId = e.GuildId, OccurredAt = e.OccurredAt, UserId = e.UserId, ChannelId = e.ChannelId, Event = e,
+                    Id = e.Id,
+                    GuildId = e.GuildId,
+                    OccurredAt = e.OccurredAt,
+                    UserId = e.UserId,
+                    ChannelId = e.ChannelId,
+                    Event = e,
                 }),
                 search,
                 guilds,
@@ -75,7 +85,12 @@ public sealed class RawEventQuery(ApolloDbContext db, IEnumerable<IPlatformIdent
             DataEventType.VoiceStateSegment => await PageAsync(
                 db.VoiceStateSegments.Select(e => new Row<Data.Voice.VoiceStateSegment>
                 {
-                    Id = e.Id, GuildId = e.GuildId, OccurredAt = e.OccurredAt, UserId = e.UserId, ChannelId = null, Event = e,
+                    Id = e.Id,
+                    GuildId = e.GuildId,
+                    OccurredAt = e.OccurredAt,
+                    UserId = e.UserId,
+                    ChannelId = null,
+                    Event = e,
                 }),
                 search,
                 guilds,
@@ -89,7 +104,12 @@ public sealed class RawEventQuery(ApolloDbContext db, IEnumerable<IPlatformIdent
             DataEventType.Reaction => await PageAsync(
                 db.ReactionEvents.Select(e => new Row<Data.Reactions.ReactionEvent>
                 {
-                    Id = e.Id, GuildId = e.GuildId, OccurredAt = e.OccurredAt, UserId = e.UserId, ChannelId = e.ChannelId, Event = e,
+                    Id = e.Id,
+                    GuildId = e.GuildId,
+                    OccurredAt = e.OccurredAt,
+                    UserId = e.UserId,
+                    ChannelId = e.ChannelId,
+                    Event = e,
                 }),
                 search,
                 guilds,
@@ -103,7 +123,12 @@ public sealed class RawEventQuery(ApolloDbContext db, IEnumerable<IPlatformIdent
             DataEventType.Membership => await PageAsync(
                 db.MembershipEvents.Select(e => new Row<Data.Membership.MembershipEvent>
                 {
-                    Id = e.Id, GuildId = e.GuildId, OccurredAt = e.OccurredAt, UserId = e.UserId, ChannelId = null, Event = e,
+                    Id = e.Id,
+                    GuildId = e.GuildId,
+                    OccurredAt = e.OccurredAt,
+                    UserId = e.UserId,
+                    ChannelId = null,
+                    Event = e,
                 }),
                 search,
                 guilds,
@@ -114,7 +139,12 @@ public sealed class RawEventQuery(ApolloDbContext db, IEnumerable<IPlatformIdent
             DataEventType.PresenceActivity => await PageAsync(
                 db.PresenceActivitySessions.Select(e => new Row<Data.Presence.PresenceActivitySession>
                 {
-                    Id = e.Id, GuildId = e.GuildId, OccurredAt = e.OccurredAt, UserId = e.UserId, ChannelId = null, Event = e,
+                    Id = e.Id,
+                    GuildId = e.GuildId,
+                    OccurredAt = e.OccurredAt,
+                    UserId = e.UserId,
+                    ChannelId = null,
+                    Event = e,
                 }),
                 search,
                 guilds,
