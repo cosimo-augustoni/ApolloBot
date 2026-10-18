@@ -70,7 +70,7 @@
                                  Count="report.HeartbeatGaps.Count" Shown="report.HeartbeatGaps.Examples.Count">
                     @foreach (var gap in report.HeartbeatGaps.Examples)
                     {
-                        <div class="apollo-sanity-example d-flex flex-wrap column-gap-3 py-1">
+                        <div class="apollo-sanity-example d-flex flex-wrap py-1">
                             <span class="apollo-numeric">@Span(gap.Start, gap.End)</span>
                             <span class="mud-text-secondary">@Duration(gap.Start, gap.End)</span>
                         </div>
@@ -151,7 +151,7 @@
     }
 
     private RenderFragment Untracked(UntrackedRowDto row) =>
-        @<div class="apollo-sanity-example d-flex flex-wrap column-gap-3 py-1">
+        @<div class="apollo-sanity-example d-flex flex-wrap py-1">
             @Member(row.User)
             <code class="apollo-sanity-column">@($"{row.Table}.{row.Column}")</code>
             <span class="apollo-numeric mud-text-secondary">@($"#{row.Id}")</span>
@@ -159,7 +159,7 @@
         </div>;
 
     private RenderFragment Session(SanitySessionDto session) =>
-        @<div class="apollo-sanity-example d-flex flex-wrap column-gap-3 py-1">
+        @<div class="apollo-sanity-example d-flex flex-wrap py-1">
             @Member(session.User)
             <code class="apollo-sanity-column">@session.Table</code>
             @if (session.EndedAt is { } end)

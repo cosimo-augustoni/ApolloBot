@@ -1,0 +1,9 @@
+/* The parts of an example row (member, column, ID, time) wrap at 360px; keep them apart without a separator. */
+.apollo-sanity-example {
+    column-gap: 12px;
+    row-gap: 2px;
+}
+
+.apollo-sanity-example + .apollo-sanity-example {
+    border-top: 1px solid var(--mud-palette-divider);
+}
