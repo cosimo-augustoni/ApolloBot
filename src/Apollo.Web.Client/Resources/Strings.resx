@@ -1041,4 +1041,144 @@
     <value>, ob du erfasst wirst und wie viele Einträge von dir gespeichert sind.</value>
     <comment>Public privacy page /datenschutz (#96); the command in code font goes between the BeforeCommand and AfterCommand parts</comment>
   </data>
+  <data name="Stats_Preset_Month" xml:space="preserve">
+    <value>Monat</value>
+    <comment>Stats: range preset</comment>
+  </data>
+  <data name="Stats_Preset_Year" xml:space="preserve">
+    <value>Jahr</value>
+    <comment>Stats: range preset</comment>
+  </data>
+  <data name="Stats_Preset_Custom" xml:space="preserve">
+    <value>Benutzerdefiniert</value>
+    <comment>Stats: range preset</comment>
+  </data>
+  <data name="Stats_Range" xml:space="preserve">
+    <value>{0} – {1}</value>
+    <comment>Stats: chosen range, e.g. 01.10.2026 – 18.10.2026</comment>
+  </data>
+  <data name="Stats_RangePicker" xml:space="preserve">
+    <value>Zeitraum</value>
+    <comment>Stats: date range picker label</comment>
+  </data>
+  <data name="Stats_Presets" xml:space="preserve">
+    <value>Zeitraum wählen</value>
+    <comment>Stats: accessible name of the preset buttons</comment>
+  </data>
+  <data name="Stats_Messages" xml:space="preserve">
+    <value>Nachrichten</value>
+    <comment>Stats: tile and series</comment>
+  </data>
+  <data name="Stats_VoiceHours" xml:space="preserve">
+    <value>Voice-Stunden</value>
+    <comment>Stats: tile and series</comment>
+  </data>
+  <data name="Stats_Reactions" xml:space="preserve">
+    <value>Reaktionen</value>
+    <comment>Stats: tile</comment>
+  </data>
+  <data name="Stats_ActiveMembers" xml:space="preserve">
+    <value>Aktive Mitglieder</value>
+    <comment>Stats: tile</comment>
+  </data>
+  <data name="Stats_PerDay" xml:space="preserve">
+    <value>Ø {0} pro Tag</value>
+    <comment>Stats: tile subtext, average per day</comment>
+  </data>
+  <data name="Stats_ActiveDays" xml:space="preserve">
+    <value>An {0} von {1} Tagen aktiv</value>
+    <comment>Stats: tile subtext, days with activity</comment>
+  </data>
+  <data name="Stats_Activity" xml:space="preserve">
+    <value>Aktivität</value>
+    <comment>Stats: activity over time card</comment>
+  </data>
+  <data name="Stats_Activity_Metric" xml:space="preserve">
+    <value>Kennzahl</value>
+    <comment>Stats: accessible name of the metric buttons</comment>
+  </data>
+  <data name="Stats_ChannelRanking" xml:space="preserve">
+    <value>Kanal-Ranking</value>
+    <comment>Stats: channel ranking card</comment>
+  </data>
+  <data name="Stats_Channel_Rank" xml:space="preserve">
+    <value>#</value>
+    <comment>Stats: channel ranking column</comment>
+  </data>
+  <data name="Stats_Channel_Name" xml:space="preserve">
+    <value>Kanal</value>
+    <comment>Stats: channel ranking column</comment>
+  </data>
+  <data name="Stats_Channel_Deleted" xml:space="preserve">
+    <value>{0} (gelöscht)</value>
+    <comment>Stats: channel that no longer exists</comment>
+  </data>
+  <data name="Stats_Channel_Unknown" xml:space="preserve">
+    <value>Unbekannter Kanal</value>
+    <comment>Stats: channel without a known name</comment>
+  </data>
+  <data name="Stats_ShowAll" xml:space="preserve">
+    <value>Alle anzeigen</value>
+    <comment>Stats: button</comment>
+  </data>
+  <data name="Stats_ShowLess" xml:space="preserve">
+    <value>Weniger anzeigen</value>
+    <comment>Stats: button</comment>
+  </data>
+  <data name="Stats_Heatmap" xml:space="preserve">
+    <value>Aktivität nach Wochentag und Stunde</value>
+    <comment>Stats: heatmap card</comment>
+  </data>
+  <data name="Stats_Heatmap_Caption" xml:space="preserve">
+    <value>Nachrichten pro Stunde</value>
+    <comment>Stats: heatmap caption</comment>
+  </data>
+  <data name="Stats_Heatmap_CaptionBlocks" xml:space="preserve">
+    <value>Nachrichten pro 3 Stunden</value>
+    <comment>Stats: heatmap caption on phones</comment>
+  </data>
+  <data name="Stats_Empty_Title" xml:space="preserve">
+    <value>Keine Daten im gewählten Zeitraum</value>
+    <comment>Stats: empty state</comment>
+  </data>
+  <data name="Stats_Empty_Text" xml:space="preserve">
+    <value>In diesem Zeitraum wurde nichts erfasst. Wähle einen anderen Zeitraum.</value>
+    <comment>Stats: empty state</comment>
+  </data>
+  <data name="Stats_VoiceNote" xml:space="preserve">
+    <value>Voice-Stunden zählen beendete Sessions am Tag ihres Beginns.</value>
+    <comment>Stats: note under the activity chart</comment>
+  </data>
+  <data name="ServerOverview_LoadFailed" xml:space="preserve">
+    <value>Die Statistik konnte nicht geladen werden. Versuche es später noch einmal.</value>
+    <comment>Server overview: error</comment>
+  </data>
+  <data name="Weekday_Monday" xml:space="preserve">
+    <value>Mo</value>
+    <comment>Weekday abbreviation</comment>
+  </data>
+  <data name="Weekday_Tuesday" xml:space="preserve">
+    <value>Di</value>
+    <comment>Weekday abbreviation</comment>
+  </data>
+  <data name="Weekday_Wednesday" xml:space="preserve">
+    <value>Mi</value>
+    <comment>Weekday abbreviation</comment>
+  </data>
+  <data name="Weekday_Thursday" xml:space="preserve">
+    <value>Do</value>
+    <comment>Weekday abbreviation</comment>
+  </data>
+  <data name="Weekday_Friday" xml:space="preserve">
+    <value>Fr</value>
+    <comment>Weekday abbreviation</comment>
+  </data>
+  <data name="Weekday_Saturday" xml:space="preserve">
+    <value>Sa</value>
+    <comment>Weekday abbreviation</comment>
+  </data>
+  <data name="Weekday_Sunday" xml:space="preserve">
+    <value>So</value>
+    <comment>Weekday abbreviation</comment>
+  </data>
 </root>
