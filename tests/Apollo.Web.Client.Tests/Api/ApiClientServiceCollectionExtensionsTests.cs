@@ -1,4 +1,4 @@
-using Apollo.Web.Client.Api;
+﻿using Apollo.Web.Client.Api;
 using Apollo.Web.Client.Api.Mock;
 using Apollo.Web.Client.Contracts;
 using Microsoft.Extensions.Configuration;
@@ -50,6 +50,16 @@ public sealed class ApiClientServiceCollectionExtensionsTests
         using var provider = BuildProvider(useMockData, new StubHttpMessageHandler(new object()));
 
         provider.GetRequiredService<IBotStatusClient>().ShouldBeOfType(expected);
+    }
+
+    [Theory]
+    [InlineData("true", typeof(MockServerStatsClient))]
+    [InlineData("false", typeof(HttpServerStatsClient))]
+    public void AddApolloApiClients_ShouldRegisterTheServerStatsClientOfTheSetting(string useMockData, Type expected)
+    {
+        using var provider = BuildProvider(useMockData, new StubHttpMessageHandler(new object()));
+
+        provider.GetRequiredService<IServerStatsClient>().ShouldBeOfType(expected);
     }
 
     [Theory]
