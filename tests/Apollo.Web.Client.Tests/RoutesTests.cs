@@ -25,7 +25,6 @@ public sealed class RoutesTests : ApolloTestContext
         { "admin/dashboard", "Server-Übersicht" },
         { "admin/members", "Mitglieder" },
         { "admin/recaps", "Server-Rückblicke" },
-        { "admin/data", "Daten" },
         { "me", "Meine Statistik" },
         { "datenschutz", "Datenschutz" },
     };
@@ -57,6 +56,16 @@ public sealed class RoutesTests : ApolloTestContext
 
         routes.WaitForAssertion(() => routes.FindComponents<Apollo.Web.Client.Pages.Admin.BotStatus>().ShouldHaveSingleItem());
         routes.Find("h1").TextContent.Trim().ShouldBe("Bot-Status");
+        routes.FindComponents<AreaPlaceholder>().ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Router_WhenRouteIsAdminData_ShouldShowTheDataPage()
+    {
+        var routes = RenderAt("admin/data");
+
+        routes.WaitForAssertion(() => routes.FindComponents<Apollo.Web.Client.Pages.Admin.Data>().ShouldHaveSingleItem());
+        routes.Find("h1").TextContent.Trim().ShouldBe("Daten");
         routes.FindComponents<AreaPlaceholder>().ShouldBeEmpty();
     }
 

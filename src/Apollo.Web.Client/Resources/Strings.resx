@@ -477,4 +477,396 @@
     <value>Ereignisse</value>
     <comment>Bot status page: chart series name</comment>
   </data>
+  <data name="Data_Table_Message" xml:space="preserve">
+    <value>Nachrichten</value>
+    <comment>Data page: table label</comment>
+  </data>
+  <data name="Data_Table_VoiceSession" xml:space="preserve">
+    <value>Voice-Sessions</value>
+    <comment>Data page: table label</comment>
+  </data>
+  <data name="Data_Table_VoiceStateSegment" xml:space="preserve">
+    <value>Voice-Abschnitte</value>
+    <comment>Data page: table label</comment>
+  </data>
+  <data name="Data_Table_Reaction" xml:space="preserve">
+    <value>Reaktionen</value>
+    <comment>Data page: table label</comment>
+  </data>
+  <data name="Data_Table_Membership" xml:space="preserve">
+    <value>Mitgliedschaft</value>
+    <comment>Data page: table label</comment>
+  </data>
+  <data name="Data_Table_PresenceActivity" xml:space="preserve">
+    <value>Aktivitäten</value>
+    <comment>Data page: table label</comment>
+  </data>
+  <data name="Data_Type_Message" xml:space="preserve">
+    <value>Nachricht</value>
+    <comment>Data page: event type of one row</comment>
+  </data>
+  <data name="Data_Type_VoiceSession" xml:space="preserve">
+    <value>Voice-Session</value>
+    <comment>Data page: event type of one row</comment>
+  </data>
+  <data name="Data_Type_VoiceStateSegment" xml:space="preserve">
+    <value>Voice-Abschnitt</value>
+    <comment>Data page: event type of one row</comment>
+  </data>
+  <data name="Data_Type_Reaction" xml:space="preserve">
+    <value>Reaktion</value>
+    <comment>Data page: event type of one row</comment>
+  </data>
+  <data name="Data_Type_Membership" xml:space="preserve">
+    <value>Mitgliedschaft</value>
+    <comment>Data page: event type of one row</comment>
+  </data>
+  <data name="Data_Type_PresenceActivity" xml:space="preserve">
+    <value>Aktivität</value>
+    <comment>Data page: event type of one row</comment>
+  </data>
+  <data name="Data_Kind_Create" xml:space="preserve">
+    <value>erstellt</value>
+    <comment>Data page: message kind</comment>
+  </data>
+  <data name="Data_Kind_Edit" xml:space="preserve">
+    <value>bearbeitet</value>
+    <comment>Data page: message kind</comment>
+  </data>
+  <data name="Data_Kind_Delete" xml:space="preserve">
+    <value>gelöscht</value>
+    <comment>Data page: message kind</comment>
+  </data>
+  <data name="Data_Kind_Add" xml:space="preserve">
+    <value>hinzugefügt</value>
+    <comment>Data page: reaction kind</comment>
+  </data>
+  <data name="Data_Kind_Remove" xml:space="preserve">
+    <value>entfernt</value>
+    <comment>Data page: reaction kind</comment>
+  </data>
+  <data name="Data_Kind_Join" xml:space="preserve">
+    <value>beigetreten</value>
+    <comment>Data page: membership kind</comment>
+  </data>
+  <data name="Data_Kind_Leave" xml:space="preserve">
+    <value>verlassen</value>
+    <comment>Data page: membership kind</comment>
+  </data>
+  <data name="Data_Kind_Ban" xml:space="preserve">
+    <value>gebannt</value>
+    <comment>Data page: membership kind</comment>
+  </data>
+  <data name="Data_Kind_Unban" xml:space="preserve">
+    <value>entbannt</value>
+    <comment>Data page: membership kind</comment>
+  </data>
+  <data name="Data_Activity_Playing" xml:space="preserve">
+    <value>spielt</value>
+    <comment>Data page: presence activity type</comment>
+  </data>
+  <data name="Data_Activity_Streaming" xml:space="preserve">
+    <value>streamt</value>
+    <comment>Data page: presence activity type</comment>
+  </data>
+  <data name="Data_Activity_Listening" xml:space="preserve">
+    <value>hört</value>
+    <comment>Data page: presence activity type</comment>
+  </data>
+  <data name="Data_Activity_Watching" xml:space="preserve">
+    <value>schaut</value>
+    <comment>Data page: presence activity type</comment>
+  </data>
+  <data name="Data_Activity_Competing" xml:space="preserve">
+    <value>tritt an</value>
+    <comment>Data page: presence activity type</comment>
+  </data>
+  <data name="Data_EndReason_Left" xml:space="preserve">
+    <value>verlassen</value>
+    <comment>Data page: why a voice session ended</comment>
+  </data>
+  <data name="Data_EndReason_Moved" xml:space="preserve">
+    <value>Kanal gewechselt</value>
+    <comment>Data page: why a voice session ended</comment>
+  </data>
+  <data name="Data_EndReason_TrackingStopped" xml:space="preserve">
+    <value>Erfassung beendet</value>
+    <comment>Data page: why a voice session ended</comment>
+  </data>
+  <data name="Data_EndReason_BotRestart" xml:space="preserve">
+    <value>Bot-Neustart</value>
+    <comment>Data page: why a voice session ended</comment>
+  </data>
+  <data name="Data_Characters" xml:space="preserve">
+    <value>{0} Zeichen</value>
+    <comment>Data page: message length</comment>
+  </data>
+  <data name="Data_Words_One" xml:space="preserve">
+    <value>1 Wort</value>
+    <comment>Data page: message word count</comment>
+  </data>
+  <data name="Data_Words" xml:space="preserve">
+    <value>{0} Wörter</value>
+    <comment>Data page: message word count</comment>
+  </data>
+  <data name="Data_Attachments_One" xml:space="preserve">
+    <value>1 Anhang</value>
+    <comment>Data page: message attachments</comment>
+  </data>
+  <data name="Data_Attachments" xml:space="preserve">
+    <value>{0} Anhänge</value>
+    <comment>Data page: message attachments</comment>
+  </data>
+  <data name="Data_Embeds_One" xml:space="preserve">
+    <value>1 Embed</value>
+    <comment>Data page: message embeds</comment>
+  </data>
+  <data name="Data_Embeds" xml:space="preserve">
+    <value>{0} Embeds</value>
+    <comment>Data page: message embeds</comment>
+  </data>
+  <data name="Data_Emojis_One" xml:space="preserve">
+    <value>1 Emoji</value>
+    <comment>Data page: message emoji</comment>
+  </data>
+  <data name="Data_Emojis" xml:space="preserve">
+    <value>{0} Emojis</value>
+    <comment>Data page: message emoji</comment>
+  </data>
+  <data name="Data_Mentions_One" xml:space="preserve">
+    <value>1 Erwähnung</value>
+    <comment>Data page: user and role mentions of a message</comment>
+  </data>
+  <data name="Data_Mentions" xml:space="preserve">
+    <value>{0} Erwähnungen</value>
+    <comment>Data page: user and role mentions of a message</comment>
+  </data>
+  <data name="Data_MentionsEveryone" xml:space="preserve">
+    <value>@everyone</value>
+    <comment>Data page: the message mentions everyone or here</comment>
+  </data>
+  <data name="Data_Part_Text" xml:space="preserve">
+    <value>Text</value>
+    <comment>Data page: message content part</comment>
+  </data>
+  <data name="Data_Part_Link" xml:space="preserve">
+    <value>Link</value>
+    <comment>Data page: message content part</comment>
+  </data>
+  <data name="Data_Part_Mention" xml:space="preserve">
+    <value>Erwähnung</value>
+    <comment>Data page: message content part</comment>
+  </data>
+  <data name="Data_Part_Emoji" xml:space="preserve">
+    <value>Emoji</value>
+    <comment>Data page: message content part</comment>
+  </data>
+  <data name="Data_Part_Attachment" xml:space="preserve">
+    <value>Anhang</value>
+    <comment>Data page: message content part</comment>
+  </data>
+  <data name="Data_ThreadIn" xml:space="preserve">
+    <value>Thread in {0}</value>
+    <comment>Data page: the message is in a thread of this channel</comment>
+  </data>
+  <data name="Data_ReplyTo" xml:space="preserve">
+    <value>Antwort an {0}</value>
+    <comment>Data page: the message replies to this member</comment>
+  </data>
+  <data name="Data_Bot" xml:space="preserve">
+    <value>Bot</value>
+    <comment>Data page: a bot sent the message</comment>
+  </data>
+  <data name="Data_ReactionOn" xml:space="preserve">
+    <value>auf Nachricht von {0}</value>
+    <comment>Data page: whose message the reaction is on</comment>
+  </data>
+  <data name="Data_NotTracked" xml:space="preserve">
+    <value>Nicht erfasst</value>
+    <comment>Data page: a reference to a member who is not tracked (stored as NULL)</comment>
+  </data>
+  <data name="Data_Until" xml:space="preserve">
+    <value>bis {0}</value>
+    <comment>Data page: when a session ended</comment>
+  </data>
+  <data name="Data_Open" xml:space="preserve">
+    <value>offen</value>
+    <comment>Data page: a session that has not ended</comment>
+  </data>
+  <data name="Data_Session" xml:space="preserve">
+    <value>Session {0}</value>
+    <comment>Data page: the voice session a segment belongs to</comment>
+  </data>
+  <data name="Data_SelfMute" xml:space="preserve">
+    <value>stumm</value>
+    <comment>Data page: voice segment flag</comment>
+  </data>
+  <data name="Data_SelfDeaf" xml:space="preserve">
+    <value>taub</value>
+    <comment>Data page: voice segment flag</comment>
+  </data>
+  <data name="Data_Streaming" xml:space="preserve">
+    <value>Stream</value>
+    <comment>Data page: voice segment flag</comment>
+  </data>
+  <data name="Data_Video" xml:space="preserve">
+    <value>Kamera</value>
+    <comment>Data page: voice segment flag</comment>
+  </data>
+  <data name="Data_Unknown" xml:space="preserve">
+    <value>Unbekannt</value>
+    <comment>Data page: a member or channel the guild sync has not named</comment>
+  </data>
+  <data name="Data_Tracked" xml:space="preserve">
+    <value>Erfasste Mitglieder</value>
+    <comment>Data page: tile</comment>
+  </data>
+  <data name="Data_Tracked_Sub" xml:space="preserve">
+    <value>Haben die Tracking-Rolle</value>
+    <comment>Data page: tile subtext</comment>
+  </data>
+  <data name="Data_Untracked" xml:space="preserve">
+    <value>Nicht erfasste Mitglieder</value>
+    <comment>Data page: tile</comment>
+  </data>
+  <data name="Data_Untracked_Sub" xml:space="preserve">
+    <value>Ohne Tracking-Rolle</value>
+    <comment>Data page: tile subtext</comment>
+  </data>
+  <data name="Data_NoMembersYet" xml:space="preserve">
+    <value>Noch keine Mitglieder synchronisiert</value>
+    <comment>Data page: tile subtext before the bot synced the guild</comment>
+  </data>
+  <data name="Data_EventsToday" xml:space="preserve">
+    <value>Ereignisse heute</value>
+    <comment>Data page: tile</comment>
+  </data>
+  <data name="Data_EventsToday_Sub" xml:space="preserve">
+    <value>Seit 00:00</value>
+    <comment>Data page: tile subtext</comment>
+  </data>
+  <data name="Data_EventsRange" xml:space="preserve">
+    <value>Ereignisse 30 Tage</value>
+    <comment>Data page: tile</comment>
+  </data>
+  <data name="Data_EventsRange_Sub" xml:space="preserve">
+    <value>Seit {0}</value>
+    <comment>Data page: tile subtext with the first day</comment>
+  </data>
+  <data name="Data_Mode_NoTrackingRole" xml:space="preserve">
+    <value>Keine Tracking-Rolle festgelegt: niemand wird erfasst.</value>
+    <comment>Data page: warning</comment>
+  </data>
+  <data name="Data_Mode_TrackingRoleDeleted" xml:space="preserve">
+    <value>Die Tracking-Rolle wurde gelöscht: niemand wird erfasst.</value>
+    <comment>Data page: warning</comment>
+  </data>
+  <data name="Data_PerTableAndDay" xml:space="preserve">
+    <value>Ereignisse pro Tabelle und Tag</value>
+    <comment>Data page: section title</comment>
+  </data>
+  <data name="Data_Last30Days" xml:space="preserve">
+    <value>Letzte 30 Tage</value>
+    <comment>Data page: section hint</comment>
+  </data>
+  <data name="Data_Column_Table" xml:space="preserve">
+    <value>Tabelle</value>
+    <comment>Data page: column</comment>
+  </data>
+  <data name="Data_Column_Today" xml:space="preserve">
+    <value>Heute</value>
+    <comment>Data page: column</comment>
+  </data>
+  <data name="Data_Column_Yesterday" xml:space="preserve">
+    <value>Gestern</value>
+    <comment>Data page: column</comment>
+  </data>
+  <data name="Data_Column_7Days" xml:space="preserve">
+    <value>7 Tage</value>
+    <comment>Data page: column</comment>
+  </data>
+  <data name="Data_Column_30Days" xml:space="preserve">
+    <value>30 Tage</value>
+    <comment>Data page: column</comment>
+  </data>
+  <data name="Data_OverviewLoadFailed" xml:space="preserve">
+    <value>Die Übersicht konnte nicht geladen werden. Versuche es später noch einmal.</value>
+    <comment>Data page: error</comment>
+  </data>
+  <data name="Data_Browse" xml:space="preserve">
+    <value>Ereignisse durchsuchen</value>
+    <comment>Data page: section title</comment>
+  </data>
+  <data name="Data_Filter_Type" xml:space="preserve">
+    <value>Typ</value>
+    <comment>Data page: filter</comment>
+  </data>
+  <data name="Data_Filter_User" xml:space="preserve">
+    <value>Mitglied</value>
+    <comment>Data page: filter</comment>
+  </data>
+  <data name="Data_Filter_Channel" xml:space="preserve">
+    <value>Kanal</value>
+    <comment>Data page: filter</comment>
+  </data>
+  <data name="Data_Filter_From" xml:space="preserve">
+    <value>Von</value>
+    <comment>Data page: filter</comment>
+  </data>
+  <data name="Data_Filter_To" xml:space="preserve">
+    <value>Bis</value>
+    <comment>Data page: filter</comment>
+  </data>
+  <data name="Data_Filter_RangeHint" xml:space="preserve">
+    <value>Ohne Datum: letzte 24 Stunden</value>
+    <comment>Data page: filter hint</comment>
+  </data>
+  <data name="Data_Filter_Apply" xml:space="preserve">
+    <value>Filtern</value>
+    <comment>Data page: button</comment>
+  </data>
+  <data name="Data_Filter_Reset" xml:space="preserve">
+    <value>Zurücksetzen</value>
+    <comment>Data page: button</comment>
+  </data>
+  <data name="Data_Column_Time" xml:space="preserve">
+    <value>Zeitpunkt</value>
+    <comment>Data page: column</comment>
+  </data>
+  <data name="Data_Column_Type" xml:space="preserve">
+    <value>Typ</value>
+    <comment>Data page: column</comment>
+  </data>
+  <data name="Data_Column_Member" xml:space="preserve">
+    <value>Mitglied</value>
+    <comment>Data page: column</comment>
+  </data>
+  <data name="Data_Column_Channel" xml:space="preserve">
+    <value>Kanal</value>
+    <comment>Data page: column</comment>
+  </data>
+  <data name="Data_Column_Details" xml:space="preserve">
+    <value>Details</value>
+    <comment>Data page: column</comment>
+  </data>
+  <data name="Data_NoEvents_Title" xml:space="preserve">
+    <value>Keine Ereignisse gefunden</value>
+    <comment>Data page: empty state</comment>
+  </data>
+  <data name="Data_NoEvents_Text" xml:space="preserve">
+    <value>Für diese Filter gibt es keine Ereignisse. Passe den Zeitraum oder die Filter an.</value>
+    <comment>Data page: empty state</comment>
+  </data>
+  <data name="Data_EventsLoadFailed" xml:space="preserve">
+    <value>Die Ereignisse konnten nicht geladen werden. Versuche es später noch einmal.</value>
+    <comment>Data page: error</comment>
+  </data>
+  <data name="Data_PagerInfo" xml:space="preserve">
+    <value>{first_item}–{last_item} von {all_items}</value>
+    <comment>Data page: pager; MudBlazor fills the placeholders</comment>
+  </data>
+  <data name="Data_RowsPerPage" xml:space="preserve">
+    <value>Pro Seite</value>
+    <comment>Data page: pager</comment>
+  </data>
 </root>

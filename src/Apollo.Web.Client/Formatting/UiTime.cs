@@ -28,5 +28,16 @@ public static class UiTime
             : FormatDateTime(instant);
     }
 
+    /// <summary>Date and time with seconds, e.g. <c>15.10.2026 14:30:12</c>.</summary>
+    public static string FormatDateTimeWithSeconds(DateTimeOffset instant) =>
+        ToZurich(instant).ToString("dd.MM.yyyy HH:mm:ss", UiCulture.Culture);
+
+    /// <summary>The Zurich calendar day <paramref name="instant"/> falls on.</summary>
+    public static DateOnly DayOf(DateTimeOffset instant) => DateOnly.FromDateTime(ToZurich(instant).DateTime);
+
+    /// <summary>Midnight at the start of <paramref name="day"/> in Zurich (UTC offset applied), e.g. for a date filter.</summary>
+    public static DateTimeOffset StartOf(DateOnly day) =>
+        new(TimeZoneInfo.ConvertTimeToUtc(day.ToDateTime(TimeOnly.MinValue), Zone), TimeSpan.Zero);
+
     private static DateTimeOffset ToZurich(DateTimeOffset instant) => TimeZoneInfo.ConvertTime(instant, Zone);
 }

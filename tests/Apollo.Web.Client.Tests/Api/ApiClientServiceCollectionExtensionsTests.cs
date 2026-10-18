@@ -52,6 +52,16 @@ public sealed class ApiClientServiceCollectionExtensionsTests
         provider.GetRequiredService<IBotStatusClient>().ShouldBeOfType(expected);
     }
 
+    [Theory]
+    [InlineData("true", typeof(MockDataOverviewClient))]
+    [InlineData("false", typeof(HttpDataOverviewClient))]
+    public void AddApolloApiClients_ShouldRegisterTheDataOverviewClientOfTheSetting(string useMockData, Type expected)
+    {
+        using var provider = BuildProvider(useMockData, new StubHttpMessageHandler(new object()));
+
+        provider.GetRequiredService<IDataOverviewClient>().ShouldBeOfType(expected);
+    }
+
     [Fact]
     public async Task HttpAppInfoClient_ShouldReadAppInfoFromApi()
     {

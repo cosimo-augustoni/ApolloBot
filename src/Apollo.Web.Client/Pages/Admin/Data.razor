@@ -1,0 +1,145 @@
+@page "/admin/data"
+@using Apollo.Web.Client.Contracts
+@using Apollo.Web.Client.Pages.Admin.Events
+@inject IDataOverviewClient Client
+@inject IStringLocalizer<Strings> L
+
+@*
+    Daten (#32, scope §7.2): what the bot has actually recorded, for debugging. Counts per raw event table and
+    Europe/Zurich day (last 30 days), tracked vs. untracked members as the bot's gate decides it, and the raw event
+    browser. Loaded once; no auto refresh.
+*@
+<PageTitle>@L["PageTitle", L["Nav_Data"]]</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-6">
+    <MudText Typo="Typo.h1" Class="mb-4">@L["Nav_Data"]</MudText>
+
+    @if (_failed)
+    {
+        <MudAlert Severity="Severity.Error" Class="apollo-data-overview-failed mb-4">@L["Data_OverviewLoadFailed"]</MudAlert>
+    }
+
+    @foreach (var platform in _members.Where(m => m.Mode != RoleSettingsMode.Active))
+    {
+        <MudAlert Severity="Severity.Warning" Class="apollo-data-mode-warning mb-4">@ModeWarning(platform)</MudAlert>
+    }
+
+    @if (_loading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-4" />
+    }
+    else if (!_failed)
+    {
+        <MudGrid Spacing="3" Class="mb-4">
+            @if (_members.Count == 0)
+            {
+                <MudItem xs="12" sm="6" md="3">
+                    <StatTile Label="@L["Data_Tracked"]" Icon="@Icons.Material.Outlined.HowToReg" SubText="@L["Data_NoMembersYet"]" />
+                </MudItem>
+                <MudItem xs="12" sm="6" md="3">
+                    <StatTile Label="@L["Data_Untracked"]" Icon="@Icons.Material.Outlined.PersonOff" SubText="@L["Data_NoMembersYet"]" />
+                </MudItem>
+            }
+            @foreach (var members in _members)
+            {
+                <MudItem xs="12" sm="6" md="3">
+                    <StatTile Label="@L["Data_Tracked"]" Icon="@Icons.Material.Outlined.HowToReg" Value="@members.Tracked" SubText="@OnPlatform(members, L["Data_Tracked_Sub"])" />
+                </MudItem>
+                <MudItem xs="12" sm="6" md="3">
+                    <StatTile Label="@L["Data_Untracked"]" Icon="@Icons.Material.Outlined.PersonOff" Value="@members.Untracked" SubText="@OnPlatform(members, L["Data_Untracked_Sub"])" />
+                </MudItem>
+            }
+            @if (_counts is { } counts)
+            {
+                <MudItem xs="12" sm="6" md="3">
+                    <StatTile Label="@L["Data_EventsToday"]" Icon="@Icons.Material.Outlined.Today" Value="@counts.Tables.Sum(Today)" SubText="@L["Data_EventsToday_Sub"]" />
+                </MudItem>
+                <MudItem xs="12" sm="6" md="3">
+                    <StatTile Label="@L["Data_EventsRange"]" Icon="@Icons.Material.Outlined.Storage" Value="@counts.Tables.Sum(t => t.Total)"
+                              SubText="@L["Data_EventsRange_Sub", counts.From.ToString("dd.MM.yyyy", UiCulture.Culture)]" />
+                </MudItem>
+                <MudItem xs="12">
+                    <SectionCard Title="@L["Data_PerTableAndDay"]">
+                        <Action>
+                            <MudText Typo="Typo.body2" Class="mud-text-secondary">@L["Data_Last30Days"]</MudText>
+                        </Action>
+                        <ChildContent>
+                            <EventsPerDayChart Counts="counts" />
+                            <MudTable T="EventTableCountDto" Items="counts.Tables" Class="apollo-data-counts mt-3" Dense="true" Elevation="0" Breakpoint="Breakpoint.Sm">
+                                <HeaderContent>
+                                    <MudTh>@L["Data_Column_Table"]</MudTh>
+                                    <MudTh Class="text-right">@L["Data_Column_Today"]</MudTh>
+                                    <MudTh Class="text-right">@L["Data_Column_Yesterday"]</MudTh>
+                                    <MudTh Class="text-right">@L["Data_Column_7Days"]</MudTh>
+                                    <MudTh Class="text-right">@L["Data_Column_30Days"]</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd DataLabel="@L["Data_Column_Table"]">@DataEventText.TableLabel(L, context.Type) <code>@DataEventText.TableName(context.Type)</code></MudTd>
+                                    <MudTd DataLabel="@L["Data_Column_Today"]" Class="apollo-numeric text-right">@TodayText(context)</MudTd>
+                                    <MudTd DataLabel="@L["Data_Column_Yesterday"]" Class="apollo-numeric text-right">@YesterdayText(context)</MudTd>
+                                    <MudTd DataLabel="@L["Data_Column_7Days"]" Class="apollo-numeric text-right">@WeekText(context)</MudTd>
+                                    <MudTd DataLabel="@L["Data_Column_30Days"]" Class="apollo-numeric text-right">@TotalText(context)</MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        </ChildContent>
+                    </SectionCard>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+
+    <EventBrowser />
+</MudContainer>
+
+@code {
+    private IReadOnlyList<MemberTrackingDto> _members = [];
+    private EventCountsDto? _counts;
+    private bool _loading = true;
+    private bool _failed;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _members = await Client.GetMemberTrackingAsync(CancellationToken.None);
+            _counts = await Client.GetCountsAsync(CancellationToken.None);
+        }
+#pragma warning disable CA1031 // A timeout, an HTML answer or an empty body all mean "not loaded"; the browser below stays usable.
+        catch (Exception)
+#pragma warning restore CA1031
+        {
+            _failed = true;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    /// <summary>The counts end today (Zurich), so the last day is today.</summary>
+    private static int Today(EventTableCountDto table) => LastDays(table, 1);
+
+    private static int LastDays(EventTableCountDto table, int days) => table.Days.TakeLast(days).Sum(d => d.Count);
+
+    private static string TodayText(EventTableCountDto table) => Number(Today(table));
+
+    private static string YesterdayText(EventTableCountDto table) => Number(LastDays(table, 2) - Today(table));
+
+    private static string WeekText(EventTableCountDto table) => Number(LastDays(table, 7));
+
+    private static string TotalText(EventTableCountDto table) => Number(table.Total);
+
+    private static string Number(int value) => value.ToString("N0", UiCulture.Culture);
+
+    /// <summary>With more than one platform, each tile names its platform.</summary>
+    private string OnPlatform(MemberTrackingDto members, string text) =>
+        _members.Count > 1 ? $"{members.Platform} · {text}" : text;
+
+    private string ModeWarning(MemberTrackingDto members)
+    {
+        string warning = members.Mode == RoleSettingsMode.TrackingRoleDeleted
+            ? L["Data_Mode_TrackingRoleDeleted"]
+            : L["Data_Mode_NoTrackingRole"];
+        return OnPlatform(members, warning);
+    }
+}

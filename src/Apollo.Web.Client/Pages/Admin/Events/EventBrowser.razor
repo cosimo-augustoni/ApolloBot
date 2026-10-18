@@ -1,0 +1,146 @@
+@using Apollo.Web.Client.Contracts
+@inject IDataOverviewClient Client
+@inject IStringLocalizer<Strings> L
+
+@*
+    Raw event browser (#32): one table at a time, newest first, paged on the server. Filter changes apply on "Filtern"
+    only (no auto refresh); a new table (@key) starts again at the first page. Dates are Europe/Zurich days.
+*@
+<SectionCard Title="@L["Data_Browse"]">
+    <MudGrid Spacing="2" Class="mb-2">
+        <MudItem xs="12" sm="6" md="2">
+            <MudSelect T="DataEventType" Label="@L["Data_Filter_Type"]" Value="_type" ValueChanged="TypeChanged" Variant="Variant.Outlined" Dense="true">
+                @foreach (var type in Enum.GetValues<DataEventType>())
+                {
+                    <MudSelectItem Value="type">@DataEventText.TableLabel(L, type)</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudAutocomplete T="EventUserDto" Label="@L["Data_Filter_User"]" Value="_user" ValueChanged="u => _user = u" SearchFunc="SearchUsersAsync"
+                             ToStringFunc="UserText" Clearable="true" ResetValueOnEmptyText="true" Variant="Variant.Outlined" Dense="true" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudAutocomplete T="EventChannelDto" Label="@L["Data_Filter_Channel"]" Value="_channel" ValueChanged="c => _channel = c" SearchFunc="SearchChannelsAsync"
+                             ToStringFunc="ChannelText" Class="apollo-data-channel" Clearable="true" ResetValueOnEmptyText="true" Disabled="@(!DataEventText.HasChannel(_type))"
+                             Variant="Variant.Outlined" Dense="true" />
+        </MudItem>
+        <MudItem xs="6" md="2">
+            <MudDatePicker Label="@L["Data_Filter_From"]" Date="_from" DateChanged="d => _from = d" DateFormat="dd.MM.yyyy" Culture="UiCulture.Culture"
+                           Clearable="true" HelperText="@L["Data_Filter_RangeHint"]" Variant="Variant.Outlined" />
+        </MudItem>
+        <MudItem xs="6" md="2">
+            <MudDatePicker Label="@L["Data_Filter_To"]" Date="_to" DateChanged="d => _to = d" DateFormat="dd.MM.yyyy" Culture="UiCulture.Culture"
+                           Clearable="true" Variant="Variant.Outlined" />
+        </MudItem>
+    </MudGrid>
+    <div class="d-flex flex-wrap gap-2 mb-4">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Apply" Class="apollo-data-apply">@L["Data_Filter_Apply"]</MudButton>
+        <MudButton Variant="Variant.Outlined" OnClick="Reset" Class="apollo-data-reset">@L["Data_Filter_Reset"]</MudButton>
+    </div>
+
+    @if (_failed)
+    {
+        <MudAlert Severity="Severity.Error" Class="apollo-data-events-failed mb-4">@L["Data_EventsLoadFailed"]</MudAlert>
+    }
+
+    <MudTable @key="_version" T="RawEventDto" ServerData="LoadAsync" RowsPerPage="RawEventFilter.DefaultPageSize" Class="apollo-data-events"
+              Dense="true" Hover="true" Elevation="0" Breakpoint="Breakpoint.Sm">
+        <HeaderContent>
+            <MudTh>@L["Data_Column_Time"]</MudTh>
+            <MudTh>@L["Data_Column_Type"]</MudTh>
+            <MudTh>@L["Data_Column_Member"]</MudTh>
+            <MudTh>@L["Data_Column_Channel"]</MudTh>
+            <MudTh>@L["Data_Column_Details"]</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="@L["Data_Column_Time"]" Class="apollo-numeric text-nowrap">@UiTime.FormatDateTimeWithSeconds(context.OccurredAt)</MudTd>
+            <MudTd DataLabel="@L["Data_Column_Type"]">@DataEventText.TypeLabel(L, context)</MudTd>
+            <MudTd DataLabel="@L["Data_Column_Member"]">@DataEventText.UserName(L, context.User)</MudTd>
+            <MudTd DataLabel="@L["Data_Column_Channel"]">@DataEventText.ChannelName(L, context.Channel)</MudTd>
+            <MudTd DataLabel="@L["Data_Column_Details"]">@DataEventText.Details(L, context)</MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <EmptyState Icon="@Icons.Material.Outlined.SearchOff" Title="@L["Data_NoEvents_Title"]" Explanation="@L["Data_NoEvents_Text"]" />
+        </NoRecordsContent>
+        <PagerContent>
+            <MudTablePager PageSizeOptions="_pageSizes" InfoFormat="@L["Data_PagerInfo"]" RowsPerPageString="@L["Data_RowsPerPage"]" />
+        </PagerContent>
+    </MudTable>
+</SectionCard>
+
+@code {
+    private static readonly int[] _pageSizes = [RawEventFilter.DefaultPageSize, 100, 200];
+
+    private DataEventType _type = DataEventType.Message;
+    private EventUserDto? _user;
+    private EventChannelDto? _channel;
+    private DateTime? _from;
+    private DateTime? _to;
+    private RawEventFilter _applied = new(DataEventType.Message);
+    private int _version;
+    private bool _failed;
+
+    private void TypeChanged(DataEventType type)
+    {
+        _type = type;
+        if (!DataEventText.HasChannel(type))
+        {
+            _channel = null;
+        }
+    }
+
+    private void Apply()
+    {
+        _applied = new RawEventFilter(
+            _type,
+            _user?.Id,
+            _channel?.Id,
+            _from is { } from ? UiTime.StartOf(DateOnly.FromDateTime(from)) : null,
+            _to is { } to ? UiTime.StartOf(DateOnly.FromDateTime(to).AddDays(1)) : null);
+        _version++;
+    }
+
+    private void Reset()
+    {
+        _type = DataEventType.Message;
+        _user = null;
+        _channel = null;
+        _from = null;
+        _to = null;
+        Apply();
+    }
+
+    private async Task<TableData<RawEventDto>> LoadAsync(TableState state, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var page = await Client.GetEventsAsync(_applied with { Page = state.Page + 1, PageSize = state.PageSize }, cancellationToken);
+            _failed = false;
+            return new TableData<RawEventDto> { TotalItems = page.Total, Items = page.Items };
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // A newer request replaced this one.
+            return new TableData<RawEventDto> { TotalItems = 0, Items = [] };
+        }
+#pragma warning disable CA1031 // A timeout, an HTML answer or a 400 all mean "not loaded"; the page stays usable.
+        catch (Exception)
+#pragma warning restore CA1031
+        {
+            _failed = true;
+            StateHasChanged();
+            return new TableData<RawEventDto> { TotalItems = 0, Items = [] };
+        }
+    }
+
+    private async Task<IEnumerable<EventUserDto>> SearchUsersAsync(string search, CancellationToken cancellationToken) =>
+        await Client.SearchUsersAsync(search ?? string.Empty, cancellationToken);
+
+    private async Task<IEnumerable<EventChannelDto>> SearchChannelsAsync(string search, CancellationToken cancellationToken) =>
+        await Client.SearchChannelsAsync(search ?? string.Empty, cancellationToken);
+
+    private string? UserText(EventUserDto? user) => user is null ? null : DataEventText.UserName(L, user);
+
+    private string? ChannelText(EventChannelDto? channel) => channel is null ? null : DataEventText.ChannelName(L, channel);
+}
