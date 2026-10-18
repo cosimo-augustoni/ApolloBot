@@ -196,6 +196,17 @@ public sealed class DataPageTests : ApolloTestContext
     }
 
     [Fact]
+    public void EventBrowser_ShouldLinkTheTrackedMemberToTheirStatsPage()
+    {
+        var page = Render<DataPage>();
+
+        page.WaitForAssertion(() => EventRows(page).Count.ShouldBe(3));
+        var link = page.FindAll(".apollo-data-events tbody tr")[0].QuerySelector("a.apollo-data-member-link").ShouldNotBeNull();
+        link.GetAttribute("href").ShouldBe($"admin/members/{MockDataOverviewClient.Anna.Id}");
+        link.TextContent.Trim().ShouldBe("Anna");
+    }
+
+    [Fact]
     public void EventBrowser_WhenNoEvents_ShouldShowEmptyState()
     {
         _client.Events = _ => new RawEventPageDto(0, []);

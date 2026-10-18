@@ -52,7 +52,7 @@
     @if (!IsEmpty)
     {
         <section id="kanaele" class="apollo-chapter">
-            @ChapterHead(Chapter(1), L["Member_Channels_Title"], TopChannelKey())
+            @ChannelsHead
             <MudGrid Spacing="3">
                 <MudItem xs="12" md="6">
                     <SectionCard Title="@L["Member_TopChannels"]">
@@ -86,7 +86,7 @@
         @if (HasVoice)
         {
             <section id="voice" class="apollo-chapter">
-                @ChapterHead(Chapter(2), L["Member_Voice_Title"], (UiDuration.HoursAndMinutes(Activity.Totals.VoiceSeconds), VoiceKeySub()))
+                @VoiceHead
                 <MudGrid Spacing="3">
                     <MudItem xs="12" md="6">
                         <SectionCard Title="@L["Member_VoiceBuddies"]">
@@ -114,7 +114,7 @@
         @if (MostActiveHour() is { } busiest)
         {
             <section id="zeiten" class="apollo-chapter">
-                @ChapterHead(Chapter(HasVoice ? 3 : 2), L["Member_Times_Title"], (L["Member_Times_Key", L[_weekdayKeys[busiest.Day]], busiest.Hour.ToString("00", UiCulture.Culture)], L["Member_Times_KeySub"]))
+                @TimesHead(busiest)
                 <SectionCard Title="@L["Stats_Heatmap"]">
                     <ActivityHeatmap Heatmap="Activity.Heatmap" />
                 </SectionCard>
@@ -124,7 +124,7 @@
         @if (Highlights.TopGames is [var topGame, ..])
         {
             <section id="spiele" class="apollo-chapter">
-                @ChapterHead(L["Member_Bonus"], L["Member_Games_Title"], (UiDuration.HoursAndMinutes(topGame.Seconds), topGame.Name))
+                @GamesHead(topGame)
                 <SectionCard Title="@L["Member_Games"]">
                     <RankList Class="apollo-member-games" EmptyText="@L["Member_Games"]"
                               Items="RankItem.Of(Highlights.TopGames, g => g.Name, g => g.Seconds, UiDuration.HoursAndMinutes)" />
@@ -160,6 +160,19 @@
         Activity.Totals.VoiceSeconds > 0 || Highlights.VoiceBuddies.Count > 0 || Highlights.LongestVoiceSession is not null;
 
     private string Chapter(int number) => L["Member_Chapter", number];
+
+    private RenderFragment ChannelsHead => ChapterHead(Chapter(1), L["Member_Channels_Title"], TopChannelKey());
+
+    private RenderFragment VoiceHead =>
+        ChapterHead(Chapter(2), L["Member_Voice_Title"], (UiDuration.HoursAndMinutes(Activity.Totals.VoiceSeconds), VoiceKeySub()));
+
+    private RenderFragment TimesHead((int Day, int Hour) busiest) => ChapterHead(
+        Chapter(HasVoice ? 3 : 2),
+        L["Member_Times_Title"],
+        (L["Member_Times_Key", L[_weekdayKeys[busiest.Day]], busiest.Hour.ToString("00", UiCulture.Culture)], L["Member_Times_KeySub"]));
+
+    private RenderFragment GamesHead(GamePlaytimeDto top) =>
+        ChapterHead(L["Member_Bonus"], L["Member_Games_Title"], (UiDuration.HoursAndMinutes(top.Seconds), top.Name));
 
     /// <summary>A chapter's kicker ("Kapitel 2", or "Bonus"), headline and, when there is one, its key number.</summary>
     private RenderFragment ChapterHead(string kicker, string title, (string Value, string SubText)? key) => __builder =>

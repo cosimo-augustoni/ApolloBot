@@ -1265,6 +1265,46 @@
     <value>Meistgespielt</value>
     <comment>Member stats: card, games by playtime</comment>
   </data>
+  <data name="Page_Member" xml:space="preserve">
+    <value>Mitglied</value>
+    <comment>Admin member page: title before the member is loaded</comment>
+  </data>
+  <data name="MemberPage_Tracked" xml:space="preserve">
+    <value>Erfasst</value>
+    <comment>Admin member page: status chip</comment>
+  </data>
+  <data name="MemberPage_NotTracked" xml:space="preserve">
+    <value>Nicht erfasst</value>
+    <comment>Admin member page: status chip</comment>
+  </data>
+  <data name="MemberPage_TrackedSince" xml:space="preserve">
+    <value>seit {0}</value>
+    <comment>Admin member page: start of the current tracking</comment>
+  </data>
+  <data name="MemberPage_TrackedUntil" xml:space="preserve">
+    <value>bis {0}</value>
+    <comment>Admin member page: end of the latest tracking</comment>
+  </data>
+  <data name="MemberPage_NeverTracked_Title" xml:space="preserve">
+    <value>Für {0} werden keine Daten erfasst</value>
+    <comment>Admin member page: empty state for a member who was never tracked; {0} is the name</comment>
+  </data>
+  <data name="MemberPage_NeverTracked_Text" xml:space="preserve">
+    <value>Apollo zählt nur bei Mitgliedern mit, die das wollen. Mit /apollo tracking on kann {0} jederzeit starten.</value>
+    <comment>Admin member page: empty state explanation</comment>
+  </data>
+  <data name="MemberPage_NotFound_Title" xml:space="preserve">
+    <value>Mitglied nicht gefunden</value>
+    <comment>Admin member page: unknown user ID</comment>
+  </data>
+  <data name="MemberPage_NotFound_Text" xml:space="preserve">
+    <value>Unter dieser ID gibt es kein Mitglied des Servers.</value>
+    <comment>Admin member page: unknown user ID</comment>
+  </data>
+  <data name="MemberPage_LoadFailed" xml:space="preserve">
+    <value>Die Statistik konnte nicht geladen werden. Versuche es später noch einmal.</value>
+    <comment>Admin member page: error</comment>
+  </data>
   <data name="ServerOverview_LoadFailed" xml:space="preserve">
     <value>Die Statistik konnte nicht geladen werden. Versuche es später noch einmal.</value>
     <comment>Server overview: error</comment>

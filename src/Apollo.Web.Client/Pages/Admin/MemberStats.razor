@@ -1,0 +1,189 @@
+@page "/admin/members/{UserId:guid}"
+@using Apollo.Web.Client.Contracts
+@implements IDisposable
+@inject IMemberStatsClient Client
+@inject TimeProvider Time
+@inject IStringLocalizer<Strings> L
+
+@*
+    A member's stats page in the admin area (#38, scope §7.2, wireframe admin-member): the head with avatar, name and
+    tracking status (whatever the range), the range selector, and the shared MemberMagazineView that /me (#42) shows
+    too. Opened from the Daten browser or by internal user ID; the member list is #101. A member who was never tracked
+    sees an empty state instead of zero charts. A new range loads again (no auto refresh); the head stays meanwhile.
+*@
+<PageTitle>@L["PageTitle", _member?.DisplayName ?? L["Page_Member"]]</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-6">
+    <div class="d-flex flex-wrap align-center justify-space-between gap-2 mb-4">
+        <div class="d-flex align-center gap-3 apollo-member-head">
+            @if (_member is not null)
+            {
+                <MudAvatar Color="Color.Primary" Size="Size.Large">
+                    @if (_member.AvatarUrl is { } avatar)
+                    {
+                        <MudImage Src="@avatar" Alt="" />
+                    }
+                    else
+                    {
+                        @Initial(_member.DisplayName)
+                    }
+                </MudAvatar>
+            }
+            <div class="apollo-member-head-text">
+                <MudText Typo="Typo.h1">@Heading</MudText>
+                @if (_tracking is not null)
+                {
+                    <div class="d-flex flex-wrap align-center gap-2">
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@(_tracking.IsTracked ? Color.Success : Color.Default)"
+                                 Class="apollo-member-status ma-0">
+                            @(_tracking.IsTracked ? L["MemberPage_Tracked"] : L["MemberPage_NotTracked"])
+                        </MudChip>
+                        <MudText Typo="Typo.body2" Class="apollo-member-status-text mud-text-secondary">@StatusText()</MudText>
+                    </div>
+                }
+            </div>
+        </div>
+        @if (_tracking?.WasEverTracked == true)
+        {
+            <DateRangeSelector Value="_range" ValueChanged="SelectRangeAsync" />
+        }
+    </div>
+
+    @if (_failed)
+    {
+        <MudAlert Severity="Severity.Error" Class="apollo-stats-load-failed mb-4">@L["MemberPage_LoadFailed"]</MudAlert>
+    }
+    else if (_notFound)
+    {
+        <MudPaper Elevation="0" Class="apollo-section-card apollo-member-not-found">
+            <EmptyState Icon="@Icons.Material.Outlined.PersonOff" Title="@L["MemberPage_NotFound_Title"]" Explanation="@L["MemberPage_NotFound_Text"]" />
+        </MudPaper>
+    }
+    else if (_stats is null)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="apollo-stats-loading" />
+    }
+    else if (!_stats.Tracking.WasEverTracked)
+    {
+        <MudPaper Elevation="0" Class="apollo-section-card apollo-member-never-tracked">
+            <EmptyState Icon="@Icons.Material.Outlined.VisibilityOff" Title="@L["MemberPage_NeverTracked_Title", MemberName(_stats.Member)]"
+                        Explanation="@L["MemberPage_NeverTracked_Text", MemberName(_stats.Member)]" />
+        </MudPaper>
+    }
+    else
+    {
+        <MemberMagazineView Activity="_stats.Activity" Highlights="_stats.Highlights" />
+    }
+</MudContainer>
+
+@code {
+    private CancellationTokenSource? _load;
+    private Guid _loadedUserId;
+    private DateRangeSelection _range = null!;
+    private MemberStatsDto? _stats;
+    private MemberProfileDto? _member;
+    private TrackingStatusDto? _tracking;
+    private bool _failed;
+    private bool _notFound;
+
+    /// <summary>The internal user ID from the route.</summary>
+    [Parameter]
+    public Guid UserId { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_range is not null && UserId == _loadedUserId)
+        {
+            return;
+        }
+
+        // Another member: their own head and the default range.
+        _loadedUserId = UserId;
+        _member = null;
+        _tracking = null;
+        _range = DateRangePresets.Default(Time);
+        await LoadAsync();
+    }
+
+    private async Task SelectRangeAsync(DateRangeSelection range)
+    {
+        _range = range;
+        await LoadAsync();
+    }
+
+    /// <summary>
+    /// Loads <see cref="_range"/>. A new range or member cancels the load still running, so a late answer never replaces
+    /// a newer one; any other failure shows the error until the next range is picked.
+    /// </summary>
+    private async Task LoadAsync()
+    {
+        if (_load is not null)
+        {
+            await _load.CancelAsync();
+            _load.Dispose();
+        }
+
+        var load = _load = new CancellationTokenSource();
+        _stats = null;
+        _failed = false;
+        _notFound = false;
+        try
+        {
+            var stats = await Client.GetAsync(UserId, _range.From, _range.To, load.Token);
+            if (load.IsCancellationRequested)
+            {
+                return;
+            }
+
+            _stats = stats;
+            _notFound = stats is null;
+            _member = stats?.Member;
+            _tracking = stats?.Tracking;
+        }
+        catch (OperationCanceledException) when (load.IsCancellationRequested)
+        {
+            // A newer range or member, or leaving the page, replaced this load.
+        }
+#pragma warning disable CA1031 // A timeout, an HTML answer or an empty body all mean "not loaded".
+        catch (Exception)
+#pragma warning restore CA1031
+        {
+            _failed = !load.IsCancellationRequested;
+        }
+    }
+
+    /// <summary>"seit 03.02.2025 · Discord", "bis 12.08.2026 · Discord", or just the platform.</summary>
+    private string StatusText()
+    {
+        var parts = new List<string>();
+        if (_tracking?.TrackedSince is { } since)
+        {
+            parts.Add(L["MemberPage_TrackedSince", Day(since)]);
+        }
+        else if (_tracking?.TrackedUntil is { } until)
+        {
+            parts.Add(L["MemberPage_TrackedUntil", Day(until)]);
+        }
+
+        if (_member?.Platform is { } platform)
+        {
+            parts.Add(platform);
+        }
+
+        return string.Join(" · ", parts);
+    }
+
+    private string Heading => _member is null ? L["Page_Member"] : MemberName(_member);
+
+    private string MemberName(MemberProfileDto member) => member.DisplayName ?? L["Member_Unknown"];
+
+    private static string Initial(string? name) => string.IsNullOrEmpty(name) ? "?" : name[..1].ToUpperInvariant();
+
+    private static string Day(DateOnly day) => day.ToString("dd.MM.yyyy", UiCulture.Culture);
+
+    public void Dispose()
+    {
+        _load?.Cancel();
+        _load?.Dispose();
+    }
+}

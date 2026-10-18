@@ -78,6 +78,17 @@ public sealed class RoutesTests : ApolloTestContext
     }
 
     [Fact]
+    public void Router_WhenRouteIsAMember_ShouldShowTheMemberStatsPage()
+    {
+        var routes = RenderAt("admin/members/3f2a1b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b");
+
+        routes.WaitForAssertion(() => routes.FindComponents<Apollo.Web.Client.Pages.Admin.MemberStats>().ShouldHaveSingleItem()
+            .Instance.UserId.ShouldBe(new Guid("3f2a1b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b")));
+        routes.WaitForAssertion(() => routes.Find("h1").TextContent.Trim().ShouldBe("Anna"));
+        routes.FindComponents<AreaPlaceholder>().ShouldBeEmpty();
+    }
+
+    [Fact]
     public void Router_WhenRouteIsDatenschutz_ShouldShowThePrivacyPage()
     {
         var routes = RenderAt("datenschutz");
