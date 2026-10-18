@@ -54,4 +54,10 @@ public sealed record ActivityStatsDto
     /// Messages per Zurich weekday and hour: 7 rows (Monday first) of 24 hours (0 to 23).
     /// </summary>
     public required IReadOnlyList<IReadOnlyList<long>> Heatmap { get; init; }
+
+    /// <summary>
+    /// Voice seconds per Zurich weekday and hour: 7 rows (Monday first) of 24 hours (0 to 23). Each closed session is
+    /// split at the Zurich hour boundaries and clipped to the range, so the cells sum to the voice time inside it.
+    /// </summary>
+    public required IReadOnlyList<IReadOnlyList<long>> VoiceHeatmap { get; init; }
 }
