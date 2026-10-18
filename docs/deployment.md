@@ -143,7 +143,7 @@ Service settings with a default (not AppHost parameters):
 |---|---|---|
 | `Apollo:Data:MigrationWaitTimeout` (`Apollo__Data__MigrationWaitTimeout`) | `00:05:00` | How long `bot` and `apollo-web` wait at startup for pending migrations before they exit (see below). Validated at startup: 1 second to 1 day |
 | `Apollo:Web:Auth:RevalidationInterval` (`Apollo__Web__Auth__RevalidationInterval`) | `00:05:00` | How long `apollo-web` trusts the access claims in a session cookie before it reads the synced guild state and the user's last logout again ([Admin access](#admin-access)). Validated at startup: 1 second to 1 day |
-| `Apollo:Web:BotStatus:StaleAfter` (`Apollo__Web__BotStatus__StaleAfter`) | `00:02:00` | How old the bot's latest heartbeat may be before the *Bot-Status* page (`/admin`) warns "Kein Lebenszeichen vom Bot" ([Is the bot collecting?](#day-to-day-operations)). Validated at startup: 1 minute to 1 day |
+| `Apollo:Web:BotStatus:StaleAfter` (`Apollo__Web__BotStatus__StaleAfter`) | `00:02:00` | How old the bot's latest heartbeat may be before the *Bot-Status* page (`/admin`) warns "Kein Lebenszeichen vom Bot" ([Is the bot collecting?](#day-to-day-operations)); also the gap between two heartbeats that the *Datenprüfung* page (`/admin/sanity`) reports. Validated at startup: 1 minute to 1 day |
 | `Apollo:Reconciliation:Interval` (`Apollo__Reconciliation__Interval`) | `00:05:00` | How often `bot` compares its open voice and presence sessions with the current voice states and presences, so a change it failed to store (e.g. while the database did not answer) is corrected without a restart (scope.md §5.1 Voice and Presence). Validated at startup: 10 seconds to 1 day |
 | `Apollo:Voice:Reconciliation:MaxGap` (`Apollo__Voice__Reconciliation__MaxGap`) | `00:02:00` | The longest blind spot (a restart, measured from the last heartbeat, or a gateway disconnect) after which a member still in the same voice channel keeps their session. After a longer one the session ends at the last moment the bot knew it (`Unobserved`, shown as "Ende nicht beobachtet") and a new one starts. Validated at startup: 0 to 1 day |
 
@@ -478,6 +478,12 @@ FROM bot_status ORDER BY occurred_at DESC LIMIT 10;
 Europe/Zurich day over the last 30 days, the tracked and untracked members, and a raw event browser (type, member,
 channel, Von/Bis; without dates the last 24 hours) for checking single events. Filters apply only on *Filtern*;
 paging loads the next page from the server.
+
+**Is the data sane?** The *Datenprüfung* page (`<PublicWebUrl>/admin/sanity`, #40) checks the last 30 Europe/Zurich days
+(or a chosen range) for heartbeat gaps longer than `Apollo:Web:BotStatus:StaleAfter`, voice and presence sessions over
+24 h, voice sessions open for more than 24 h, and rows of or references to members who were not tracked at the time.
+The last two must be 0: a red "Daten von nicht erfassten Nutzern gefunden" is a recording bug (scope.md §5.1.1); the
+examples name the table, column and row ID to look up in pgAdmin.
 
 No row for the last minute means the bot process is down or cannot write; rows with `connected = false` mean it runs but
 the gateway is disconnected. After 2 minutes of that the bot's `gateway` health check turns unhealthy and the bot logs
