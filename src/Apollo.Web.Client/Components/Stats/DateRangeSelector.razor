@@ -1,0 +1,81 @@
+@inject TimeProvider Time
+@inject IStringLocalizer<Strings> L
+
+@*
+    The range of a stats page (#37): the presets "Monat" (default) and "Jahr" end today in Zurich (DateRangePresets);
+    "Benutzerdefiniert" opens a range picker that cannot reach past today. The page owns the range: this only reports
+    a new one through ValueChanged.
+*@
+<div class="apollo-range-selector d-flex flex-wrap align-center gap-2">
+    <MudToggleGroup T="DateRangePreset" Value="@Preset" ValueChanged="SelectAsync" SelectionMode="SelectionMode.SingleSelection"
+                    Size="Size.Small" Color="Color.Primary" aria-label="@L["Stats_Presets"]">
+        <MudToggleItem Value="DateRangePreset.Month" Text="@L["Stats_Preset_Month"]" />
+        <MudToggleItem Value="DateRangePreset.Year" Text="@L["Stats_Preset_Year"]" />
+        <MudToggleItem Value="DateRangePreset.Custom" Text="@L["Stats_Preset_Custom"]" />
+    </MudToggleGroup>
+    @if (Preset == DateRangePreset.Custom)
+    {
+        <MudDateRangePicker @ref="_picker" Class="apollo-range-picker" Label="@L["Stats_RangePicker"]" DateRange="PickerRange" DateRangeChanged="PickAsync"
+                            MaxDate="@Today.ToDateTime(TimeOnly.MinValue)" DateFormat="dd.MM.yyyy" Culture="UiCulture.Culture"
+                            Variant="Variant.Outlined" Margin="Margin.Dense" AutoClose="true" />
+    }
+    else
+    {
+        <MudText Typo="Typo.body2" Class="apollo-range-text apollo-numeric mud-text-secondary">@L["Stats_Range", Day(Value.From), Day(Value.To)]</MudText>
+    }
+</div>
+
+@code {
+    private MudDateRangePicker? _picker;
+    private bool _customChosen;
+    private bool _openPicker;
+
+    /// <summary>The range shown; the page passes the one it loaded.</summary>
+    [Parameter, EditorRequired]
+    public DateRangeSelection Value { get; set; } = null!;
+
+    /// <summary>A new range: a preset's range when one is clicked, or the days picked for "Benutzerdefiniert".</summary>
+    [Parameter]
+    public EventCallback<DateRangeSelection> ValueChanged { get; set; }
+
+    // "Benutzerdefiniert" shows the picker with the current days before the page gets a custom range.
+    private DateRangePreset Preset => _customChosen ? DateRangePreset.Custom : Value.Preset;
+
+    private DateOnly Today => UiTime.DayOf(Time.GetUtcNow());
+
+    private DateRange PickerRange => new(Value.From.ToDateTime(TimeOnly.MinValue), Value.To.ToDateTime(TimeOnly.MinValue));
+
+    // "Benutzerdefiniert" keeps the current days until the user picks others, so it does not reload by itself.
+    private async Task SelectAsync(DateRangePreset preset)
+    {
+        if (preset == DateRangePreset.Custom)
+        {
+            _openPicker = Preset != DateRangePreset.Custom;
+            _customChosen = true;
+            return;
+        }
+
+        _customChosen = false;
+        await ValueChanged.InvokeAsync(DateRangePresets.Resolve(preset, Time));
+    }
+
+    // The picker reports the start alone while the user is still choosing the end.
+    private async Task PickAsync(DateRange? range)
+    {
+        if (range is { Start: { } start, End: { } end })
+        {
+            await ValueChanged.InvokeAsync(DateRangeSelection.Custom(DateOnly.FromDateTime(start), DateOnly.FromDateTime(end)));
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_openPicker && _picker is not null)
+        {
+            _openPicker = false;
+            await _picker.OpenAsync();
+        }
+    }
+
+    private static string Day(DateOnly day) => day.ToString("dd.MM.yyyy", UiCulture.Culture);
+}

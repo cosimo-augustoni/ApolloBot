@@ -1,0 +1,54 @@
+@using ApexCharts
+@using Apollo.Web.Client.Contracts
+@inject IStringLocalizer<Strings> L
+
+@*
+    Activity per Zurich day (#37): messages, or voice hours, one at a time (wireframe), so a phone needs no second axis.
+    Kept apart from the pages: ApexCharts and MudBlazor both define Color and Size.
+*@
+<div class="d-flex justify-end mb-2">
+    <MudToggleGroup T="ActivityMetric" @bind-Value="_metric" SelectionMode="SelectionMode.SingleSelection" Size="MudBlazor.Size.Small"
+                    Color="MudBlazor.Color.Primary" aria-label="@L["Stats_Activity_Metric"]">
+        <MudToggleItem Value="ActivityMetric.Messages" Text="@L["Stats_Messages"]" />
+        <MudToggleItem Value="ActivityMetric.VoiceHours" Text="@L["Stats_VoiceHours"]" />
+    </MudToggleGroup>
+</div>
+@* @key: a new range or metric draws a new chart; the chart would otherwise keep the series it was first rendered with. *@
+<ApexChart @key="(Days, _metric)" TItem="DailyActivityDto" Options="_options" Height="@ChartHeight">
+    <ApexPointSeries TItem="DailyActivityDto" Items="Days" Name="@SeriesName" SeriesType="SeriesType.Area"
+                     XValue="d => DayLabel(d.Date)" YValue="YValue" />
+</ApexChart>
+
+@code {
+    private const int ChartHeight = 280;
+
+    private readonly ApexChartOptions<DailyActivityDto> _options = ApexChartDefaults.Create<DailyActivityDto>();
+    private ActivityMetric _metric = ActivityMetric.Messages;
+
+    /// <summary>One entry per day, oldest first (<see cref="ActivityStatsDto.Daily"/>).</summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyList<DailyActivityDto> Days { get; set; } = [];
+
+    private enum ActivityMetric
+    {
+        Messages,
+        VoiceHours,
+    }
+
+    protected override void OnInitialized()
+    {
+        _options.Stroke = new Stroke { Curve = Curve.Smooth, Width = 2 };
+        _options.Xaxis.Labels.HideOverlappingLabels = true;
+        _options.Xaxis.Labels.Rotate = 0;
+        _options.Xaxis.TickAmount = 8;
+    }
+
+    private string SeriesName => _metric == ActivityMetric.Messages ? L["Stats_Messages"] : L["Stats_VoiceHours"];
+
+    private Func<DailyActivityDto, decimal?> YValue => _metric == ActivityMetric.Messages
+        ? d => d.Counts.Messages
+        : d => (decimal)UiDuration.Hours(d.Counts.VoiceSeconds);
+
+    /// <summary>The day as in charts (style guide): <c>15.10.</c>.</summary>
+    private static string DayLabel(DateOnly day) => day.ToString("dd.MM.", UiCulture.Culture);
+}

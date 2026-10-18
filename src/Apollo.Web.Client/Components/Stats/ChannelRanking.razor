@@ -1,0 +1,57 @@
+@using Apollo.Web.Client.Contracts
+@inject IStringLocalizer<Strings> L
+
+@*
+    The channels of a range (#37), in the order the stats layer ranks them (most messages, then most voice time), threads
+    rolled up into their channel (D2). A list rather than a bar chart: it carries both numbers, and below 600px its rows
+    stack into labelled lines, so nothing scrolls sideways at 360px.
+*@
+<MudTable T="IndexedChannel" Items="Shown" Class="apollo-channel-ranking" Dense="true" Elevation="0" Breakpoint="Breakpoint.Xs"
+          RowClass="apollo-channel-row">
+    <HeaderContent>
+        <MudTh>@L["Stats_Channel_Rank"]</MudTh>
+        <MudTh>@L["Stats_Channel_Name"]</MudTh>
+        <MudTh Style="text-align: right">@L["Stats_Messages"]</MudTh>
+        <MudTh Style="text-align: right">@L["Stats_VoiceHours"]</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="@L["Stats_Channel_Rank"]" Class="apollo-numeric">@context.Rank</MudTd>
+        <MudTd DataLabel="@L["Stats_Channel_Name"]" Class="@(context.Channel.IsDeleted ? "mud-text-secondary" : null)">@ChannelName(context.Channel)</MudTd>
+        <MudTd DataLabel="@L["Stats_Messages"]" Class="apollo-numeric" Style="text-align: right">@context.Channel.Messages.ToString("N0", UiCulture.Culture)</MudTd>
+        <MudTd DataLabel="@L["Stats_VoiceHours"]" Class="apollo-numeric" Style="text-align: right">@VoiceTime(context.Channel.VoiceSeconds)</MudTd>
+    </RowTemplate>
+</MudTable>
+@if (Channels.Count > Top)
+{
+    <div class="d-flex justify-center mt-2">
+        <MudButton Variant="Variant.Text" Size="Size.Small" Class="apollo-channel-show-all" OnClick="() => _showAll = !_showAll">
+            @(_showAll ? L["Stats_ShowLess"] : L["Stats_ShowAll"])
+        </MudButton>
+    </div>
+}
+
+@code {
+    private bool _showAll;
+
+    /// <summary>The ranked channels (<see cref="ActivityStatsDto.Channels"/>), first place first.</summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyList<ChannelActivityDto> Channels { get; set; } = [];
+
+    /// <summary>How many channels show until "Alle anzeigen" is clicked.</summary>
+    [Parameter]
+    public int Top { get; set; } = 10;
+
+    private sealed record IndexedChannel(int Rank, ChannelActivityDto Channel);
+
+    private IEnumerable<IndexedChannel> Shown =>
+        Channels.Take(_showAll ? Channels.Count : Top).Select((channel, i) => new IndexedChannel(i + 1, channel));
+
+    private string ChannelName(ChannelActivityDto channel) => (channel.Name, channel.IsDeleted) switch
+    {
+        (null, _) => L["Stats_Channel_Unknown"],
+        (var name, true) => L["Stats_Channel_Deleted", name],
+        (var name, false) => name,
+    };
+
+    private static string VoiceTime(long seconds) => seconds == 0 ? UiCulture.Placeholder : UiDuration.HoursAndMinutes(seconds);
+}
