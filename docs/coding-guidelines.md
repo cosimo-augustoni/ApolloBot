@@ -60,7 +60,7 @@ tests/
 | Platform adapters | Feed recorded or hand-built library payloads (NetCord types) into the mapper and assert on the neutral platform events. **No live Discord in tests.** |
 | Bot recorders | Use **`FakeChatPlatform`** from `Apollo.Testing`, an in-memory implementation of `IChatPlatform` that can raise platform events and hold fake guild state (members, roles, voice states). Persist into a real DB through Testcontainers. |
 | Data / EF | **Never mock `DbContext`.** Use Testcontainers. Share one container per test collection and reset with Respawn or a transaction per test. |
-| Stats queries | Seed raw events, refresh the continuous aggregates explicitly (`CALL refresh_continuous_aggregate(...)`), then assert on the stats DTOs. Time zone edge cases (DST switch, midnight in Zurich vs UTC) must be tested. |
+| Stats queries | Seed raw events, refresh the continuous aggregates explicitly (`CALL refresh_continuous_aggregate(...)`, in tests `TimescaleFixture.RefreshContinuousAggregatesAsync()`), then assert on the stats DTOs. Time zone edge cases (DST switch, midnight in Zurich vs UTC) must be tested. |
 | Web API / auth | `WebApplicationFactory` with a test auth handler that issues claims. Every policy gets allowed and denied tests. |
 | UI | bUnit for components with logic: formatting, empty states, conditional rendering. Visual layout is checked by eye, not by test. |
 

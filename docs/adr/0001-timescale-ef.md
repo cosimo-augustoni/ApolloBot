@@ -286,3 +286,9 @@ To regenerate the migration SQL: `dotnet ef migrations script --project spikes/t
 - If a daily aggregate is built on top of an hourly one (hierarchical), check TimescaleDB's rules for time-zone buckets on hierarchical
   aggregates first; the spike did not test this.
 - Reuse the spike's seed points (Zurich midnight, both DST switches, the repeated 02:30 hour) in the stats tests.
+
+**Outcome (#34):** one hand-written Zurich-day aggregate per source hypertable (messages, reactions given, reactions
+received, voice), combined by the plain views `daily_user_channel_activity` and `daily_guild_activity` (no hierarchy);
+`hourly_activity_heatmap` uses the fluent API, and `ActivityAggregatesTests` proves its buckets on both DST days.
+`materialized_only = false` everywhere (real-time aggregation); refresh policy every 30 minutes from 7 days to 1 hour ago.
+See scope §5.3.
