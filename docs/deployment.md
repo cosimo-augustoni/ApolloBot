@@ -451,9 +451,10 @@ The latest task should show `Complete`; earlier `Failed` tasks are restarts afte
 
 **Rerun migrations** without other changes: `docker service update --force apollo_migrationservice`.
 
-**Is the bot collecting?** The *Bot-Status* page (`<PublicWebUrl>/admin`, #31) shows the latest heartbeat, the gateway
-latency, the last event, the open voice sessions and the events recorded per hour over the last 24 hours, and reloads
-every 30 s. It warns "Kein Lebenszeichen vom Bot seit …" when the latest heartbeat is older than
+**Is the bot collecting?** The *Bot-Status* page (`<PublicWebUrl>/admin`, #31, #91) shows the latest heartbeat, the
+gateway latency (mean of the last 5 minutes), the last event, the open voice sessions with member and channel and the
+events recorded per hour and type over the last 24 hours, and reloads every 30 s. While no tracking role is set it says
+"Keine Tracking-Rolle festgelegt" and links to the settings. It warns "Kein Lebenszeichen vom Bot seit …" when the latest heartbeat is older than
 `Apollo:Web:BotStatus:StaleAfter` (2 minutes) and "Der Bot ist nicht verbunden" when the bot runs but its gateway is
 down. The bot appends a heartbeat row to `bot_status` every 30 s, connected or not (#24). In pgAdmin:
 
