@@ -36,8 +36,8 @@ public sealed class DataSanityService(ApolloDbContext db, TimeProvider time) : I
     {
         // Raw SQL: a gap is the distance to the previous heartbeat, a window function (LAG) that LINQ can't express; the
         // total comes from a second window over the gaps, so one round trip returns both. The last heartbeat before the
-        // range joins in, so a gap that started before the range is reported from its real start. This is the only raw
-        // query of the service.
+        // range and the first after it join in, so a gap that overlaps an edge of the range is reported with its real
+        // start and end. This is the only raw query of the service.
         var rows = await db.Database.SqlQuery<GapRow>($"""
             WITH beats AS (
                 SELECT occurred_at FROM bot_status
@@ -46,6 +46,11 @@ public sealed class DataSanityService(ApolloDbContext db, TimeProvider time) : I
                 (SELECT occurred_at FROM bot_status
                 WHERE guild_id = {query.GuildId} AND occurred_at < {range.Start}
                 ORDER BY occurred_at DESC
+                LIMIT 1)
+                UNION ALL
+                (SELECT occurred_at FROM bot_status
+                WHERE guild_id = {query.GuildId} AND occurred_at >= {range.End}
+                ORDER BY occurred_at
                 LIMIT 1)
             ), pairs AS (
                 SELECT LAG(occurred_at) OVER (ORDER BY occurred_at) AS previous_at, occurred_at

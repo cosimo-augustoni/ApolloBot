@@ -56,12 +56,29 @@ public sealed class HeartbeatGapTests(TimescaleFixture fixture) : TimescaleTest(
             seed.Heartbeat(SanitySeed.Utc("2026-01-08T12:00:00Z")),
             seed.Heartbeat(SanitySeed.Utc("2026-01-09T22:00:00Z")),
             seed.Heartbeat(SanitySeed.Utc("2026-01-10T08:00:00Z")),
-            seed.Heartbeat(SanitySeed.Utc("2026-01-10T08:00:30Z")),
-            seed.Heartbeat(SanitySeed.Utc("2026-01-15T01:00:00Z"))); // after the range
+            seed.Heartbeat(SanitySeed.Utc("2026-01-10T08:00:30Z")));
 
         var report = await SanitySeed.Service(db).GetAsync(seed.Query(), Ct);
 
         report.HeartbeatGaps.Examples.ShouldBe([new HeartbeatGap(SanitySeed.Utc("2026-01-09T22:00:00Z"), SanitySeed.Utc("2026-01-10T08:00:00Z"))]);
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenAGapEndsAfterTheRange_ShouldReportItUpToTheFirstHeartbeatAfter()
+    {
+        await using var db = Fixture.CreateDbContext();
+        var seed = await SanitySeed.CreateAsync(db, Ct);
+        // The range ends at 2026-01-14T23:00Z (midnight in Zurich).
+        await RawStatsSeed.AddAsync(
+            db,
+            Ct,
+            seed.Heartbeat(SanitySeed.Utc("2026-01-14T22:00:00Z")),
+            seed.Heartbeat(SanitySeed.Utc("2026-01-15T01:00:00Z")),
+            seed.Heartbeat(SanitySeed.Utc("2026-01-15T08:00:00Z")));
+
+        var report = await SanitySeed.Service(db).GetAsync(seed.Query(), Ct);
+
+        report.HeartbeatGaps.Examples.ShouldBe([new HeartbeatGap(SanitySeed.Utc("2026-01-14T22:00:00Z"), SanitySeed.Utc("2026-01-15T01:00:00Z"))]);
     }
 
     [Fact]
