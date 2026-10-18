@@ -56,7 +56,10 @@
         <RowTemplate>
             <MudTd DataLabel="@L["Data_Column_Time"]" Class="apollo-numeric text-nowrap">@UiTime.FormatDateTimeWithSeconds(context.OccurredAt)</MudTd>
             <MudTd DataLabel="@L["Data_Column_Type"]">@DataEventText.TypeLabel(L, context)</MudTd>
-            <MudTd DataLabel="@L["Data_Column_Member"]">@DataEventText.UserName(L, context.User)</MudTd>
+            @* Every row belongs to a tracked member (untracked members have no rows), so the name opens their stats page (#38). *@
+            <MudTd DataLabel="@L["Data_Column_Member"]">
+                <MudLink Href="@($"admin/members/{context.User.Id}")" Class="apollo-data-member-link">@DataEventText.UserName(L, context.User)</MudLink>
+            </MudTd>
             <MudTd DataLabel="@L["Data_Column_Channel"]">@DataEventText.ChannelName(L, context.Channel)</MudTd>
             <MudTd DataLabel="@L["Data_Column_Details"]">@DataEventText.Details(L, context)</MudTd>
         </RowTemplate>
