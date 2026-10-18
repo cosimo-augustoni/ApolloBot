@@ -351,15 +351,16 @@ public sealed class ActivityAggregatesTests(TimescaleFixture fixture) : Timescal
     }
 
     /// <summary>
-    /// Real-time aggregation reads what no refresh has materialized yet from the raw tables. The event lies after
-    /// everything other tests seed, so it is above every aggregate's materialization watermark.
+    /// Real-time aggregation reads what no refresh has materialized yet from the raw tables. The event lies in 2099,
+    /// after everything other tests seed, so it is above every aggregate's materialization watermark. No other test may
+    /// seed events after 2099-01-01: a refresh would move the watermark past this event and the test would fail.
     /// </summary>
     [Fact]
     public async Task Aggregates_WhenNotRefreshed_ShouldStillReturnTheNewestEvents()
     {
         await using var db = Fixture.CreateDbContext();
         var seed = await SeedAsync(db);
-        var sentAt = Utc("2036-01-15T09:00:00Z");
+        var sentAt = Utc("2099-01-15T09:00:00Z");
         await AddAsync(
             db,
             new MessageEventBuilder().In(seed.GuildId, seed.General).By(seed.Alice).At(sentAt).Build(),
