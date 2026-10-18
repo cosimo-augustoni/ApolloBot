@@ -1,0 +1,237 @@
+@using Apollo.Web.Client.Contracts
+@inject IStringLocalizer<Strings> L
+
+@*
+    A member's stats as the magazine page of the member area (#38, scope D16, wireframes admin-member/me-overview): the
+    key numbers and activity over time, then chapters (Kanäle, Voice, Zeiten, and Spiele as a bonus), each led by one
+    key number. A chapter without data in the range is left out; the games chapter only shows with game data. It takes
+    plain DTOs and injects nothing but the strings, so the admin member page (#38) and /me (#42) show the same view;
+    whose page it is (name, tracking status, never tracked) is the page's job. Text speaks to the member ("du").
+*@
+<div class="apollo-magazine">
+    <MudGrid Spacing="3">
+        <MudItem xs="6" md="3">
+            <StatTile Label="@L["Stats_Messages"]" Icon="@Icons.Material.Outlined.Chat" Value="@Activity.Totals.Messages"
+                      SubText="@PerDay(Activity.Averages.Messages)" />
+        </MudItem>
+        <MudItem xs="6" md="3">
+            <StatTile Label="@L["Stats_VoiceHours"]" Icon="@Icons.Material.Outlined.Headset"
+                      SubText="@L["Stats_PerDay", UiDuration.HoursAndMinutes((long)Activity.Averages.VoiceSeconds)]">
+                <ValueContent>@UiDuration.HoursAndMinutes(Activity.Totals.VoiceSeconds)</ValueContent>
+            </StatTile>
+        </MudItem>
+        <MudItem xs="6" md="3">
+            <StatTile Label="@L["Stats_Reactions"]" Icon="@Icons.Material.Outlined.AddReaction" Value="@Activity.Totals.ReactionsGiven"
+                      SubText="@PerDay(Activity.Averages.ReactionsGiven)" />
+        </MudItem>
+        <MudItem xs="6" md="3">
+            <StatTile Label="@L["Member_ActiveDays"]" Icon="@Icons.Material.Outlined.CalendarMonth" SubText="@L["Member_ActiveDays_Sub"]">
+                <ValueContent>@L["Member_ActiveDays_Value", Activity.ActiveDays, Activity.TrackedDays ?? Activity.Daily.Count]</ValueContent>
+            </StatTile>
+        </MudItem>
+
+        @if (IsEmpty)
+        {
+            <MudItem xs="12">
+                <MudPaper Elevation="0" Class="apollo-section-card apollo-stats-empty">
+                    <EmptyState Icon="@Icons.Material.Outlined.Insights" Title="@L["Stats_Empty_Title"]" Explanation="@L["Stats_Empty_Text"]" />
+                </MudPaper>
+            </MudItem>
+        }
+        else
+        {
+            <MudItem xs="12">
+                <SectionCard Title="@L["Stats_Activity"]">
+                    <ActivityOverTimeChart Days="Activity.Daily" />
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">@L["Stats_VoiceNote"]</MudText>
+                </SectionCard>
+            </MudItem>
+        }
+    </MudGrid>
+
+    @if (!IsEmpty)
+    {
+        <section id="kanaele" class="apollo-chapter">
+            @ChapterHead(Chapter(1), L["Member_Channels_Title"], TopChannelKey())
+            <MudGrid Spacing="3">
+                <MudItem xs="12" md="6">
+                    <SectionCard Title="@L["Member_TopChannels"]">
+                        <ChannelRanking Channels="Activity.Channels" Top="5" />
+                    </SectionCard>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <SectionCard Title="@L["Member_TopEmojis"]">
+                        <RankList Class="apollo-member-emojis" EmptyText="@L["Member_TopEmojis_None"]"
+                                  Items="RankItem.Of(Highlights.TopEmojis, EmojiText, e => e.Count, Count)" />
+                    </SectionCard>
+                </MudItem>
+                @if (Highlights.RepliesTo.Count > 0 || Highlights.RepliedBy.Count > 0)
+                {
+                    <MudItem xs="12" md="6">
+                        <SectionCard Title="@L["Member_RepliesTo"]">
+                            <RankList Class="apollo-member-replies-to" EmptyText="@L["Member_Replies_None"]"
+                                      Items="RankItem.Of(Highlights.RepliesTo, r => MemberName(r.User), r => r.Count, Count)" />
+                        </SectionCard>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <SectionCard Title="@L["Member_RepliedBy"]">
+                            <RankList Class="apollo-member-replied-by" EmptyText="@L["Member_Replies_None"]"
+                                      Items="RankItem.Of(Highlights.RepliedBy, r => MemberName(r.User), r => r.Count, Count)" />
+                        </SectionCard>
+                    </MudItem>
+                }
+            </MudGrid>
+        </section>
+
+        @if (HasVoice)
+        {
+            <section id="voice" class="apollo-chapter">
+                @ChapterHead(Chapter(2), L["Member_Voice_Title"], (UiDuration.HoursAndMinutes(Activity.Totals.VoiceSeconds), VoiceKeySub()))
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" md="6">
+                        <SectionCard Title="@L["Member_VoiceBuddies"]">
+                            <RankList Class="apollo-member-buddies" EmptyText="@L["Member_VoiceBuddies_None"]"
+                                      Items="RankItem.Of(Highlights.VoiceBuddies, b => MemberName(b.User), b => b.Seconds, UiDuration.HoursAndMinutes)" />
+                        </SectionCard>
+                    </MudItem>
+                    <MudItem xs="12" md="6" Class="apollo-member-longest">
+                        @if (Highlights.LongestVoiceSession is { } longest)
+                        {
+                            <StatTile Label="@L["Member_LongestSession"]" Icon="@Icons.Material.Outlined.Timer"
+                                      SubText="@L["Member_LongestSession_Sub", ChannelName(longest.Channel), UiTime.FormatDateTime(longest.StartedAt)]">
+                                <ValueContent>@UiDuration.HoursAndMinutes(longest.DurationSeconds)</ValueContent>
+                            </StatTile>
+                        }
+                        else
+                        {
+                            <StatTile Label="@L["Member_LongestSession"]" Icon="@Icons.Material.Outlined.Timer" SubText="@L["Member_LongestSession_None"]" />
+                        }
+                    </MudItem>
+                </MudGrid>
+            </section>
+        }
+
+        @if (MostActiveHour() is { } busiest)
+        {
+            <section id="zeiten" class="apollo-chapter">
+                @ChapterHead(Chapter(HasVoice ? 3 : 2), L["Member_Times_Title"], (L["Member_Times_Key", L[_weekdayKeys[busiest.Day]], busiest.Hour.ToString("00", UiCulture.Culture)], L["Member_Times_KeySub"]))
+                <SectionCard Title="@L["Stats_Heatmap"]">
+                    <ActivityHeatmap Heatmap="Activity.Heatmap" />
+                </SectionCard>
+            </section>
+        }
+
+        @if (Highlights.TopGames is [var topGame, ..])
+        {
+            <section id="spiele" class="apollo-chapter">
+                @ChapterHead(L["Member_Bonus"], L["Member_Games_Title"], (UiDuration.HoursAndMinutes(topGame.Seconds), topGame.Name))
+                <SectionCard Title="@L["Member_Games"]">
+                    <RankList Class="apollo-member-games" EmptyText="@L["Member_Games"]"
+                              Items="RankItem.Of(Highlights.TopGames, g => g.Name, g => g.Seconds, UiDuration.HoursAndMinutes)" />
+                </SectionCard>
+            </section>
+        }
+    }
+</div>
+
+@code {
+    private static readonly string[] _weekdayKeys =
+        ["Weekday_Monday", "Weekday_Tuesday", "Weekday_Wednesday", "Weekday_Thursday", "Weekday_Friday", "Weekday_Saturday", "Weekday_Sunday"];
+
+    /// <summary>The member's activity over the range (#35).</summary>
+    [Parameter, EditorRequired]
+    public ActivityStatsDto Activity { get; set; } = null!;
+
+    /// <summary>The member's raw-data stats over the same range (#36).</summary>
+    [Parameter, EditorRequired]
+    public MemberHighlightsDto Highlights { get; set; } = null!;
+
+    /// <summary>Nothing at all in the range: no activity and no highlights.</summary>
+    private bool IsEmpty =>
+        Activity.Totals.IsEmpty
+        && Highlights.TopEmojis.Count == 0
+        && Highlights.VoiceBuddies.Count == 0
+        && Highlights.RepliesTo.Count == 0
+        && Highlights.RepliedBy.Count == 0
+        && Highlights.LongestVoiceSession is null
+        && Highlights.TopGames.Count == 0;
+
+    private bool HasVoice =>
+        Activity.Totals.VoiceSeconds > 0 || Highlights.VoiceBuddies.Count > 0 || Highlights.LongestVoiceSession is not null;
+
+    private string Chapter(int number) => L["Member_Chapter", number];
+
+    /// <summary>A chapter's kicker ("Kapitel 2", or "Bonus"), headline and, when there is one, its key number.</summary>
+    private RenderFragment ChapterHead(string kicker, string title, (string Value, string SubText)? key) => __builder =>
+    {
+        <div class="apollo-chapter-head">
+            <div>
+                <div class="apollo-chapter-kicker mud-text-secondary">@kicker</div>
+                <h2 class="apollo-chapter-title">@title</h2>
+            </div>
+            @if (key is { } k)
+            {
+                <div class="apollo-chapter-key">
+                    <div class="apollo-chapter-key-value apollo-numeric">@k.Value</div>
+                    <div class="apollo-chapter-key-sub mud-text-secondary">@k.SubText</div>
+                </div>
+            }
+        </div>
+    };
+
+    /// <summary>The channel with the most messages and its share of all messages, as in the wireframe.</summary>
+    private (string, string)? TopChannelKey()
+    {
+        if (Activity.Channels is not [var top, ..] || top.Messages == 0 || Activity.Totals.Messages == 0)
+        {
+            return null;
+        }
+
+        var share = Math.Round(100.0 * top.Messages / Activity.Totals.Messages);
+        return ($"#{ChannelName(new EventChannelDto(top.ChannelId, top.Name), top.IsDeleted)}", L["Member_Channels_KeySub", share.ToString("N0", UiCulture.Culture)]);
+    }
+
+    private string VoiceKeySub() => Highlights.VoiceBuddies is [var buddy, ..]
+        ? L["Member_Voice_KeySubWith", MemberName(buddy.User)]
+        : L["Member_Voice_KeySub"];
+
+    /// <summary>The weekday (Monday = 0) and hour with the most messages, the earliest on a tie; none without messages.</summary>
+    private (int Day, int Hour)? MostActiveHour()
+    {
+        (int Day, int Hour)? busiest = null;
+        long most = 0;
+        for (var day = 0; day < Activity.Heatmap.Count; day++)
+        {
+            for (var hour = 0; hour < Activity.Heatmap[day].Count; hour++)
+            {
+                if (Activity.Heatmap[day][hour] > most)
+                {
+                    most = Activity.Heatmap[day][hour];
+                    busiest = (day, hour);
+                }
+            }
+        }
+
+        return busiest;
+    }
+
+    private string PerDay(double average) => L["Stats_PerDay", average.ToString("N1", UiCulture.Culture)];
+
+    private static string Count(long count) => count.ToString("N0", UiCulture.Culture);
+
+    private string EmojiText(EmojiUsageDto emoji) => (emoji.IsCustom, emoji.Name) switch
+    {
+        (_, "") => L["Member_Emoji_Unknown"],
+        (true, var name) => $":{name}:",
+        (false, var name) => name,
+    };
+
+    private string MemberName(EventUserDto user) => user.DisplayName ?? L["Member_Unknown"];
+
+    private string ChannelName(EventChannelDto channel, bool isDeleted = false) => (channel.Name, isDeleted) switch
+    {
+        (null, _) => L["Stats_Channel_Unknown"],
+        (var name, true) => L["Stats_Channel_Deleted", name],
+        (var name, false) => name,
+    };
+}

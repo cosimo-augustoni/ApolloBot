@@ -40,6 +40,15 @@ public sealed class ChannelRankingTests : ApolloTestContext
         Rows(ranking)[^1][1].ShouldBe("kanal-12");
     }
 
+    [Fact]
+    public void ChannelRanking_WhenNoChannels_ShouldSayThereAreNone()
+    {
+        var ranking = RenderRanking([]);
+
+        ranking.Find(".apollo-channel-ranking-empty").TextContent.Trim().ShouldBe("Keine Nachrichten und keine Voice-Zeit im gewählten Zeitraum");
+        ranking.FindAll(".apollo-channel-show-all").ShouldBeEmpty();
+    }
+
     private IRenderedComponent<ChannelRanking> RenderRanking(IReadOnlyList<ChannelActivityDto> channels) =>
         Render<ChannelRanking>(p => p.Add(r => r.Channels, channels));
 

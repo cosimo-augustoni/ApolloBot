@@ -1,0 +1,38 @@
+@using System.Globalization
+
+@*
+    A short ranked list with a bar behind each row (#38, wireframe "wf-rank"): top emojis, voice buddies, reply partners,
+    games. Label and number share one line and the label wraps, so nothing scrolls sideways at 360px.
+*@
+@if (Items.Count == 0)
+{
+    <MudText Typo="Typo.body2" Class="@($"apollo-rank-empty mud-text-secondary {Class}")">@EmptyText</MudText>
+}
+else
+{
+    <ol class="@($"apollo-rank {Class}")">
+        @foreach (var item in Items)
+        {
+            <li style="@($"--apollo-rank-share: {Percent(item.Share)}")">
+                <span class="apollo-rank-label">@item.Label</span>
+                <span class="apollo-rank-value apollo-numeric">@item.Value</span>
+            </li>
+        }
+    </ol>
+}
+
+@code {
+    /// <summary>The rows, first place first.</summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyList<RankItem> Items { get; set; } = [];
+
+    /// <summary>Shown instead of the list when there are no rows.</summary>
+    [Parameter, EditorRequired]
+    public string EmptyText { get; set; } = string.Empty;
+
+    /// <summary>Extra CSS class on the list (or on the empty text).</summary>
+    [Parameter]
+    public string? Class { get; set; }
+
+    private static string Percent(double share) => (Math.Clamp(share, 0, 1) * 100).ToString("0.#", CultureInfo.InvariantCulture) + "%";
+}
