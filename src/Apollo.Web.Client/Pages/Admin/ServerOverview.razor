@@ -9,6 +9,7 @@
     Server-Übersicht (#37, scope §7.2): the activity of the server over a range of Zurich days, bots left out. It opens
     with the current month (DateRangePresets) and loads again whenever the range changes; there is no auto refresh. The
     stats components take their data as parameters, so the member pages (#38, #42) can show theirs with the same ones.
+    Voice comes first (#111): the first tile, and every toggle's default.
 *@
 <PageTitle>@L["PageTitle", L["Page_ServerOverview"]]</PageTitle>
 
@@ -30,14 +31,14 @@
     {
         <MudGrid Spacing="3">
             <MudItem xs="12" sm="6" md="3" Class="apollo-stats-tile-item">
-                <StatTile Label="@L["Stats_Messages"]" Icon="@Icons.Material.Outlined.Chat" Value="@_stats.Totals.Messages"
-                          SubText="@PerDay(_stats.Averages.Messages)" />
-            </MudItem>
-            <MudItem xs="12" sm="6" md="3" Class="apollo-stats-tile-item">
                 <StatTile Label="@L["Stats_VoiceHours"]" Icon="@Icons.Material.Outlined.Headset"
                           SubText="@L["Stats_PerDay", UiDuration.HoursAndMinutes((long)_stats.Averages.VoiceSeconds)]">
                     <ValueContent>@UiDuration.HoursAndMinutes(_stats.Totals.VoiceSeconds)</ValueContent>
                 </StatTile>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3" Class="apollo-stats-tile-item">
+                <StatTile Label="@L["Stats_Messages"]" Icon="@Icons.Material.Outlined.Chat" Value="@_stats.Totals.Messages"
+                          SubText="@PerDay(_stats.Averages.Messages)" />
             </MudItem>
             <MudItem xs="12" sm="6" md="3" Class="apollo-stats-tile-item">
                 <StatTile Label="@L["Stats_Reactions"]" Icon="@Icons.Material.Outlined.AddReaction" Value="@_stats.Totals.ReactionsGiven"

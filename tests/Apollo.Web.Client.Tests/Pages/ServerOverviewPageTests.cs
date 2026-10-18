@@ -1,3 +1,4 @@
+using ApexCharts;
 using Apollo.Web.Client.Api;
 using Apollo.Web.Client.Api.Mock;
 using Apollo.Web.Client.Components.Stats;
@@ -69,8 +70,36 @@ public sealed class ServerOverviewPageTests : ApolloTestContext
         page.WaitForAssertion(() => page.FindComponent<ChannelRanking>().Instance.Channels.ShouldBeSameAs(expected.Channels));
         page.FindComponent<ActivityOverTimeChart>().Instance.Days.ShouldBeSameAs(expected.Daily);
         page.FindComponent<ActivityHeatmap>().Instance.Heatmap.ShouldBeSameAs(expected.Heatmap);
+        page.FindComponent<ActivityHeatmap>().Instance.VoiceHeatmap.ShouldBeSameAs(expected.VoiceHeatmap);
         page.FindComponent<DateRangeSelector>().Instance.Value.ShouldBe(new DateRangeSelection(DateRangePreset.Month, new DateOnly(2026, 10, 1), _today));
         page.FindAll(".apollo-stats-empty").ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void ServerOverview_ShouldPutVoiceFirst()
+    {
+        var page = Render<ServerOverview>();
+
+        page.WaitForAssertion(() => page.FindAll(".apollo-stat-tile").Count.ShouldBe(4));
+        page.FindAll(".apollo-stat-label").Select(l => l.TextContent.Trim()).ShouldBe(["Voice-Stunden", "Nachrichten", "Reaktionen", "Aktive Mitglieder"]);
+        page.FindComponent<ActivityOverTimeChart>().FindComponent<ApexPointSeries<DailyActivityDto>>().Instance.Name.ShouldBe("Voice-Stunden");
+        page.Find(".apollo-heatmap-caption").TextContent.Trim().ShouldBe("Voice-Zeit pro Stunde");
+        RankedChannels(page)[0].ShouldBe("Voice-Lounge");
+    }
+
+    [Fact]
+    public void ServerOverview_WhenMessagesChosen_ShouldSwitchEachViewToMessages()
+    {
+        var page = Render<ServerOverview>();
+        page.WaitForAssertion(() => page.FindAll(".apollo-stat-tile").Count.ShouldBe(4));
+
+        page.FindComponent<ActivityOverTimeChart>().FindAll(".mud-toggle-item").Single(b => b.TextContent.Trim() == "Nachrichten").Click();
+        page.FindComponent<ChannelRanking>().FindAll(".mud-toggle-item").Single(b => b.TextContent.Trim() == "Nachrichten").Click();
+        page.FindComponent<ActivityHeatmap>().FindAll(".mud-toggle-item").Single(b => b.TextContent.Trim() == "Nachrichten").Click();
+
+        page.WaitForAssertion(() => page.Find(".apollo-heatmap-caption").TextContent.Trim().ShouldBe("Nachrichten pro Stunde"));
+        page.FindComponent<ActivityOverTimeChart>().FindComponent<ApexPointSeries<DailyActivityDto>>().Instance.Name.ShouldBe("Nachrichten");
+        RankedChannels(page)[0].ShouldBe("allgemein");
     }
 
     [Fact]
@@ -168,6 +197,9 @@ public sealed class ServerOverviewPageTests : ApolloTestContext
         page.WaitForAssertion(() => page.FindAll(".apollo-stat-tile").Count.ShouldBe(4));
         page.FindAll(".apollo-stats-tile-item").ShouldAllBe(item => item.ClassList.Contains("mud-grid-item-xs-12"));
     }
+
+    private static List<string> RankedChannels(IRenderedComponent<ServerOverview> page) =>
+        [.. page.FindAll(".apollo-channel-ranking tbody tr").Select(row => row.QuerySelectorAll("td")[1].TextContent.Trim())];
 
     private static string Value(IRenderedComponent<ServerOverview> page, string label) =>
         Tile(page, label).QuerySelector(".apollo-stat-value")!.TextContent.Trim();
