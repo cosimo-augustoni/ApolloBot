@@ -216,6 +216,72 @@ public sealed class VoiceReconciliationTests(TimescaleFixture fixture) : Timesca
     }
 
     [Fact]
+    public async Task VoiceEvent_WhenItArrivesAfterStartupBeforeTheRuleRanForTheMember_ShouldApplyTheRule()
+    {
+        var hold = new HeldTrackingStart(Alice);
+        await using var host = Create(Fixture, _meters, hold: hold);
+        var open = await SeedOpenSessionAsync(host, Alice, Lounge, TestTime.Now.AddHours(-9));
+        var heartbeat = TestTime.Now.AddHours(-8);
+        await SeedHeartbeatAsync(host, heartbeat);
+        host.Platform.WithVoiceState(VoiceOf(Alice, Gaming).Build());
+        await StartAsync(host);
+        await host.SeedRoleSettingAsync(new RoleSettingBuilder().ForRole(Statistik));
+        var sync = SyncAsync(host);
+        await hold.Entered.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+
+        await ChangeOnPlatformAsync(host, VoiceOf(Alice, Gaming).Muted());
+        hold.Release();
+        await sync;
+
+        var gamingId = await ChannelIdAsync(host, Gaming);
+        (await EndsAsync(host)).ShouldBe([(heartbeat, VoiceSessionEndReason.Unobserved), (null, null)]);
+        var sessions = await SessionsAsync(host);
+        sessions[0].Id.ShouldBe(open.Id);
+        sessions[1].ShouldSatisfyAllConditions(
+            () => sessions[1].ChannelId.ShouldBe(gamingId),
+            () => sessions[1].OccurredAt.ShouldBe(TestTime.Now));
+        (await SegmentsAsync(host)).Last().SelfMute.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task VoiceEvent_WhenItArrivesAfterAReconnectBeforeTheSync_ShouldEndTheOldSessionAtTheDisconnect()
+    {
+        await using var host = Create(Fixture, _meters);
+        await StartAndSyncAsync(host);
+        await ChangeOnPlatformAsync(host, VoiceOf(Alice, Lounge));
+        host.Time.Advance(_stay);
+        var disconnectedAt = host.Time.GetUtcNow();
+        await ConnectionAsync(host, PlatformConnectionState.Disconnected);
+        host.Time.Advance(TimeSpan.FromMinutes(5));
+        await ConnectionAsync(host, PlatformConnectionState.Connected);
+
+        await ChangeOnPlatformAsync(host, VoiceOf(Alice, Gaming).Muted());
+        await SyncAsync(host);
+
+        (await EndsAsync(host)).ShouldBe([(disconnectedAt, VoiceSessionEndReason.Unobserved), (null, null)]);
+        (await SessionsAsync(host))[1].OccurredAt.ShouldBe(host.Time.GetUtcNow());
+    }
+
+    [Fact]
+    public async Task VoiceEvent_WhenTheMemberMovesAgainAfterTheRuleRanForThem_ShouldCloseAsMoved()
+    {
+        await using var host = Create(Fixture, _meters);
+        await StartAndSyncAsync(host);
+        await ChangeOnPlatformAsync(host, VoiceOf(Alice, Lounge));
+        host.Time.Advance(_stay);
+        await ConnectionAsync(host, PlatformConnectionState.Disconnected);
+        host.Time.Advance(TimeSpan.FromMinutes(5));
+        await ConnectionAsync(host, PlatformConnectionState.Connected);
+        await ChangeOnPlatformAsync(host, VoiceOf(Alice, Gaming));
+        host.Time.Advance(TimeSpan.FromSeconds(10));
+        var movedAt = host.Time.GetUtcNow();
+
+        await ChangeOnPlatformAsync(host, VoiceOf(Alice, Lounge));
+
+        (await EndsAsync(host)).Skip(1).ShouldBe([(movedAt, VoiceSessionEndReason.Moved), (null, null)]);
+    }
+
+    [Fact]
     public async Task Reconnect_WhenTheDisconnectWasLongerThanMaxGap_ShouldEndTheSessionAtTheDisconnectAndOpenANewOne()
     {
         await using var host = Create(Fixture, _meters);
