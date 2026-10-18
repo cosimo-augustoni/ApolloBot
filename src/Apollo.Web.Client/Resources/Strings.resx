@@ -1353,4 +1353,71 @@
     <value>So</value>
     <comment>Weekday abbreviation</comment>
   </data>
+  <data name="Nav_Sanity" xml:space="preserve">
+    <value>Datenprüfung</value>
+    <comment>Navigation and page heading, /admin/sanity (#40)</comment>
+  </data>
+  <data name="Sanity_Intro" xml:space="preserve">
+    <value>Prüft die erfassten Daten auf Fehler beim Erfassen. Jede Prüfung zeigt die Anzahl und bis zu 20 Beispiele, die neuesten zuerst.</value>
+  </data>
+  <data name="Sanity_LoadFailed" xml:space="preserve">
+    <value>Die Datenprüfung konnte nicht geladen werden. Versuche es später noch einmal.</value>
+  </data>
+  <data name="Sanity_Untracked_Found" xml:space="preserve">
+    <value>Daten von nicht erfassten Nutzern gefunden</value>
+    <comment>Wording fixed by #40</comment>
+  </data>
+  <data name="Sanity_Untracked_FoundText" xml:space="preserve">
+    <value>Für Mitglieder ohne Tracking-Rolle darf nichts gespeichert sein. Die Beispiele unten zeigen, wo.</value>
+  </data>
+  <data name="Sanity_Untracked_None" xml:space="preserve">
+    <value>Keine Daten von nicht erfassten Nutzern gefunden</value>
+    <comment>Counterpart of Sanity_Untracked_Found</comment>
+  </data>
+  <data name="Sanity_HeartbeatGaps" xml:space="preserve">
+    <value>Heartbeat-Lücken</value>
+  </data>
+  <data name="Sanity_HeartbeatGaps_Text" xml:space="preserve">
+    <value>Aufeinanderfolgende Heartbeats des Bots mit Abstand über {0}, etwa bei einem Neustart.</value>
+    <comment>{0}: threshold, e.g. 2 min</comment>
+  </data>
+  <data name="Sanity_LongSessions" xml:space="preserve">
+    <value>Sitzungen über 24 h</value>
+  </data>
+  <data name="Sanity_LongSessions_Text" xml:space="preserve">
+    <value>Abgeschlossene Voice- und Aktivitätssitzungen, die im Zeitraum begonnen haben und länger als 24 h dauerten.</value>
+  </data>
+  <data name="Sanity_OpenSessions" xml:space="preserve">
+    <value>Offene Sitzungen über 24 h</value>
+  </data>
+  <data name="Sanity_OpenSessions_Text" xml:space="preserve">
+    <value>Voice-Sitzungen, die seit mehr als 24 h offen sind.</value>
+  </data>
+  <data name="Sanity_UntrackedEvents" xml:space="preserve">
+    <value>Ereignisse nicht erfasster Mitglieder</value>
+  </data>
+  <data name="Sanity_UntrackedEvents_Text" xml:space="preserve">
+    <value>Zeilen eines Mitglieds, das zu dieser Zeit nicht erfasst wurde. Erwartet: 0.</value>
+  </data>
+  <data name="Sanity_UntrackedReferences" xml:space="preserve">
+    <value>Verweise auf nicht erfasste Mitglieder</value>
+  </data>
+  <data name="Sanity_UntrackedReferences_Text" xml:space="preserve">
+    <value>Antworten, Erwähnungen und Reaktionen, die auf ein Mitglied verweisen, das zu dieser Zeit nicht erfasst wurde. Erwartet: 0.</value>
+  </data>
+  <data name="Sanity_Clean" xml:space="preserve">
+    <value>Nichts gefunden</value>
+  </data>
+  <data name="Sanity_Shown" xml:space="preserve">
+    <value>Die neuesten {0} von {1}</value>
+    <comment>{0}: examples shown, {1}: total found</comment>
+  </data>
+  <data name="Sanity_OpenSince" xml:space="preserve">
+    <value>offen seit {0}</value>
+    <comment>{0}: start, dd.MM.yyyy HH:mm</comment>
+  </data>
+  <data name="Sanity_Duration" xml:space="preserve">
+    <value>Dauer {0}</value>
+    <comment>{0}: e.g. 25 h 3 min</comment>
+  </data>
 </root>

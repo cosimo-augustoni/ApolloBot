@@ -63,6 +63,16 @@ public sealed class ApiClientServiceCollectionExtensionsTests
     }
 
     [Theory]
+    [InlineData("true", typeof(MockDataSanityClient))]
+    [InlineData("false", typeof(HttpDataSanityClient))]
+    public void AddApolloApiClients_ShouldRegisterTheDataSanityClientOfTheSetting(string useMockData, Type expected)
+    {
+        using var provider = BuildProvider(useMockData, new StubHttpMessageHandler(new object()));
+
+        provider.GetRequiredService<IDataSanityClient>().ShouldBeOfType(expected);
+    }
+
+    [Theory]
     [InlineData("true", typeof(MockMemberStatsClient))]
     [InlineData("false", typeof(HttpMemberStatsClient))]
     public void AddApolloApiClients_ShouldRegisterTheMemberStatsClientOfTheSetting(string useMockData, Type expected)

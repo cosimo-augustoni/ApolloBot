@@ -78,6 +78,16 @@ public sealed class RoutesTests : ApolloTestContext
     }
 
     [Fact]
+    public void Router_WhenRouteIsAdminSanity_ShouldShowTheDataSanityPage()
+    {
+        var routes = RenderAt("admin/sanity");
+
+        routes.WaitForAssertion(() => routes.FindComponents<Apollo.Web.Client.Pages.Admin.DataSanity>().ShouldHaveSingleItem());
+        routes.Find("h1").TextContent.Trim().ShouldBe("Datenprüfung");
+        routes.FindComponents<AreaPlaceholder>().ShouldBeEmpty();
+    }
+
+    [Fact]
     public void Router_WhenRouteIsAMember_ShouldShowTheMemberStatsPage()
     {
         var routes = RenderAt("admin/members/3f2a1b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b");

@@ -10,6 +10,7 @@ public sealed class NavigationAreasTests
     [InlineData("/me/", "Nav_MemberOverview")]
     [InlineData("ME?tab=1#top", "Nav_MemberOverview")]
     [InlineData("datenschutz", "Nav_PrivacyPolicy")]
+    [InlineData("admin/sanity", "Nav_Sanity")]
     public void Find_WhenPathBelongsToArea_ShouldReturnItsEntry(string path, string expectedLabelKey) =>
         NavigationAreas.Find(path).ShouldNotBeNull().LabelKey.ShouldBe(expectedLabelKey);
 
@@ -24,7 +25,7 @@ public sealed class NavigationAreasTests
     public void Sections_ShouldMatchTheWireframeDrawer() =>
         NavigationAreas.Sections.Select(s => $"{s.TitleKey}: {string.Join(", ", s.Items.Select(i => i.LabelKey))}").ShouldBe(
         [
-            "Nav_SectionServer: Nav_BotStatus, Nav_ServerOverview, Nav_Members, Nav_ServerRecaps, Nav_Data, Nav_Settings",
+            "Nav_SectionServer: Nav_BotStatus, Nav_ServerOverview, Nav_Members, Nav_ServerRecaps, Nav_Data, Nav_Sanity, Nav_Settings",
             "Nav_SectionMember: Nav_MemberOverview",
             "Nav_SectionInfo: Nav_PrivacyPolicy",
         ]);
@@ -33,7 +34,7 @@ public sealed class NavigationAreasTests
     public void Items_ShouldMatchWireframeRouteMap() =>
         NavigationAreas.Items.Select(i => i.Href).ShouldBe(
         [
-            "admin", "admin/dashboard", "admin/members", "admin/recaps", "admin/data", "admin/settings",
+            "admin", "admin/dashboard", "admin/members", "admin/recaps", "admin/data", "admin/sanity", "admin/settings",
             "me",
             "datenschutz",
         ]);

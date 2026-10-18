@@ -23,7 +23,7 @@ public sealed class MainLayoutTests : ApolloTestContext
         layout.Find(".apollo-menu-button").GetAttribute("aria-label").ShouldBe("Menü ein- oder ausblenden");
         layout.FindAll(".mud-nav-link").Select(l => l.TextContent.Trim()).ShouldBe(
         [
-            "Bot-Status", "Übersicht", "Mitglieder", "Rückblicke", "Daten", "Einstellungen",
+            "Bot-Status", "Übersicht", "Mitglieder", "Rückblicke", "Daten", "Datenprüfung", "Einstellungen",
             "Meine Statistik",
             "Datenschutz",
         ]);

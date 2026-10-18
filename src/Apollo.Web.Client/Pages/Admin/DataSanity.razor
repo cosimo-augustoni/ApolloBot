@@ -1,0 +1,192 @@
+@page "/admin/sanity"
+@using Apollo.Web.Client.Contracts
+@using Apollo.Web.Client.Pages.Admin.Sanity
+@implements IDisposable
+@inject IDataSanityClient Client
+@inject IStringLocalizer<Strings> L
+
+@*
+    Datenprüfung (#40, scope §7.2): a validation tool for the admin, so collection bugs show up while the first stats
+    are watched. It opens with the host's default range (the last 30 Zurich days up to today) and loads again whenever
+    the range changes; there is no auto refresh. Data of untracked members must never be stored (scope §5.1.1), so
+    those two checks lead with a red or green banner.
+*@
+<PageTitle>@L["PageTitle", L["Nav_Sanity"]]</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-6">
+    <div class="d-flex flex-wrap align-center justify-space-between gap-2 mb-2">
+        <MudText Typo="Typo.h1">@L["Nav_Sanity"]</MudText>
+        @if (_range is not null)
+        {
+            <DateRangeSelector Value="_range" ValueChanged="SelectRangeAsync" />
+        }
+    </div>
+    <MudText Typo="Typo.body2" Class="mud-text-secondary mb-4">@L["Sanity_Intro"]</MudText>
+
+    @if (_failed)
+    {
+        <MudAlert Severity="Severity.Error" Class="apollo-sanity-load-failed mb-4">@L["Sanity_LoadFailed"]</MudAlert>
+    }
+    else if (_report is not { } report)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="apollo-sanity-loading" />
+    }
+    else
+    {
+        @if (report.UntrackedEvents.Count + report.UntrackedReferences.Count > 0)
+        {
+            <MudAlert Severity="Severity.Error" Class="apollo-sanity-untracked-alert mb-4">
+                <strong>@L["Sanity_Untracked_Found"]</strong>
+                <div>@L["Sanity_Untracked_FoundText"]</div>
+            </MudAlert>
+        }
+        else
+        {
+            <MudAlert Severity="Severity.Success" Class="apollo-sanity-untracked-ok mb-4">@L["Sanity_Untracked_None"]</MudAlert>
+        }
+
+        <MudGrid Spacing="3">
+            <MudItem xs="12" md="6">
+                <SanityCheckCard Name="untracked-events" Title="@L["Sanity_UntrackedEvents"]" Description="@L["Sanity_UntrackedEvents_Text"]"
+                                 Count="report.UntrackedEvents.Count" Shown="report.UntrackedEvents.Examples.Count" MustBeZero="true">
+                    @foreach (var row in report.UntrackedEvents.Examples)
+                    {
+                        @Untracked(row)
+                    }
+                </SanityCheckCard>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <SanityCheckCard Name="untracked-references" Title="@L["Sanity_UntrackedReferences"]" Description="@L["Sanity_UntrackedReferences_Text"]"
+                                 Count="report.UntrackedReferences.Count" Shown="report.UntrackedReferences.Examples.Count" MustBeZero="true">
+                    @foreach (var row in report.UntrackedReferences.Examples)
+                    {
+                        @Untracked(row)
+                    }
+                </SanityCheckCard>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <SanityCheckCard Name="heartbeat-gaps" Title="@L["Sanity_HeartbeatGaps"]"
+                                 Description="@L["Sanity_HeartbeatGaps_Text", UiDuration.HoursAndMinutes(report.HeartbeatGapThresholdSeconds)]"
+                                 Count="report.HeartbeatGaps.Count" Shown="report.HeartbeatGaps.Examples.Count">
+                    @foreach (var gap in report.HeartbeatGaps.Examples)
+                    {
+                        <div class="apollo-sanity-example d-flex flex-wrap column-gap-3 py-1">
+                            <span class="apollo-numeric">@Span(gap.Start, gap.End)</span>
+                            <span class="mud-text-secondary">@Duration(gap.Start, gap.End)</span>
+                        </div>
+                    }
+                </SanityCheckCard>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <SanityCheckCard Name="long-sessions" Title="@L["Sanity_LongSessions"]" Description="@L["Sanity_LongSessions_Text"]"
+                                 Count="report.LongSessions.Count" Shown="report.LongSessions.Examples.Count">
+                    @foreach (var session in report.LongSessions.Examples)
+                    {
+                        @Session(session)
+                    }
+                </SanityCheckCard>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <SanityCheckCard Name="open-sessions" Title="@L["Sanity_OpenSessions"]" Description="@L["Sanity_OpenSessions_Text"]"
+                                 Count="report.OpenSessions.Count" Shown="report.OpenSessions.Examples.Count">
+                    @foreach (var session in report.OpenSessions.Examples)
+                    {
+                        @Session(session)
+                    }
+                </SanityCheckCard>
+            </MudItem>
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    private CancellationTokenSource? _load;
+    private DateRangeSelection? _range;
+    private DataSanityDto? _report;
+    private bool _failed;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task SelectRangeAsync(DateRangeSelection range)
+    {
+        _range = range;
+        await LoadAsync();
+    }
+
+    /// <summary>
+    /// Loads <see cref="_range"/>, or the host's default before one was chosen (the selector then shows the days the
+    /// host picked). A new range cancels the load still running, so a late answer for an older range never replaces the
+    /// newer one; any other failure shows the error until the next range is picked.
+    /// </summary>
+    private async Task LoadAsync()
+    {
+        if (_load is not null)
+        {
+            await _load.CancelAsync();
+            _load.Dispose();
+        }
+
+        var load = _load = new CancellationTokenSource();
+        _report = null;
+        _failed = false;
+        try
+        {
+            var report = await Client.GetAsync(_range?.From, _range?.To, load.Token);
+            if (!load.IsCancellationRequested)
+            {
+                _report = report;
+                _range ??= DateRangeSelection.Custom(report.From, report.To);
+            }
+        }
+        catch (OperationCanceledException) when (load.IsCancellationRequested)
+        {
+            // A newer range or leaving the page replaced this load.
+        }
+#pragma warning disable CA1031 // A timeout, an HTML answer or an empty body all mean "not loaded".
+        catch (Exception)
+#pragma warning restore CA1031
+        {
+            _failed = !load.IsCancellationRequested;
+        }
+    }
+
+    private RenderFragment Untracked(UntrackedRowDto row) =>
+        @<div class="apollo-sanity-example d-flex flex-wrap column-gap-3 py-1">
+            @Member(row.User)
+            <code class="apollo-sanity-column">@($"{row.Table}.{row.Column}")</code>
+            <span class="apollo-numeric mud-text-secondary">@($"#{row.Id}")</span>
+            <span class="apollo-numeric">@UiTime.FormatDateTime(row.OccurredAt)</span>
+        </div>;
+
+    private RenderFragment Session(SanitySessionDto session) =>
+        @<div class="apollo-sanity-example d-flex flex-wrap column-gap-3 py-1">
+            @Member(session.User)
+            <code class="apollo-sanity-column">@session.Table</code>
+            @if (session.EndedAt is { } end)
+            {
+                <span class="apollo-numeric">@UiTime.FormatDateTime(session.StartedAt)</span>
+                <span class="mud-text-secondary">@L["Sanity_Duration", Duration(session.StartedAt, end)]</span>
+            }
+            else
+            {
+                <span class="apollo-numeric">@L["Sanity_OpenSince", UiTime.FormatDateTime(session.StartedAt)]</span>
+            }
+        </div>;
+
+    private RenderFragment Member(EventUserDto user) =>
+        @<MudLink Href="@($"admin/members/{user.Id}")" Typo="Typo.body2">@(user.DisplayName ?? L["Member_Unknown"])</MudLink>;
+
+    // The end with its date only when the gap reaches into another Zurich day.
+    private static string Span(DateTimeOffset start, DateTimeOffset end) =>
+        UiTime.DayOf(start) == UiTime.DayOf(end)
+            ? $"{UiTime.FormatDateTimeWithSeconds(start)} – {UiTime.FormatTimeWithSeconds(end)}"
+            : $"{UiTime.FormatDateTimeWithSeconds(start)} – {UiTime.FormatDateTimeWithSeconds(end)}";
+
+    private static string Duration(DateTimeOffset start, DateTimeOffset end) => UiDuration.HoursAndMinutes((long)(end - start).TotalSeconds);
+
+    public void Dispose()
+    {
+        _load?.Cancel();
+        _load?.Dispose();
+    }
+}
