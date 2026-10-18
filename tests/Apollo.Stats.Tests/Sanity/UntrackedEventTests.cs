@@ -3,8 +3,8 @@ using Apollo.Data.Identity;
 using Apollo.Data.Membership;
 using Apollo.Data.Tracking;
 using Apollo.Platform.Abstractions;
-using Apollo.Stats.Tests.Raw;
 using Apollo.Stats.Sanity;
+using Apollo.Stats.Tests.Raw;
 using Apollo.Testing.Data;
 using Microsoft.Extensions.Logging.Abstractions;
 
