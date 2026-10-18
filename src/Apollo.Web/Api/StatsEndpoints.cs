@@ -8,8 +8,8 @@ namespace Apollo.Web.Api;
 /// <summary>
 /// The stats API of the admin area under <c>/api/admin/stats</c>, in the <see cref="AdminEndpoints.MapAdminGroup"/> group:
 /// <c>server?from=yyyy-MM-dd&amp;to=yyyy-MM-dd</c> (#37) is the activity of the configured guild over those Zurich days,
-/// both included, bots left out. A missing or malformed date, or <c>from</c> after <c>to</c>, is 400 with a validation
-/// problem.
+/// both included, bots left out. A missing or malformed date, <c>from</c> after <c>to</c>, or a date outside
+/// <see cref="EarliestDate"/> to tomorrow in Zurich is 400 with a validation problem.
 /// </summary>
 public static class StatsEndpoints
 {
@@ -17,6 +17,15 @@ public static class StatsEndpoints
 
     /// <summary>The only date format the range accepts (ISO 8601 calendar date).</summary>
     public const string DateFormat = "yyyy-MM-dd";
+
+    /// <summary>
+    /// The earliest day a range may start on: long before any recorded data. Far older days fall into Zurich's old
+    /// local mean time, whose midnight lies before <see cref="DateTime.MinValue"/> in UTC.
+    /// </summary>
+    public static readonly DateOnly EarliestDate = new(2000, 1, 1);
+
+    /// <summary>How many days after today (Zurich) a range may end, for a browser whose clock or zone is a little ahead.</summary>
+    public const int FutureSlackDays = 1;
 
     public static IEndpointRouteBuilder MapStatsEndpoints(this IEndpointRouteBuilder endpoints)
     {
@@ -29,7 +38,7 @@ public static class StatsEndpoints
 
     // The dates bind as strings, so a malformed one is a validation problem like every other bad range, not a bind failure.
     private static async Task<Results<Ok<ActivityStatsDto>, ValidationProblem>> GetServerAsync(
-        string? from, string? to, ServerStatsQuery query, CancellationToken cancellationToken)
+        string? from, string? to, ServerStatsQuery query, TimeProvider time, CancellationToken cancellationToken)
     {
         if (ParseDate(from) is not { } start)
         {
@@ -44,6 +53,18 @@ public static class StatsEndpoints
         if (start > end)
         {
             return Invalid(nameof(from), "The range must not end before it starts.");
+        }
+
+        // Bounded, so no day overflows the instant arithmetic and no range zero-fills centuries of days.
+        if (start < EarliestDate)
+        {
+            return Invalid(nameof(from), $"The start must not be before {EarliestDate.ToString(DateFormat, CultureInfo.InvariantCulture)}.");
+        }
+
+        var latest = ZurichTime.DayOf(time.GetUtcNow()).AddDays(FutureSlackDays);
+        if (end > latest)
+        {
+            return Invalid(nameof(to), $"The end must not be after {latest.ToString(DateFormat, CultureInfo.InvariantCulture)}.");
         }
 
         return TypedResults.Ok(await query.GetAsync(start, end, cancellationToken));

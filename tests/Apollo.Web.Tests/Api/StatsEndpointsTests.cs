@@ -80,6 +80,21 @@ public sealed class StatsEndpointsTests(TimescaleFixture fixture) : TimescaleTes
         stats.Heatmap.Sum(day => day.Sum()).ShouldBe(2);
     }
 
+    [Theory]
+    [InlineData("from=2000-01-01&to=2000-01-02")]
+    [InlineData("from=2026-01-16&to=2026-01-16")]
+    public async Task GetServer_WhenRangeAtTheEdgesOfTheWindow_ShouldReturn200(string query)
+    {
+        await SeedMemberAsync(isAdministrator: true);
+        await using var factory = CreateFactory();
+        using var http = factory.CreateHttpsClient();
+        await SignInAsync(http);
+
+        using var response = await GetAsync(http, $"/api/admin/stats/server?{query}");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
     [Fact]
     public async Task GetServer_WhenTheBotNeverSawTheGuild_ShouldReturnAnEmptyRange()
     {
@@ -103,6 +118,10 @@ public sealed class StatsEndpointsTests(TimescaleFixture fixture) : TimescaleTes
     [InlineData("from=2026-01-15&to=morgen", "to")]
     [InlineData("to=2026-01-15", "from")]
     [InlineData("from=2026-01-15", "to")]
+    [InlineData("from=0001-01-01&to=2026-01-15", "from")]
+    [InlineData("from=1999-12-31&to=2026-01-15", "from")]
+    [InlineData("from=2026-01-01&to=9999-12-31", "to")]
+    [InlineData("from=2026-01-01&to=2026-01-17", "to")]
     public async Task GetServer_WhenRangeInvalid_ShouldReturn400(string query, string field)
     {
         await SeedMemberAsync(isAdministrator: true);
