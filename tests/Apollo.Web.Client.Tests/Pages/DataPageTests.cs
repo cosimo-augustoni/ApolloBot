@@ -94,6 +94,20 @@ public sealed class DataPageTests : ApolloTestContext
     }
 
     [Fact]
+    public void EventBrowser_WhenALoadSucceedsAfterAFailure_ShouldHideTheAlert()
+    {
+        _client.Failure = new HttpRequestException("down");
+        var page = Render<DataPage>();
+        page.WaitForAssertion(() => page.FindAll(".apollo-data-events-failed").ShouldHaveSingleItem());
+        _client.Failure = null;
+
+        page.Find(".apollo-data-apply").Click();
+
+        page.WaitForAssertion(() => EventRows(page).Count.ShouldBe(3));
+        page.FindAll(".apollo-data-events-failed").ShouldBeEmpty();
+    }
+
+    [Fact]
     public void EventBrowser_ShouldRequestTheFirstPageOfMessagesOfTheLast24Hours()
     {
         var page = Render<DataPage>();

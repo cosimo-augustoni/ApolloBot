@@ -464,7 +464,8 @@ FROM bot_status ORDER BY occurred_at DESC LIMIT 10;
 
 **What was recorded?** The *Daten* page (`<PublicWebUrl>/admin/data`, #32) shows the rows per event table and
 Europe/Zurich day over the last 30 days, the tracked and untracked members, and a raw event browser (type, member,
-channel, Von/Bis; without dates the last 24 hours) for checking single events. It reloads only on *Filtern*.
+channel, Von/Bis; without dates the last 24 hours) for checking single events. Filters apply only on *Filtern*;
+paging loads the next page from the server.
 
 No row for the last minute means the bot process is down or cannot write; rows with `connected = false` mean it runs but
 the gateway is disconnected. After 2 minutes of that the bot's `gateway` health check turns unhealthy and the bot logs

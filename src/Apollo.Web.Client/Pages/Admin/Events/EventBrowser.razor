@@ -116,7 +116,13 @@
         try
         {
             var page = await Client.GetEventsAsync(_applied with { Page = state.Page + 1, PageSize = state.PageSize }, cancellationToken);
-            _failed = false;
+            if (_failed)
+            {
+                // ServerData re-renders only the table; the alert above it belongs to this component.
+                _failed = false;
+                StateHasChanged();
+            }
+
             return new TableData<RawEventDto> { TotalItems = page.Total, Items = page.Items };
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
