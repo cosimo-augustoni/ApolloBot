@@ -10,6 +10,7 @@ using Apollo.Platform.Abstractions.Dispatch;
 using Apollo.Platform.Abstractions.Events;
 using Apollo.Platform.Abstractions.Snapshots;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Apollo.Bot.Voice;
 
@@ -21,13 +22,19 @@ namespace Apollo.Bot.Voice;
 /// <remarks>
 /// <para>
 /// Inputs: voice state updates of tracked users; the tracking hooks (gaining tracking opens a session from the current
-/// voice state, losing it closes the session as <see cref="VoiceSessionEndReason.TrackingStopped"/>); every full guild
-/// sync (on startup and after a reconnect), which reconciles everyone with the current voice states; and
-/// <see cref="VoiceSessionLifecycleService"/> on startup and shutdown.
+/// voice state, losing it closes the session as <see cref="VoiceSessionEndReason.TrackingStopped"/>); the gateway's
+/// connection state; and the reconciliation (#98).
 /// </para>
 /// <para>
-/// Before anything is opened, the sessions and segments a previous run left open are closed as
-/// <see cref="VoiceSessionEndReason.BotRestart"/> at that moment, whichever input comes first.
+/// The reconciliation applies one rule (<see cref="VoiceSessionStateMachine.Reconcile"/>) to every tracked member after
+/// a time the bot could not see or store changes. It runs after every full guild sync (on startup and after a
+/// reconnect) and every <see cref="VoiceReconciliationOptions.Interval"/> (<see cref="VoiceSessionLifecycleService"/>),
+/// each with its own T, the last moment the bot knew the voice states: on startup the previous run's last connected
+/// heartbeat, after a reconnect the disconnect, periodically the previous full reconciliation.
+/// </para>
+/// <para>
+/// Before anything is applied, the sessions and segments a previous run left open are taken over into memory, so the
+/// rule decides whether they continue. A graceful shutdown leaves them open.
 /// </para>
 /// </remarks>
 internal sealed partial class VoiceSessionRecorder(
@@ -36,10 +43,14 @@ internal sealed partial class VoiceSessionRecorder(
     ITrackingGate gate,
     IChatPlatform platform,
     VoiceSessionStore store,
+    IOptions<VoiceReconciliationOptions> options,
     RecordedEventMetrics metrics,
     TimeProvider timeProvider,
     ILogger<VoiceSessionRecorder> logger)
-    : IPlatformEventHandler<PlatformVoiceStateChanged>, ITrackingLifecycleHandler, IGuildStateNotificationHandler<GuildStateSynchronized>
+    : IPlatformEventHandler<PlatformVoiceStateChanged>,
+        IPlatformEventHandler<PlatformConnectionStateChanged>,
+        ITrackingLifecycleHandler,
+        IGuildStateNotificationHandler<GuildStateSynchronized>
 {
     public async Task HandleAsync(PlatformVoiceStateChanged platformEvent, CancellationToken cancellationToken)
     {
@@ -49,6 +60,7 @@ internal sealed partial class VoiceSessionRecorder(
             return;
         }
 
+        using var pending = store.BeginEvent(userId);
         var guildId = await ids.ResolveGuildAsync(platformEvent.Guild, cancellationToken);
         var connection = await ToConnectionAsync(platformEvent.Guild, platformEvent.State, cancellationToken);
 
@@ -73,6 +85,35 @@ internal sealed partial class VoiceSessionRecorder(
         }
     }
 
+    /// <summary>
+    /// Remembers when the gateway disconnected (T for the reconciliation after the reconnect) and whether it is down. A
+    /// resume replays the missed events, so it ends the blind spot without a reconciliation.
+    /// </summary>
+    public async Task HandleAsync(PlatformConnectionStateChanged platformEvent, CancellationToken cancellationToken)
+    {
+        using (await store.EnterAsync(cancellationToken))
+        {
+            switch (platformEvent.State)
+            {
+                case PlatformConnectionState.Disconnected:
+                    store.GatewayDown = true;
+                    store.DisconnectedAt ??= platformEvent.OccurredAt;
+                    break;
+                case PlatformConnectionState.Resumed:
+                    store.GatewayDown = false;
+                    store.DisconnectedAt = null;
+                    break;
+                default:
+                    store.GatewayDown = false;
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Applies the rule to the user with the current blind spot: on startup (the gate's first <c>TrackingStartedAsync</c>
+    /// calls) it decides whether a taken-over session continues; later it opens a session from the current voice state.
+    /// </summary>
     public async Task TrackingStartedAsync(TrackedUser user, CancellationToken cancellationToken)
     {
         if (await GuildRefAsync(user.GuildId, cancellationToken) is not { } guild)
@@ -83,10 +124,11 @@ internal sealed partial class VoiceSessionRecorder(
         // The voice states are read under the lock, so an event applied in the meantime is not overwritten by older ones.
         using (await store.EnterAsync(cancellationToken))
         {
+            await EnsureTakenOverAsync(cancellationToken);
+            var blindSpot = await BlindSpotAsync(user.GuildId, timeProvider.GetUtcNow(), cancellationToken);
             var states = await platform.ListVoiceStatesAsync(guild, cancellationToken);
             var connections = await ToConnectionsAsync(guild, states.Where(s => s.User == user.User), cancellationToken);
-            var now = timeProvider.GetUtcNow();
-            await ApplyAsync(user.GuildId, machine => machine.Reconcile(user.UserId, connections, now, VoiceSessionEndReason.BotRestart), cancellationToken);
+            await ApplyAsync(user.GuildId, machine => machine.Reconcile(user.UserId, connections, blindSpot), cancellationToken);
         }
     }
 
@@ -100,20 +142,72 @@ internal sealed partial class VoiceSessionRecorder(
     }
 
     /// <summary>
-    /// Reconciles every tracked user with the current voice states after a full guild sync. On startup the
-    /// <see cref="TrackingStartedAsync"/> calls already did this; after a reconnect it catches the joins, leaves and
-    /// moves the bot missed. A session that no longer matches closes as <see cref="VoiceSessionEndReason.BotRestart"/>,
-    /// since the bot did not see when it really ended.
+    /// Reconciles everyone after a full guild sync: on startup with T = the previous run's last heartbeat, after a
+    /// reconnect with T = the disconnect.
     /// </summary>
-    public async Task HandleAsync(GuildStateSynchronized notification, CancellationToken cancellationToken)
-    {
-        if (await GuildRefAsync(notification.GuildId, cancellationToken) is not { } guild)
-        {
-            return;
-        }
+    public Task HandleAsync(GuildStateSynchronized notification, CancellationToken cancellationToken) =>
+        ReconcileAsync(notification.GuildId, cancellationToken);
 
+    /// <summary>
+    /// The periodic run: reconciles everyone in the guild of the latest full sync. While the gateway is down it waits for
+    /// the reconnect; members with a voice event on its way are left to that event.
+    /// </summary>
+    public Task ReconcileAsync(CancellationToken cancellationToken) => ReconcileAsync(guildId: null, cancellationToken);
+
+    /// <summary>
+    /// Records the start of this run and takes over the sessions a previous run left open (startup).
+    /// </summary>
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
         using (await store.EnterAsync(cancellationToken))
         {
+            store.StartedAt ??= timeProvider.GetUtcNow();
+            await EnsureTakenOverAsync(cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Reconciles everyone in <paramref name="guildId"/>, the synced guild, or for the periodic run (<see langword="null"/>)
+    /// in the guild of the latest sync.
+    /// </summary>
+    private async Task ReconcileAsync(Guid? guildId, CancellationToken cancellationToken)
+    {
+        using (await store.EnterAsync(cancellationToken))
+        {
+            var periodic = guildId is null;
+            if (guildId is not null)
+            {
+                // Remembered before the run, so the periodic run retries a reconciliation after a sync that failed.
+                store.GuildId = guildId;
+            }
+
+            // Before the gate's first rebuild everyone would look untracked; the gate's TrackingStartedAsync calls and
+            // the next periodic run reconcile once it is there.
+            if ((guildId ?? store.GuildId) is not { } id || gate.Mode is null)
+            {
+                return;
+            }
+
+            if (periodic && store.GatewayDown)
+            {
+                LogSkippedWhileDisconnected();
+                return;
+            }
+
+            if (await GuildRefAsync(id, cancellationToken) is not { } guild)
+            {
+                return;
+            }
+
+            await EnsureTakenOverAsync(cancellationToken);
+            var now = timeProvider.GetUtcNow();
+            var trigger = !store.StartupReconciled ? "startup" : store.DisconnectedAt is not null ? "reconnect" : periodic ? "periodic" : "sync";
+            var blindSpot = await BlindSpotAsync(id, now, cancellationToken);
+
+            // Only while the gateway stayed connected can a member's voice state differ because an event is still on its
+            // way; after a blind spot the current state is the baseline the event then applies to.
+            var skipPending = periodic && trigger == "periodic";
+
             var current = new Dictionary<Guid, IReadOnlyList<VoiceConnection>>();
             foreach (var userStates in (await platform.ListVoiceStatesAsync(guild, cancellationToken)).GroupBy(s => s.User))
             {
@@ -123,71 +217,74 @@ internal sealed partial class VoiceSessionRecorder(
                 }
             }
 
-            var now = timeProvider.GetUtcNow();
-            await ApplyAsync(notification.GuildId, machine =>
+            var changes = await ApplyAsync(id, machine =>
             {
-                var changes = new List<VoiceChange>();
+                var reconciled = new List<VoiceChange>();
                 foreach (var userId in machine.UsersInVoice.Union(current.Keys).ToList())
                 {
-                    changes.AddRange(gate.IsTracked(userId)
-                        ? machine.Reconcile(userId, current.GetValueOrDefault(userId, []), now, VoiceSessionEndReason.BotRestart)
-                        : machine.Stop(userId, now, VoiceSessionEndReason.TrackingStopped));
+                    if (skipPending && store.HasPendingEvents(userId))
+                    {
+                        continue;
+                    }
+
+                    reconciled.AddRange(gate.IsTracked(userId)
+                        ? machine.Reconcile(userId, current.GetValueOrDefault(userId, []), blindSpot)
+                        : machine.ReconcileUntracked(userId, blindSpot));
                 }
 
-                return changes;
+                return reconciled;
             }, cancellationToken);
+
+            store.StartupReconciled = true;
+            store.DisconnectedAt = null;
+            store.LastReconciledAt = now;
+            if (changes.Count > 0)
+            {
+                LogReconciled(changes.Count, trigger, blindSpot.LastKnownAt);
+            }
         }
     }
 
     /// <summary>
-    /// Closes the sessions and segments a previous run left open (startup).
+    /// The blind spot for a reconciliation at <paramref name="now"/>: on startup since the previous run's last connected
+    /// heartbeat (none: every session closes at the start), after a disconnect since the disconnect, otherwise since the
+    /// previous full reconciliation, with the gateway connected. Call under the store's lock.
     /// </summary>
-    public async Task CloseLeftOpenSessionsAsync(CancellationToken cancellationToken)
+    private async Task<VoiceBlindSpot> BlindSpotAsync(Guid guildId, DateTimeOffset now, CancellationToken cancellationToken)
     {
-        using (await store.EnterAsync(cancellationToken))
+        var maxGap = options.Value.MaxGap;
+        var startedAt = store.StartedAt ?? now;
+        if (!store.StartupReconciled)
         {
-            await EnsureLeftOpenSessionsClosedAsync(cancellationToken);
-        }
-    }
+            if (store.StartupHeartbeat is not { } heartbeat || heartbeat.GuildId != guildId)
+            {
+                var at = await db.BotStatuses
+                    .Where(b => b.GuildId == guildId && b.Connected && b.OccurredAt < startedAt)
+                    .MaxAsync(b => (DateTimeOffset?)b.OccurredAt, cancellationToken);
+                heartbeat = store.StartupHeartbeat = new StartupHeartbeat(guildId, at);
+            }
 
-    /// <summary>
-    /// Closes every open session as <see cref="VoiceSessionEndReason.BotRestart"/> (graceful shutdown). Afterwards the
-    /// recorder opens nothing more, also when the close failed: hosted services stop in reverse order, so the gateway
-    /// still delivers events after this.
-    /// </summary>
-    public async Task CloseAllAsync(CancellationToken cancellationToken)
-    {
-        using (await store.EnterAsync(cancellationToken))
-        {
-            try
-            {
-                var now = timeProvider.GetUtcNow();
-                await ApplyAsync(guildId: null, machine => machine.StopAll(now, VoiceSessionEndReason.BotRestart), cancellationToken);
-            }
-            finally
-            {
-                store.Stopped = true;
-            }
+            return heartbeat.At is { } lastKnownAt
+                ? VoiceBlindSpot.Outage(lastKnownAt, now, maxGap)
+                : VoiceBlindSpot.Unknown(startedAt, now);
         }
+
+        return store.DisconnectedAt is { } disconnectedAt
+            ? VoiceBlindSpot.Outage(disconnectedAt, now, maxGap)
+            : VoiceBlindSpot.WhileConnected(store.LastReconciledAt ?? startedAt, now);
     }
 
     /// <summary>
     /// Runs <paramref name="decide"/> on a copy of the state machine and stores its changes in one transaction. The copy
     /// and the new row keys replace the store's only after the commit, so a failed save changes nothing. Call under the
-    /// store's lock. <paramref name="guildId"/> may be <see langword="null"/> only when nothing can open. After the
-    /// shutdown close nothing is applied.
+    /// store's lock. <paramref name="guildId"/> is the guild new sessions open in.
     /// </summary>
     private async Task<IReadOnlyList<VoiceChange>> ApplyAsync(
-        Guid? guildId,
+        Guid guildId,
         Func<VoiceSessionStateMachine, IReadOnlyList<VoiceChange>> decide,
         CancellationToken cancellationToken)
     {
-        if (store.Stopped)
-        {
-            return [];
-        }
-
-        await EnsureLeftOpenSessionsClosedAsync(cancellationToken);
+        await EnsureTakenOverAsync(cancellationToken);
 
         var machine = store.Machine.Clone();
         var changes = decide(machine);
@@ -205,7 +302,7 @@ internal sealed partial class VoiceSessionRecorder(
                 var open = rows.TryGetValue(change.UserId, out var pending) ? pending : store.Rows.GetValueOrDefault(change.UserId);
                 rows[change.UserId] = change switch
                 {
-                    VoiceSessionOpened opened => await OpenAsync(guildId ?? throw new InvalidOperationException("Opening a session needs its guild."), opened, cancellationToken),
+                    VoiceSessionOpened opened => await OpenAsync(guildId, opened, cancellationToken),
                     VoiceSessionClosed closed => await CloseAsync(open, closed, cancellationToken),
                     VoiceSegmentChanged segment => await ChangeSegmentAsync(open, segment, cancellationToken),
                     _ => throw new InvalidOperationException($"Unknown voice change {change.GetType().Name}."),
@@ -307,33 +404,66 @@ internal sealed partial class VoiceSessionRecorder(
     }
 
     /// <summary>
-    /// Closes, once per process, what a previous run left open, at the current time (the real end is unknown). Call
-    /// under the store's lock.
+    /// Takes over, once per process, the sessions a previous run left open: per user the newest open session with its
+    /// newest open segment goes into the state machine, so the first reconciliation decides whether it continues. Any
+    /// other open row (a session without an open segment, an older duplicate) cannot be continued and closes as
+    /// <see cref="VoiceSessionEndReason.Unobserved"/> at the start of this run. Call under the store's lock.
     /// </summary>
-    private async Task EnsureLeftOpenSessionsClosedAsync(CancellationToken cancellationToken)
+    private async Task EnsureTakenOverAsync(CancellationToken cancellationToken)
     {
-        if (store.LeftOpenSessionsClosed)
+        if (store.TakenOver)
         {
             return;
         }
 
-        var now = timeProvider.GetUtcNow();
-        int sessions;
-        await using (var transaction = await db.Database.BeginTransactionAsync(cancellationToken))
+        var startedAt = store.StartedAt ??= timeProvider.GetUtcNow();
+        var sessions = await db.VoiceSessions.AsNoTracking().Where(s => s.EndedAt == null).ToListAsync(cancellationToken);
+        var segments = await db.VoiceStateSegments.AsNoTracking().Where(s => s.EndedAt == null).ToListAsync(cancellationToken);
+
+        var machine = new VoiceSessionStateMachine();
+        var rows = new Dictionary<Guid, OpenVoiceRows>();
+        foreach (var session in sessions.GroupBy(s => s.UserId).Select(g => g.OrderByDescending(s => s.OccurredAt).ThenByDescending(s => s.Id).First()))
         {
-            await db.VoiceStateSegments
-                .Where(s => s.EndedAt == null)
-                .ExecuteUpdateAsync(s => s.SetProperty(x => x.EndedAt, now), cancellationToken);
-            sessions = await db.VoiceSessions
-                .Where(s => s.EndedAt == null)
-                .ExecuteUpdateAsync(
-                    s => s.SetProperty(x => x.EndedAt, now).SetProperty(x => x.EndReason, VoiceSessionEndReason.BotRestart),
-                    cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
+            var segment = segments
+                .Where(s => s.SessionId == session.Id && s.OccurredAt >= session.OccurredAt)
+                .OrderByDescending(s => s.OccurredAt)
+                .ThenByDescending(s => s.Id)
+                .FirstOrDefault();
+            if (segment is null)
+            {
+                continue;
+            }
+
+            machine.Restore(session.UserId, session.ChannelId, new VoiceFlags(segment.SelfMute, segment.SelfDeaf, segment.Streaming, segment.Video), segment.OccurredAt);
+            rows[session.UserId] = new OpenVoiceRows(session.GuildId, session.Id, session.OccurredAt, segment.Id, segment.OccurredAt);
         }
 
-        store.LeftOpenSessionsClosed = true;
-        LogClosedLeftOpen(sessions);
+        var staleSessions = sessions.Where(s => !rows.Values.Any(r => r.SessionId == s.Id)).Select(s => s.Id).ToList();
+        var staleSegments = segments.Where(s => !rows.Values.Any(r => r.SegmentId == s.Id)).Select(s => s.Id).ToList();
+        if (staleSessions.Count > 0 || staleSegments.Count > 0)
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            await db.VoiceStateSegments
+                .Where(s => staleSegments.Contains(s.Id) && s.EndedAt == null)
+                .ExecuteUpdateAsync(s => s.SetProperty(x => x.EndedAt, startedAt), cancellationToken);
+            await db.VoiceSessions
+                .Where(s => staleSessions.Contains(s.Id) && s.EndedAt == null)
+                .ExecuteUpdateAsync(
+                    s => s.SetProperty(x => x.EndedAt, startedAt).SetProperty(x => x.EndReason, VoiceSessionEndReason.Unobserved),
+                    cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            LogClosedStale(staleSessions.Count, staleSegments.Count);
+        }
+
+        store.Machine = machine;
+        store.Rows.Clear();
+        foreach (var (userId, open) in rows)
+        {
+            store.Rows[userId] = open;
+        }
+
+        store.TakenOver = true;
+        LogTookOver(rows.Count);
     }
 
     private async Task<IReadOnlyList<VoiceConnection>> ToConnectionsAsync(
@@ -380,8 +510,17 @@ internal sealed partial class VoiceSessionRecorder(
     [LoggerMessage(Level = LogLevel.Debug, Message = "Dropped voice state update of {User}: untracked")]
     private partial void LogDropped(PlatformRef user);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Closed {SessionCount} voice sessions left open by the previous run as BotRestart")]
-    private partial void LogClosedLeftOpen(int sessionCount);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Took over {SessionCount} voice sessions left open by the previous run")]
+    private partial void LogTookOver(int sessionCount);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Closed {SessionCount} voice sessions and {SegmentCount} segments left open that could not be taken over as Unobserved")]
+    private partial void LogClosedStale(int sessionCount, int segmentCount);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Voice reconciliation ({Trigger}) stored {ChangeCount} changes; last known state at {LastKnownAt}")]
+    private partial void LogReconciled(int changeCount, string trigger, DateTimeOffset lastKnownAt);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Skipped the periodic voice reconciliation: the gateway is disconnected, the reconnect reconciles")]
+    private partial void LogSkippedWhileDisconnected();
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "No open voice session rows for {UserId}, probably after a failed save; skipping the change")]
     private partial void LogNoOpenRows(Guid userId);

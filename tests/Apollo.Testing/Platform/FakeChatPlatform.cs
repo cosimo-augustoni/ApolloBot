@@ -40,6 +40,8 @@ public sealed class FakeChatPlatform(
     private List<PlatformMemberUpdated>? _heldUpdates;
     private int _memberListingFailures;
     private int _memberListings;
+    private TaskCompletionSource? _heldVoiceListings;
+    private TaskCompletionSource _voiceListingHeld = NewSignal();
 
     public PlatformRef Guild { get; } = guild ?? TestPlatform.Guild;
 
@@ -140,6 +142,51 @@ public sealed class FakeChatPlatform(
         {
             await RaiseAsync(update, cancellationToken);
         }
+    }
+
+    /// <summary>
+    /// Makes <see cref="ListVoiceStatesAsync"/> take its snapshot and then wait until
+    /// <see cref="ReleaseVoiceStateListings"/>, as a slow platform read would; <see cref="VoiceStateListingHeld"/>
+    /// completes once a call waits.
+    /// </summary>
+    public FakeChatPlatform HoldVoiceStateListings()
+    {
+        lock (_lock)
+        {
+            _heldVoiceListings = NewSignal();
+            _voiceListingHeld = NewSignal();
+        }
+
+        return this;
+    }
+
+    /// <summary>
+    /// Completes when a <see cref="ListVoiceStatesAsync"/> call waits after <see cref="HoldVoiceStateListings"/>.
+    /// </summary>
+    public Task VoiceStateListingHeld
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _voiceListingHeld.Task;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Lets the held <see cref="ListVoiceStatesAsync"/> calls return their snapshots, and the following ones at once.
+    /// </summary>
+    public void ReleaseVoiceStateListings()
+    {
+        TaskCompletionSource? held;
+        lock (_lock)
+        {
+            held = _heldVoiceListings;
+            _heldVoiceListings = null;
+        }
+
+        held?.TrySetResult();
     }
 
     public FakeChatPlatform WithCapabilities(PlatformCapabilities capabilities)
@@ -243,8 +290,26 @@ public sealed class FakeChatPlatform(
             : List(guild, _members);
     }
 
-    public Task<IReadOnlyList<PlatformVoiceState>> ListVoiceStatesAsync(PlatformRef guild, CancellationToken cancellationToken) =>
-        List(guild, _voiceStates);
+    public async Task<IReadOnlyList<PlatformVoiceState>> ListVoiceStatesAsync(PlatformRef guild, CancellationToken cancellationToken)
+    {
+        var states = await List(guild, _voiceStates);
+        TaskCompletionSource? held;
+        lock (_lock)
+        {
+            held = _heldVoiceListings;
+            if (held is not null)
+            {
+                _voiceListingHeld.TrySetResult();
+            }
+        }
+
+        if (held is not null)
+        {
+            await held.Task.WaitAsync(cancellationToken);
+        }
+
+        return states;
+    }
 
     /// <summary>
     /// The seeded presences; without <see cref="PlatformCapabilities.PresenceActivities"/> their activities are dropped,
@@ -320,6 +385,8 @@ public sealed class FakeChatPlatform(
             return _members.Find(m => m.User == user);
         }
     }
+
+    private static TaskCompletionSource NewSignal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private Task<IReadOnlyList<T>> List<T>(PlatformRef guild, List<T> items)
     {

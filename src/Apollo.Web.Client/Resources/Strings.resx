@@ -637,8 +637,8 @@
     <value>Erfassung beendet</value>
     <comment>Data page: why a voice session ended</comment>
   </data>
-  <data name="Data_EndReason_BotRestart" xml:space="preserve">
-    <value>Bot-Neustart</value>
+  <data name="Data_EndReason_Unobserved" xml:space="preserve">
+    <value>Ende nicht beobachtet</value>
     <comment>Data page: why a voice session ended</comment>
   </data>
   <data name="Data_Characters" xml:space="preserve">

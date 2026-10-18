@@ -1,48 +1,71 @@
+using Microsoft.Extensions.Options;
+
 namespace Apollo.Bot.Voice;
 
 /// <summary>
-/// Startup and shutdown of voice recording (#16): on start, closes the sessions a previous run left open as
-/// <c>BotRestart</c>; on a graceful stop, closes every open session as <c>BotRestart</c> and opens nothing after.
-/// Opening sessions for users already in voice is left to the tracking gate's first <c>TrackingStartedAsync</c> calls
-/// after the first guild sync.
+/// Startup and the periodic run of the voice reconciliation (#98): on start, takes over the sessions a previous run
+/// left open; then reconciles every <see cref="VoiceReconciliationOptions.Interval"/>, so a change the bot failed to
+/// store is corrected without a restart. A graceful stop leaves the open sessions open: the next start decides with the
+/// rule whether they continue.
 /// </summary>
 /// <remarks>
-/// A failed close on startup is logged and retried before the first session opens, so a database hiccup does not stop
-/// the bot.
+/// A failed take-over is logged and retried before the first change is applied, and a failed periodic run on the next
+/// tick, so a database hiccup does not stop the bot.
 /// </remarks>
 internal sealed partial class VoiceSessionLifecycleService(
     IServiceScopeFactory scopeFactory,
-    ILogger<VoiceSessionLifecycleService> logger) : IHostedService
+    IOptions<VoiceReconciliationOptions> options,
+    TimeProvider timeProvider,
+    ILogger<VoiceSessionLifecycleService> logger) : BackgroundService
 {
-    public async Task StartAsync(CancellationToken cancellationToken)
+    private PeriodicTimer? _timer;
+
+    /// <summary>
+    /// Takes over the open sessions and creates the timer before <see cref="ExecuteAsync"/> starts, so the first periodic
+    /// run is due exactly one interval after the host started.
+    /// </summary>
+    public override async Task StartAsync(CancellationToken cancellationToken)
     {
+        _timer = new PeriodicTimer(options.Value.Interval, timeProvider);
         try
         {
             await using var scope = scopeFactory.CreateAsyncScope();
-            await scope.ServiceProvider.GetRequiredService<VoiceSessionRecorder>().CloseLeftOpenSessionsAsync(cancellationToken);
+            await scope.ServiceProvider.GetRequiredService<VoiceSessionRecorder>().StartAsync(cancellationToken);
         }
         catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
         {
-            LogStartupCloseFailed(exception);
+            LogTakeOverFailed(exception);
         }
+
+        await base.StartAsync(cancellationToken);
     }
 
-    public async Task StopAsync(CancellationToken cancellationToken)
+    public override void Dispose()
     {
-        try
+        _timer?.Dispose();
+        base.Dispose();
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        var timer = _timer ?? throw new InvalidOperationException("The voice reconciliation was not started.");
+        while (await timer.WaitForNextTickAsync(stoppingToken))
         {
-            await using var scope = scopeFactory.CreateAsyncScope();
-            await scope.ServiceProvider.GetRequiredService<VoiceSessionRecorder>().CloseAllAsync(cancellationToken);
-        }
-        catch (Exception exception)
-        {
-            LogShutdownCloseFailed(exception);
+            try
+            {
+                await using var scope = scopeFactory.CreateAsyncScope();
+                await scope.ServiceProvider.GetRequiredService<VoiceSessionRecorder>().ReconcileAsync(stoppingToken);
+            }
+            catch (Exception exception) when (!(exception is OperationCanceledException && stoppingToken.IsCancellationRequested))
+            {
+                LogReconciliationFailed(exception);
+            }
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "Closing the voice sessions left open by the previous run failed; retrying before the first session opens")]
-    private partial void LogStartupCloseFailed(Exception exception);
+    [LoggerMessage(Level = LogLevel.Error, Message = "Taking over the voice sessions left open by the previous run failed; retrying before the first change is stored")]
+    private partial void LogTakeOverFailed(Exception exception);
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "Closing the open voice sessions on shutdown failed; the next start closes them as BotRestart")]
-    private partial void LogShutdownCloseFailed(Exception exception);
+    [LoggerMessage(Level = LogLevel.Error, Message = "The periodic voice reconciliation failed; retrying on the next tick")]
+    private partial void LogReconciliationFailed(Exception exception);
 }
