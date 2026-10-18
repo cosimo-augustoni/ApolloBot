@@ -78,7 +78,6 @@ public sealed class AdminEndpointsTests(TimescaleFixture fixture) : TimescaleTes
             Connected: true,
             LastConnectedAt: TestTime.Now - TimeSpan.FromSeconds(30),
             GatewayLatencyMeanMs: 84,
-            TestTime.Now - TimeSpan.FromSeconds(12),
             LastRecordedEvent: null,
             status.OpenVoiceSessions,
             IsStale: false,

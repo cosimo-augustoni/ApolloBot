@@ -87,15 +87,15 @@
                           SubText="@L["BotStatus_LatencyMean"]" />
             </MudItem>
             <MudItem xs="12" sm="6" md="3">
-                @if (_status.LastEventAt is { } lastEventAt)
+                @if (_status.LastRecordedEvent is { } lastRecorded)
                 {
-                    <StatTile Label="@L["BotStatus_LastEvent"]" Icon="@Icons.Material.Outlined.Bolt" SubText="@LastEventText(lastEventAt)">
-                        <ValueContent>@L.Ago(lastEventAt, _status.CheckedAt)</ValueContent>
+                    <StatTile Label="@L["BotStatus_LastEvent"]" Icon="@Icons.Material.Outlined.Bolt" SubText="@LastEventText(lastRecorded)">
+                        <ValueContent>@L.Ago(lastRecorded.OccurredAt, _status.CheckedAt)</ValueContent>
                     </StatTile>
                 }
                 else
                 {
-                    <StatTile Label="@L["BotStatus_LastEvent"]" Icon="@Icons.Material.Outlined.Bolt" SubText="@L["BotStatus_NoEventYet"]" />
+                    <StatTile Label="@L["BotStatus_LastEvent"]" Icon="@Icons.Material.Outlined.Bolt" SubText="@L["BotStatus_NothingRecorded"]" />
                 }
             </MudItem>
             <MudItem xs="12" sm="6" md="3">
@@ -215,16 +215,10 @@
         }
     }
 
-    /// <summary>
-    /// What the newest recorded row was, e.g. "Nachricht in #allgemein"; before anything is recorded, when the bot last
-    /// received an event.
-    /// </summary>
-    private string LastEventText(DateTimeOffset lastEventAt) => _status!.LastRecordedEvent switch
-    {
-        { ChannelName: { } channel } recorded => L["BotStatus_LastEvent_InChannel", DataEventText.TypeName(L, recorded.Type), channel],
-        { } recorded => DataEventText.TypeName(L, recorded.Type),
-        null => UiTime.FormatSince(lastEventAt, _status.CheckedAt),
-    };
+    /// <summary>What the newest recorded row was, e.g. "Nachricht in #allgemein"; the type only for a row without a channel.</summary>
+    private string LastEventText(LastRecordedEventDto recorded) => recorded.ChannelName is { } channel
+        ? L["BotStatus_LastEvent_InChannel", DataEventText.TypeName(L, recorded.Type), channel]
+        : DataEventText.TypeName(L, recorded.Type);
 
     /// <summary>"In 2 Kanälen"; no subtext while nobody is in voice.</summary>
     private string? VoiceChannelsText => _status!.OpenVoiceSessions.Select(s => s.ChannelId).Distinct().Count() switch

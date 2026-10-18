@@ -44,7 +44,6 @@ public sealed class BotStatusQueryTests(TimescaleFixture fixture) : TimescaleTes
         status.LastHeartbeatAt.ShouldBe(TestTime.Now - TimeSpan.FromSeconds(30));
         status.Connected.ShouldBeTrue();
         status.GatewayLatencyMeanMs.ShouldBe(84);
-        status.LastEventAt.ShouldBe(lastEventAt);
         status.IsStale.ShouldBeFalse();
     }
 

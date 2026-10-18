@@ -52,7 +52,7 @@ public sealed class BotStatusQuery(
         var heartbeat = await heartbeats.OrderByDescending(s => s.OccurredAt).FirstOrDefaultAsync(cancellationToken);
         if (heartbeat is null)
         {
-            return new BotStatusDto(now, null, false, null, null, null, lastRecordedEvent, openVoiceSessions, false, noTrackingRole, eventsPerHour);
+            return new BotStatusDto(now, null, false, null, null, lastRecordedEvent, openVoiceSessions, false, noTrackingRole, eventsPerHour);
         }
 
         var lastConnectedAt = await heartbeats.Where(s => s.Connected)
@@ -69,7 +69,6 @@ public sealed class BotStatusQuery(
             heartbeat.Connected,
             lastConnectedAt,
             latencyMean is { } mean ? (int)Math.Round(mean, MidpointRounding.AwayFromZero) : null,
-            heartbeat.LastEventAt,
             lastRecordedEvent,
             openVoiceSessions,
             now - heartbeat.OccurredAt > options.Value.StaleAfter,

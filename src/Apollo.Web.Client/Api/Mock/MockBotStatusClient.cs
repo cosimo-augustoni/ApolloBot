@@ -34,7 +34,6 @@ public sealed class MockBotStatusClient : IBotStatusClient
             Connected: true,
             LastConnectedAt: now.AddSeconds(-7),
             GatewayLatencyMeanMs: 84,
-            now.AddSeconds(-12),
             new LastRecordedEventDto(DataEventType.Message, now.AddSeconds(-12), "allgemein"),
             [
                 new OpenVoiceSessionDto("Anna", _lounge, "Voice-Lounge", now.AddMinutes(-50)),
