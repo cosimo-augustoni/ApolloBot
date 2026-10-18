@@ -144,6 +144,8 @@ Service settings with a default (not AppHost parameters):
 | `Apollo:Data:MigrationWaitTimeout` (`Apollo__Data__MigrationWaitTimeout`) | `00:05:00` | How long `bot` and `apollo-web` wait at startup for pending migrations before they exit (see below). Validated at startup: 1 second to 1 day |
 | `Apollo:Web:Auth:RevalidationInterval` (`Apollo__Web__Auth__RevalidationInterval`) | `00:05:00` | How long `apollo-web` trusts the access claims in a session cookie before it reads the synced guild state and the user's last logout again ([Admin access](#admin-access)). Validated at startup: 1 second to 1 day |
 | `Apollo:Web:BotStatus:StaleAfter` (`Apollo__Web__BotStatus__StaleAfter`) | `00:02:00` | How old the bot's latest heartbeat may be before the *Bot-Status* page (`/admin`) warns "Kein Lebenszeichen vom Bot" ([Is the bot collecting?](#day-to-day-operations)). Validated at startup: 1 minute to 1 day |
+| `Apollo:Voice:Reconciliation:Interval` (`Apollo__Voice__Reconciliation__Interval`) | `00:05:00` | How often `bot` compares its open voice sessions with the current voice states, so a change it failed to store (e.g. while the database did not answer) is corrected without a restart (scope.md §5.1 Voice). Validated at startup: 10 seconds to 1 day |
+| `Apollo:Voice:Reconciliation:MaxGap` (`Apollo__Voice__Reconciliation__MaxGap`) | `00:02:00` | The longest blind spot (a restart, measured from the last heartbeat, or a gateway disconnect) after which a member still in the same voice channel keeps their session. After a longer one the session ends at the last moment the bot knew it (`Unobserved`, shown as "Ende nicht beobachtet") and a new one starts. Validated at startup: 0 to 1 day |
 
 ### Environment of each service
 
@@ -165,8 +167,9 @@ stack sets no `DOTNET_ENVIRONMENT`), so `appsettings.Development.json` and user-
 | `HTTP_PORTS` | `apollo-web` | AppHost: `80`, the port the reverse proxy targets |
 | `ASPNETCORE_FORWARDEDHEADERS_ENABLED` | `apollo-web` | Set by Aspire (`true`) |
 
-`Apollo__Platform__Discord__Connect`, `Apollo__Data__MigrationWaitTimeout`, `Apollo__Web__Auth__RevalidationInterval`
-and `Apollo__Web__BotStatus__StaleAfter` are not set and keep their defaults.
+`Apollo__Platform__Discord__Connect`, `Apollo__Data__MigrationWaitTimeout`, `Apollo__Web__Auth__RevalidationInterval`,
+`Apollo__Web__BotStatus__StaleAfter`, `Apollo__Voice__Reconciliation__Interval` and `Apollo__Voice__Reconciliation__MaxGap`
+are not set and keep their defaults.
 `db` gets `POSTGRES_PASSWORD` from `db-password`, `pgadmin` its `PgAdmin*` parameters.
 
 ## Web login (Discord OAuth)
@@ -486,7 +489,9 @@ metrics view for the `bot` resource.
 ### Back up the database
 
 All data is in the `PostgresDataPath` bind mount. A file copy is consistent only while Postgres is stopped, so stop the
-writers first (the bot closes its open voice and presence sessions on a graceful shutdown), then the database:
+writers first (on a graceful shutdown the bot stores its open presence sessions; open voice sessions stay open, and on
+the next start the bot continues them if the pause was at most `Apollo:Voice:Reconciliation:MaxGap` and the member is
+still in the same channel, otherwise it ends them at its last heartbeat), then the database:
 
 ```bash
 docker service scale apollo_bot=0 apollo_apollo-web=0
