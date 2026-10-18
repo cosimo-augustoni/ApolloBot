@@ -2,10 +2,18 @@
 @inject IStringLocalizer<Strings> L
 
 @*
-    Messages per Zurich weekday and hour (#37), Monday on top. 24 columns need about 13px each, too small to read on a
-    phone, so below 600px (Breakpoint.Xs) the hours are summed into 8 blocks of 3 hours (HeatmapBlocks) instead.
-    Kept apart from the pages: ApexCharts and MudBlazor both define Color and Size.
+    Voice time or messages per Zurich weekday and hour (#37, #111), Monday on top, one at a time with voice first. 24
+    columns need about 13px each, too small to read on a phone, so below 600px (Breakpoint.Xs) the hours are summed into
+    8 blocks of 3 hours (HeatmapBlocks) instead. Kept apart from the pages: ApexCharts and MudBlazor both define Color
+    and Size.
 *@
+<div class="d-flex justify-end mb-2">
+    <MudToggleGroup T="StatsMetric" @bind-Value="_metric" SelectionMode="SelectionMode.SingleSelection" Size="MudBlazor.Size.Small"
+                    Color="MudBlazor.Color.Primary" aria-label="@L["Stats_Activity_Metric"]">
+        <MudToggleItem Value="StatsMetric.VoiceHours" Text="@L["Stats_VoiceHours"]" />
+        <MudToggleItem Value="StatsMetric.Messages" Text="@L["Stats_Messages"]" />
+    </MudToggleGroup>
+</div>
 <MudHidden Breakpoint="Breakpoint.Xs">
     @Chart(1)
 </MudHidden>
@@ -19,21 +27,40 @@
 
     private const int ChartHeight = 320;
 
+    private StatsMetric _metric;
+
     /// <summary>Messages per weekday (7 rows, Monday first) and hour (24 columns), as in <c>ActivityStatsDto.Heatmap</c>.</summary>
     [Parameter, EditorRequired]
     public IReadOnlyList<IReadOnlyList<long>> Heatmap { get; set; } = [];
 
+    /// <summary>Voice seconds per weekday and hour, shaped as <see cref="Heatmap"/> (<c>ActivityStatsDto.VoiceHeatmap</c>).</summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyList<IReadOnlyList<long>> VoiceHeatmap { get; set; } = [];
+
+    /// <summary>The metric shown first; the toggle switches to the other one.</summary>
+    [Parameter]
+    public StatsMetric InitialMetric { get; set; }
+
+    protected override void OnInitialized() => _metric = InitialMetric;
+
+    private bool IsVoice => _metric == StatsMetric.VoiceHours;
+
     private RenderFragment Chart(int hoursPerBlock) => __builder =>
     {
-        var days = HeatmapBlocks.Group(Heatmap, hoursPerBlock);
+        var cells = IsVoice ? VoiceHeatmap : Heatmap;
+        var days = HeatmapBlocks.Group(cells, hoursPerBlock);
+        // The colour steps run over the cells' own unit (seconds for voice); only the tooltip formats them.
         var options = ApexChartDefaults.CreateHeatmap<HeatmapBlock>(Math.Max(1, days.SelectMany(d => d).Select(b => b.Count).DefaultIfEmpty().Max()));
         options.Xaxis.Labels.HideOverlappingLabels = true;
         options.Xaxis.Labels.Rotate = 0;
-        <MudText Typo="Typo.body2" Class="apollo-heatmap-caption mud-text-secondary mb-1">
-            @(hoursPerBlock == 1 ? L["Stats_Heatmap_Caption"] : L["Stats_Heatmap_CaptionBlocks"])
-        </MudText>
-        @* @key: a new range or form draws a new chart; the chart would otherwise keep the series it was first rendered with. *@
-        <ApexChart @key="(Heatmap, hoursPerBlock)" TItem="HeatmapBlock" Options="options" Height="@ChartHeight">
+        if (IsVoice)
+        {
+            options.Tooltip.Y.Formatter = ApexChartDefaults.DurationFormatter;
+        }
+
+        <MudText Typo="Typo.body2" Class="apollo-heatmap-caption mud-text-secondary mb-1">@Caption(hoursPerBlock)</MudText>
+        @* @key: a new range, metric or form draws a new chart; the chart would otherwise keep the series it was first rendered with. *@
+        <ApexChart @key="(cells, hoursPerBlock)" TItem="HeatmapBlock" Options="options" Height="@ChartHeight">
             @* ApexCharts draws the first series at the bottom, so Sunday comes first to put Monday on top. *@
             @for (var day = days.Count - 1; day >= 0; day--)
             {
@@ -41,6 +68,14 @@
                                  XValue="b => HourLabel(b, hoursPerBlock)" YValue="b => b.Count" />
             }
         </ApexChart>
+    };
+
+    private string Caption(int hoursPerBlock) => (IsVoice, hoursPerBlock == 1) switch
+    {
+        (true, true) => L["Stats_Heatmap_CaptionVoice"],
+        (true, false) => L["Stats_Heatmap_CaptionVoiceBlocks"],
+        (false, true) => L["Stats_Heatmap_Caption"],
+        (false, false) => L["Stats_Heatmap_CaptionBlocks"],
     };
 
     private string Weekday(int day) => L[_weekdayKeys[day]];

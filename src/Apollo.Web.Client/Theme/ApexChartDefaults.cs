@@ -15,6 +15,13 @@ public static class ApexChartDefaults
     public const string SwissNumberFormatter =
         """function (value) { return typeof value === 'number' ? value.toLocaleString('de-CH', { maximumFractionDigits: 1 }).replace(/’/g, "'") : value; }""";
 
+    /// <summary>
+    /// JS formatter for durations given in seconds, as <see cref="Formatting.UiDuration.HoursAndMinutes"/> writes them:
+    /// <c>35 min</c> under an hour, otherwise <c>1'234 h 5 min</c>, started minutes cut off.
+    /// </summary>
+    public const string DurationFormatter =
+        """function (value) { if (typeof value !== 'number') { return value; } var hours = Math.floor(value / 3600); var minutes = Math.floor((value % 3600) / 60) + ' min'; return hours === 0 ? minutes : hours.toLocaleString('de-CH').replace(/’/g, "'") + ' h ' + minutes; }""";
+
     public static ApexChartOptions<T> Create<T>() where T : class => new()
     {
         Colors = [.. ChartPalette.Series],

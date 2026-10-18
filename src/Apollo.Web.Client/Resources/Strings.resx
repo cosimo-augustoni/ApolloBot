@@ -1141,6 +1141,12 @@
     <value>Nachrichten pro 3 Stunden</value>
     <comment>Stats: heatmap caption on phones</comment>
   </data>
+  <data name="Stats_Heatmap_CaptionVoice" xml:space="preserve">
+    <value>Voice-Zeit pro Stunde</value>
+  </data>
+  <data name="Stats_Heatmap_CaptionVoiceBlocks" xml:space="preserve">
+    <value>Voice-Zeit pro 3 Stunden</value>
+  </data>
   <data name="Stats_Empty_Title" xml:space="preserve">
     <value>Keine Daten im gewählten Zeitraum</value>
     <comment>Stats: empty state</comment>
