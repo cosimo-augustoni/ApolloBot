@@ -5,21 +5,28 @@ namespace Apollo.Bot.Tests.Presence;
 
 /// <summary>
 /// Once <see cref="Arm"/>ed, fails the next insert into <c>presence_activity_sessions</c> (storing a closed session), as
-/// a transient database error would.
+/// a transient database error would. Counts the inserts that reached the database (<see cref="Inserts"/>).
 /// </summary>
 internal sealed class FailingPresenceInsertInterceptor : DbCommandInterceptor
 {
     private int _armed;
+    private int _inserts;
+
+    public int Inserts => Volatile.Read(ref _inserts);
 
     public void Arm() => Interlocked.Exchange(ref _armed, 1);
 
     public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
         DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result, CancellationToken cancellationToken = default)
     {
-        if (command.CommandText.Contains("INSERT INTO presence_activity_sessions", StringComparison.OrdinalIgnoreCase)
-            && Interlocked.Exchange(ref _armed, 0) == 1)
+        if (command.CommandText.Contains("INSERT INTO presence_activity_sessions", StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException("Simulated: database write failed.");
+            if (Interlocked.Exchange(ref _armed, 0) == 1)
+            {
+                throw new InvalidOperationException("Simulated: database write failed.");
+            }
+
+            Interlocked.Increment(ref _inserts);
         }
 
         return ValueTask.FromResult(result);

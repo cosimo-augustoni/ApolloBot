@@ -149,6 +149,47 @@ public sealed class PresenceSessionStateMachineTests
         copy.OpenSessionCount.ShouldBe(0);
     }
 
+    [Fact]
+    public void Reconcile_WhenAnActivityIsGone_ShouldCloseItAtLastKnown()
+    {
+        _machine.Update(_alice, [_factorio, _spotify], _startedAt);
+        var lastKnownAt = _later;
+
+        var changes = _machine.Reconcile(_alice, [_spotify], lastKnownAt, now: _later.AddMinutes(5));
+
+        changes.ShouldBe([new PresenceSessionClosed(_alice, _factorio, _startedAt, lastKnownAt)]);
+        _machine.OpenSessionCount.ShouldBe(1);
+    }
+
+    [Fact]
+    public void Reconcile_WhenTheSessionStartedAfterLastKnown_ShouldNotCloseItBeforeItsStart()
+    {
+        _machine.Update(_alice, [_factorio], _later);
+
+        var changes = _machine.Reconcile(_alice, [], lastKnownAt: _startedAt, now: _later.AddMinutes(5));
+
+        changes.ShouldBe([new PresenceSessionClosed(_alice, _factorio, _later, _later)]);
+    }
+
+    [Fact]
+    public void Reconcile_WhenAnActivityHasNoSession_ShouldOpenOneNow()
+    {
+        var now = _later.AddMinutes(5);
+
+        var changes = _machine.Reconcile(_alice, [_celeste], lastKnownAt: _later, now);
+
+        changes.ShouldBe([new PresenceSessionOpened(_alice, _celeste, now)]);
+    }
+
+    [Fact]
+    public void Reconcile_WhenEverythingMatches_ShouldChangeNothingAndKeepTheStart()
+    {
+        _machine.Update(_alice, [_factorio], _startedAt);
+
+        _machine.Reconcile(_alice, [_factorio], lastKnownAt: _later, now: _later.AddMinutes(5)).ShouldBeEmpty();
+        _machine.Update(_alice, [], _later.AddMinutes(10)).ShouldBe([new PresenceSessionClosed(_alice, _factorio, _startedAt, _later.AddMinutes(10))]);
+    }
+
     [Theory]
     [InlineData(59, false)]
     [InlineData(60, true)]

@@ -1,10 +1,11 @@
+using Apollo.Bot.Reconciliation;
 using Microsoft.Extensions.Options;
 
 namespace Apollo.Bot.Voice;
 
 /// <summary>
 /// Startup and the periodic run of the voice reconciliation (#98): on start, takes over the sessions a previous run
-/// left open; then reconciles every <see cref="VoiceReconciliationOptions.Interval"/>, so a change the bot failed to
+/// left open; then reconciles every <see cref="ReconciliationOptions.Interval"/>, so a change the bot failed to
 /// store is corrected without a restart. A graceful stop leaves the open sessions open: the next start decides with the
 /// rule whether they continue.
 /// </summary>
@@ -14,7 +15,7 @@ namespace Apollo.Bot.Voice;
 /// </remarks>
 internal sealed partial class VoiceSessionLifecycleService(
     IServiceScopeFactory scopeFactory,
-    IOptions<VoiceReconciliationOptions> options,
+    IOptions<ReconciliationOptions> options,
     TimeProvider timeProvider,
     ILogger<VoiceSessionLifecycleService> logger) : BackgroundService
 {

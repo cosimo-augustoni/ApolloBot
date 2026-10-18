@@ -41,8 +41,9 @@ public sealed class FakeChatPlatform(
     private int _memberListingFailures;
     private int _memberListings;
     private bool _guildUnavailable;
-    private TaskCompletionSource? _heldVoiceListings;
-    private TaskCompletionSource _voiceListingHeld = NewSignal();
+    private TaskCompletionSource? _heldListings;
+    private bool _snapshotOnRelease;
+    private TaskCompletionSource _listingHeld = NewSignal();
 
     public PlatformRef Guild { get; } = guild ?? TestPlatform.Guild;
 
@@ -148,7 +149,7 @@ public sealed class FakeChatPlatform(
     /// <summary>
     /// Whether the guild is available (<see cref="IsGuildAvailable"/>, the default) or not, as between a gateway connect
     /// and its snapshot or during a platform outage. While it is not, <see cref="ListVoiceStatesAsync"/> returns nothing,
-    /// as an adapter reading an empty cache would.
+    /// as an adapter reading an empty cache would; so does <see cref="ListPresencesAsync"/>.
     /// </summary>
     public FakeChatPlatform WithGuildAvailability(bool available)
     {
@@ -163,45 +164,47 @@ public sealed class FakeChatPlatform(
     }
 
     /// <summary>
-    /// Makes <see cref="ListVoiceStatesAsync"/> take its snapshot and then wait until
-    /// <see cref="ReleaseVoiceStateListings"/>, as a slow platform read would; <see cref="VoiceStateListingHeld"/>
-    /// completes once a call waits.
+    /// Makes <see cref="ListVoiceStatesAsync"/> and <see cref="ListPresencesAsync"/> wait until
+    /// <see cref="ReleaseStateListings"/>, as a slow platform read would; <see cref="StateListingHeld"/> completes once a
+    /// call waits. The snapshot is taken before waiting (a stale read), or with <paramref name="snapshotOnRelease"/>
+    /// after it (a read that sees what changed meanwhile).
     /// </summary>
-    public FakeChatPlatform HoldVoiceStateListings()
+    public FakeChatPlatform HoldStateListings(bool snapshotOnRelease = false)
     {
         lock (_lock)
         {
-            _heldVoiceListings = NewSignal();
-            _voiceListingHeld = NewSignal();
+            _heldListings = NewSignal();
+            _snapshotOnRelease = snapshotOnRelease;
+            _listingHeld = NewSignal();
         }
 
         return this;
     }
 
     /// <summary>
-    /// Completes when a <see cref="ListVoiceStatesAsync"/> call waits after <see cref="HoldVoiceStateListings"/>.
+    /// Completes when a listing waits after <see cref="HoldStateListings"/>.
     /// </summary>
-    public Task VoiceStateListingHeld
+    public Task StateListingHeld
     {
         get
         {
             lock (_lock)
             {
-                return _voiceListingHeld.Task;
+                return _listingHeld.Task;
             }
         }
     }
 
     /// <summary>
-    /// Lets the held <see cref="ListVoiceStatesAsync"/> calls return their snapshots, and the following ones at once.
+    /// Lets the held listings return, and the following ones at once.
     /// </summary>
-    public void ReleaseVoiceStateListings()
+    public void ReleaseStateListings()
     {
         TaskCompletionSource? held;
         lock (_lock)
         {
-            held = _heldVoiceListings;
-            _heldVoiceListings = null;
+            held = _heldListings;
+            _heldListings = null;
         }
 
         held?.TrySetResult();
@@ -308,36 +311,19 @@ public sealed class FakeChatPlatform(
             : List(guild, _members);
     }
 
-    public async Task<IReadOnlyList<PlatformVoiceState>> ListVoiceStatesAsync(PlatformRef guild, CancellationToken cancellationToken)
-    {
-        var states = IsGuildAvailable(guild) ? await List(guild, _voiceStates) : [];
-        TaskCompletionSource? held;
-        lock (_lock)
-        {
-            held = _heldVoiceListings;
-            if (held is not null)
-            {
-                _voiceListingHeld.TrySetResult();
-            }
-        }
-
-        if (held is not null)
-        {
-            await held.Task.WaitAsync(cancellationToken);
-        }
-
-        return states;
-    }
+    public Task<IReadOnlyList<PlatformVoiceState>> ListVoiceStatesAsync(PlatformRef guild, CancellationToken cancellationToken) =>
+        HeldListAsync(guild, _voiceStates, states => states, cancellationToken);
 
     /// <summary>
     /// The seeded presences; without <see cref="PlatformCapabilities.PresenceActivities"/> their activities are dropped,
     /// as a platform without activities would report them.
     /// </summary>
-    public async Task<IReadOnlyList<PlatformPresence>> ListPresencesAsync(PlatformRef guild, CancellationToken cancellationToken)
-    {
-        var presences = await List(guild, _presences);
-        return Capabilities.PresenceActivities ? presences : [.. presences.Select(p => p with { Activities = [] })];
-    }
+    public Task<IReadOnlyList<PlatformPresence>> ListPresencesAsync(PlatformRef guild, CancellationToken cancellationToken) =>
+        HeldListAsync(
+            guild,
+            _presences,
+            presences => Capabilities.PresenceActivities ? presences : [.. presences.Select(p => p with { Activities = [] })],
+            cancellationToken);
 
     /// <summary>
     /// Records the call, gives the member the role and echoes a <see cref="PlatformMemberUpdated"/>.
@@ -402,6 +388,38 @@ public sealed class FakeChatPlatform(
         {
             return _members.Find(m => m.User == user);
         }
+    }
+
+    /// <summary>
+    /// A cache read: nothing while the guild is unavailable, and held while <see cref="HoldStateListings"/> says so.
+    /// </summary>
+    private async Task<IReadOnlyList<T>> HeldListAsync<T>(
+        PlatformRef guild,
+        List<T> items,
+        Func<IReadOnlyList<T>, IReadOnlyList<T>> map,
+        CancellationToken cancellationToken)
+    {
+        IReadOnlyList<T> Snapshot() => IsGuildAvailable(guild) ? map(List(guild, items).Result) : [];
+
+        TaskCompletionSource? held;
+        bool snapshotOnRelease;
+        lock (_lock)
+        {
+            (held, snapshotOnRelease) = (_heldListings, _snapshotOnRelease);
+        }
+
+        var snapshot = held is not null && snapshotOnRelease ? null : Snapshot();
+        if (held is not null)
+        {
+            lock (_lock)
+            {
+                _listingHeld.TrySetResult();
+            }
+
+            await held.Task.WaitAsync(cancellationToken);
+        }
+
+        return snapshot ?? Snapshot();
     }
 
     private static TaskCompletionSource NewSignal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
