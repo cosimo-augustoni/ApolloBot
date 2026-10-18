@@ -35,8 +35,8 @@ public sealed record ActivityStatsDto
     public required int? TrackedDays { get; init; }
 
     /// <summary>
-    /// For a user: the Zurich day their first tracking period started (whatever the range); <see langword="null"/> for
-    /// the guild and for a user who was never tracked.
+    /// For a user: the Zurich day their current (open) tracking period started, whatever the range;
+    /// <see langword="null"/> for the guild and for a user who is not tracked now.
     /// </summary>
     public required DateOnly? TrackedSince { get; init; }
 
