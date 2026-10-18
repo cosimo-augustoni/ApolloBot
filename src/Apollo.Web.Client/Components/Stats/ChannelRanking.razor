@@ -20,6 +20,10 @@
         <MudTd DataLabel="@L["Stats_Messages"]" Class="apollo-numeric" Style="text-align: right">@context.Channel.Messages.ToString("N0", UiCulture.Culture)</MudTd>
         <MudTd DataLabel="@L["Stats_VoiceHours"]" Class="apollo-numeric" Style="text-align: right">@VoiceTime(context.Channel.VoiceSeconds)</MudTd>
     </RowTemplate>
+    <NoRecordsContent>
+        @* A member who only reacted in the range has no channel with messages or voice time (#38). *@
+        <MudText Typo="Typo.body2" Class="apollo-channel-ranking-empty mud-text-secondary">@L["Stats_Channel_None"]</MudText>
+    </NoRecordsContent>
 </MudTable>
 @if (Channels.Count > Top)
 {

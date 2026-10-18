@@ -1117,6 +1117,10 @@
     <value>Unbekannter Kanal</value>
     <comment>Stats: channel without a known name</comment>
   </data>
+  <data name="Stats_Channel_None" xml:space="preserve">
+    <value>Keine Nachrichten und keine Voice-Zeit im gewählten Zeitraum</value>
+    <comment>Stats: channel ranking without rows</comment>
+  </data>
   <data name="Stats_ShowAll" xml:space="preserve">
     <value>Alle anzeigen</value>
     <comment>Stats: button</comment>
@@ -1148,6 +1152,118 @@
   <data name="Stats_VoiceNote" xml:space="preserve">
     <value>Voice-Stunden zählen beendete Sessions am Tag ihres Beginns.</value>
     <comment>Stats: note under the activity chart</comment>
+  </data>
+  <data name="Member_ActiveDays" xml:space="preserve">
+    <value>Aktive Tage</value>
+    <comment>Member stats: tile</comment>
+  </data>
+  <data name="Member_ActiveDays_Value" xml:space="preserve">
+    <value>{0} von {1}</value>
+    <comment>Member stats: active days of the tracked days in the range</comment>
+  </data>
+  <data name="Member_ActiveDays_Sub" xml:space="preserve">
+    <value>Erfasste Tage im Zeitraum</value>
+    <comment>Member stats: tile subtext, what the second number counts</comment>
+  </data>
+  <data name="Member_Chapter" xml:space="preserve">
+    <value>Kapitel {0}</value>
+    <comment>Member stats: chapter kicker</comment>
+  </data>
+  <data name="Member_Bonus" xml:space="preserve">
+    <value>Bonus</value>
+    <comment>Member stats: kicker of the games chapter, shown only with game data</comment>
+  </data>
+  <data name="Member_Channels_Title" xml:space="preserve">
+    <value>Du und deine Kanäle</value>
+    <comment>Member stats: chapter headline</comment>
+  </data>
+  <data name="Member_Channels_KeySub" xml:space="preserve">
+    <value>{0} % deiner Nachrichten</value>
+    <comment>Member stats: share of the top channel</comment>
+  </data>
+  <data name="Member_TopChannels" xml:space="preserve">
+    <value>Top-Kanäle</value>
+    <comment>Member stats: card</comment>
+  </data>
+  <data name="Member_TopEmojis" xml:space="preserve">
+    <value>Top-Emojis</value>
+    <comment>Member stats: card</comment>
+  </data>
+  <data name="Member_TopEmojis_None" xml:space="preserve">
+    <value>Keine Reaktionen im gewählten Zeitraum</value>
+    <comment>Member stats: no emojis</comment>
+  </data>
+  <data name="Member_Emoji_Unknown" xml:space="preserve">
+    <value>Unbekanntes Emoji</value>
+    <comment>Member stats: custom emoji without a known name</comment>
+  </data>
+  <data name="Member_RepliesTo" xml:space="preserve">
+    <value>Du antwortest am meisten</value>
+    <comment>Member stats: card, whom the member replies to</comment>
+  </data>
+  <data name="Member_RepliedBy" xml:space="preserve">
+    <value>Dir antworten am meisten</value>
+    <comment>Member stats: card, who replies to the member</comment>
+  </data>
+  <data name="Member_Replies_None" xml:space="preserve">
+    <value>Keine Antworten im gewählten Zeitraum</value>
+    <comment>Member stats: no replies</comment>
+  </data>
+  <data name="Member_Unknown" xml:space="preserve">
+    <value>Unbekanntes Mitglied</value>
+    <comment>Member stats: member without a known name</comment>
+  </data>
+  <data name="Member_Voice_Title" xml:space="preserve">
+    <value>Deine Leute im Voice</value>
+    <comment>Member stats: chapter headline</comment>
+  </data>
+  <data name="Member_Voice_KeySub" xml:space="preserve">
+    <value>im Voice</value>
+    <comment>Member stats: under the voice hours</comment>
+  </data>
+  <data name="Member_Voice_KeySubWith" xml:space="preserve">
+    <value>im Voice, am meisten mit {0}</value>
+    <comment>Member stats: under the voice hours; {0} is the top voice buddy</comment>
+  </data>
+  <data name="Member_VoiceBuddies" xml:space="preserve">
+    <value>Am meisten Zeit zusammen</value>
+    <comment>Member stats: card, voice buddies</comment>
+  </data>
+  <data name="Member_VoiceBuddies_None" xml:space="preserve">
+    <value>Niemand war gleichzeitig im selben Kanal</value>
+    <comment>Member stats: no voice buddies</comment>
+  </data>
+  <data name="Member_LongestSession" xml:space="preserve">
+    <value>Längste Voice-Session</value>
+    <comment>Member stats: tile</comment>
+  </data>
+  <data name="Member_LongestSession_Sub" xml:space="preserve">
+    <value>in {0} am {1}</value>
+    <comment>Member stats: channel and start of the longest session</comment>
+  </data>
+  <data name="Member_LongestSession_None" xml:space="preserve">
+    <value>Keine beendete Session im Zeitraum</value>
+    <comment>Member stats: no longest session</comment>
+  </data>
+  <data name="Member_Times_Title" xml:space="preserve">
+    <value>Deine Zeiten</value>
+    <comment>Member stats: chapter headline</comment>
+  </data>
+  <data name="Member_Times_Key" xml:space="preserve">
+    <value>{0}, {1} Uhr</value>
+    <comment>Member stats: most active weekday and hour</comment>
+  </data>
+  <data name="Member_Times_KeySub" xml:space="preserve">
+    <value>deine aktivste Stunde</value>
+    <comment>Member stats: under the most active hour</comment>
+  </data>
+  <data name="Member_Games_Title" xml:space="preserve">
+    <value>Spiele</value>
+    <comment>Member stats: chapter headline</comment>
+  </data>
+  <data name="Member_Games" xml:space="preserve">
+    <value>Meistgespielt</value>
+    <comment>Member stats: card, games by playtime</comment>
   </data>
   <data name="ServerOverview_LoadFailed" xml:space="preserve">
     <value>Die Statistik konnte nicht geladen werden. Versuche es später noch einmal.</value>

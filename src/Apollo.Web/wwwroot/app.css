@@ -58,6 +58,96 @@ h1:focus {
     min-height: 160px;
 }
 
+/* Member stats magazine (#38, scope D16): chapters led by a headline and one key number. */
+.apollo-chapter {
+    margin-top: 40px;
+}
+
+.apollo-chapter-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 8px 24px;
+    margin-bottom: 16px;
+}
+
+.apollo-chapter-kicker {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.apollo-chapter-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.apollo-chapter-key {
+    min-width: 0;
+    text-align: right;
+}
+
+.apollo-chapter-key-value {
+    font-size: 1.875rem;
+    font-weight: 700;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+/* Below 600px the key number goes under the headline (wireframe "at 360px"). */
+@media (max-width: 599.98px) {
+    .apollo-chapter-key {
+        text-align: left;
+    }
+}
+
+/* Ranked lists (RankList): a bar behind each row, as wide as its share of the first row. */
+.apollo-rank {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.apollo-rank li {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 10px;
+    overflow: hidden;
+    border-radius: var(--mud-default-borderradius);
+}
+
+.apollo-rank li::before {
+    position: absolute;
+    inset: 0;
+    width: var(--apollo-rank-share, 0%);
+    background-color: var(--mud-palette-primary);
+    opacity: 0.25;
+    content: "";
+}
+
+.apollo-rank-label,
+.apollo-rank-value {
+    position: relative;
+}
+
+.apollo-rank-label {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.apollo-rank-value {
+    white-space: nowrap;
+}
+
 /* Style guide page */
 .apollo-swatch {
     height: 100%;
