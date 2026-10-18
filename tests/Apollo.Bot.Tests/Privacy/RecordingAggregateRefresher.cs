@@ -13,6 +13,7 @@ internal sealed class RecordingAggregateRefresher(ApolloDbContext db, AggregateR
     public Task RefreshAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken)
     {
         log.Calls.Add(new AggregateRefreshLog.Call(from, to, db.Database.CurrentTransaction is not null));
+        log.During?.Invoke();
         return log.Failure is { } failure ? Task.FromException(failure) : Task.CompletedTask;
     }
 

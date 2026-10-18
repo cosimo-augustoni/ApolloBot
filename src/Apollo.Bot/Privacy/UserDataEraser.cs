@@ -20,17 +20,18 @@ namespace Apollo.Bot.Privacy;
 /// time range of the rows the steps change (<see cref="IUserDataEraserStep.FindRangeAsync"/>).
 /// </item>
 /// <item>
-/// After the commit, the continuous aggregates are refreshed over that range (#39): a refresh policy only re-materializes
-/// its own window, so older aggregate rows would keep the deleted numbers. A refresh cannot run in a transaction, and
-/// when it fails the deletion stays: the error is logged, and the aggregates are fixed by a manual refresh
-/// (docs/scope.md §5.4). Without rows there is nothing to refresh.
-/// </item>
-/// <item>
 /// Only then is the tracking role removed: after a failed deletion the member keeps their role and their data as before,
 /// and after a successful one recording does not resume. The gate's mark ends once the role removal is synced (the
 /// echoed member update). Without a role to remove (tracking not set up, the member does not hold it) or
 /// when the platform refuses the removal, the deletion fails or is cancelled, the mark ends right away and the gate
 /// tracks whoever the rule tracks, from a new tracking period. Only the deletion that added the mark ends it.
+/// </item>
+/// <item>
+/// Last, the continuous aggregates are refreshed over that range (#39): a refresh policy only re-materializes its own
+/// window, so older aggregate rows would keep the deleted numbers. A refresh cannot run in a transaction, and after the
+/// role removal a cancellation cannot leave a member with deleted data still holding the role. When it fails the deletion
+/// stays: the error is logged, and the aggregates are fixed by a manual refresh (docs/scope.md §5.4). Without rows there
+/// is nothing to refresh.
 /// </item>
 /// </list>
 /// <para>
@@ -77,32 +78,16 @@ internal sealed partial class UserDataEraser(
                 return UserDataErasureOutcome.Failed;
             }
 
+            // The refresh comes last, after the role removal on every path: a cancellation during a long refresh (e.g. a
+            // shutdown) must not skip the removal once the rows are gone, or the member would be recorded again.
+            var outcome = await RemoveTrackingRoleAsync(view, guild, member, mark, userId, cancellationToken);
+            markEndsWithRoleRemoval = outcome == UserDataErasureOutcome.DeletedAndRoleRemoved;
             if (range is not null)
             {
                 await RefreshAggregatesAsync(userId, range, cancellationToken);
             }
 
-            // With a tracking role, the gate tracks exactly its holders (see TrackingRoleSwitch). A mark another deletion
-            // added means the member held the role then, and its removal may not be synced yet: removing it again is
-            // harmless, and the reply stays true.
-            var holdsRole = view.TryGetTrackedUserId(member) is not null || mark == UntrackedMark.AlreadyMarked;
-            if (view.TrackingRole is not { } role || !holdsRole)
-            {
-                return WithoutRoleRemoval(view);
-            }
-
-            try
-            {
-                await platform.RemoveRoleAsync(guild, member, role, cancellationToken);
-            }
-            catch (Exception exception) when (!IsCancellation(exception, cancellationToken))
-            {
-                LogRemoveRoleFailed(exception, role.ToString(), userId);
-                return UserDataErasureOutcome.DeletedButRoleKept;
-            }
-
-            markEndsWithRoleRemoval = true;
-            return UserDataErasureOutcome.DeletedAndRoleRemoved;
+            return outcome;
         }
         finally
         {
@@ -111,6 +96,36 @@ internal sealed partial class UserDataEraser(
                 await gate.ReleaseUntrackedMarkAsync(guildId, userId, CancellationToken.None);
             }
         }
+    }
+
+    private async Task<UserDataErasureOutcome> RemoveTrackingRoleAsync(
+        ITrackingView view,
+        PlatformRef guild,
+        PlatformRef member,
+        UntrackedMark mark,
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        // With a tracking role, the gate tracks exactly its holders (see TrackingRoleSwitch). A mark another deletion
+        // added means the member held the role then, and its removal may not be synced yet: removing it again is
+        // harmless, and the reply stays true.
+        var holdsRole = view.TryGetTrackedUserId(member) is not null || mark == UntrackedMark.AlreadyMarked;
+        if (view.TrackingRole is not { } role || !holdsRole)
+        {
+            return WithoutRoleRemoval(view);
+        }
+
+        try
+        {
+            await platform.RemoveRoleAsync(guild, member, role, cancellationToken);
+        }
+        catch (Exception exception) when (!IsCancellation(exception, cancellationToken))
+        {
+            LogRemoveRoleFailed(exception, role.ToString(), userId);
+            return UserDataErasureOutcome.DeletedButRoleKept;
+        }
+
+        return UserDataErasureOutcome.DeletedAndRoleRemoved;
     }
 
     private static bool IsCancellation(Exception exception, CancellationToken cancellationToken) =>
