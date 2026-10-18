@@ -22,7 +22,6 @@ public sealed class RoutesTests : ApolloTestContext
     /// <summary>Every navigation route with its page heading from the wireframes (#27).</summary>
     public static TheoryData<string, string> PlaceholderRoutes => new()
     {
-        { "admin/dashboard", "Server-Übersicht" },
         { "admin/members", "Mitglieder" },
         { "admin/recaps", "Server-Rückblicke" },
         { "me", "Meine Statistik" },
@@ -65,6 +64,16 @@ public sealed class RoutesTests : ApolloTestContext
 
         routes.WaitForAssertion(() => routes.FindComponents<Apollo.Web.Client.Pages.Admin.Data>().ShouldHaveSingleItem());
         routes.Find("h1").TextContent.Trim().ShouldBe("Daten");
+        routes.FindComponents<AreaPlaceholder>().ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Router_WhenRouteIsAdminDashboard_ShouldShowTheServerOverview()
+    {
+        var routes = RenderAt("admin/dashboard");
+
+        routes.WaitForAssertion(() => routes.FindComponents<Apollo.Web.Client.Pages.Admin.ServerOverview>().ShouldHaveSingleItem());
+        routes.Find("h1").TextContent.Trim().ShouldBe("Server-Übersicht");
         routes.FindComponents<AreaPlaceholder>().ShouldBeEmpty();
     }
 

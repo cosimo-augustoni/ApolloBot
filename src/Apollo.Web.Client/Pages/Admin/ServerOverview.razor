@@ -1,0 +1,142 @@
+@page "/admin/dashboard"
+@using Apollo.Web.Client.Contracts
+@implements IDisposable
+@inject IServerStatsClient Client
+@inject TimeProvider Time
+@inject IStringLocalizer<Strings> L
+
+@*
+    Server-Übersicht (#37, scope §7.2): the activity of the server over a range of Zurich days, bots left out. It opens
+    with the current month (DateRangePresets) and loads again whenever the range changes; there is no auto refresh. The
+    stats components take their data as parameters, so the member pages (#38, #42) can show theirs with the same ones.
+*@
+<PageTitle>@L["PageTitle", L["Page_ServerOverview"]]</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-6">
+    <div class="d-flex flex-wrap align-center justify-space-between gap-2 mb-4">
+        <MudText Typo="Typo.h1">@L["Page_ServerOverview"]</MudText>
+        <DateRangeSelector Value="_range" ValueChanged="SelectRangeAsync" />
+    </div>
+
+    @if (_failed)
+    {
+        <MudAlert Severity="Severity.Error" Class="apollo-stats-load-failed mb-4">@L["ServerOverview_LoadFailed"]</MudAlert>
+    }
+    else if (_stats is null)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="apollo-stats-loading" />
+    }
+    else
+    {
+        <MudGrid Spacing="3">
+            <MudItem xs="12" sm="6" md="3" Class="apollo-stats-tile-item">
+                <StatTile Label="@L["Stats_Messages"]" Icon="@Icons.Material.Outlined.Chat" Value="@_stats.Totals.Messages"
+                          SubText="@PerDay(_stats.Averages.Messages)" />
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3" Class="apollo-stats-tile-item">
+                <StatTile Label="@L["Stats_VoiceHours"]" Icon="@Icons.Material.Outlined.Headset"
+                          SubText="@L["Stats_PerDay", UiDuration.HoursAndMinutes((long)_stats.Averages.VoiceSeconds)]">
+                    <ValueContent>@UiDuration.HoursAndMinutes(_stats.Totals.VoiceSeconds)</ValueContent>
+                </StatTile>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3" Class="apollo-stats-tile-item">
+                <StatTile Label="@L["Stats_Reactions"]" Icon="@Icons.Material.Outlined.AddReaction" Value="@_stats.Totals.ReactionsGiven"
+                          SubText="@PerDay(_stats.Averages.ReactionsGiven)" />
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3" Class="apollo-stats-tile-item">
+                <StatTile Label="@L["Stats_ActiveMembers"]" Icon="@Icons.Material.Outlined.People" Value="@_stats.ActiveUsers"
+                          SubText="@L["Stats_ActiveDays", _stats.ActiveDays, _stats.Daily.Count]" />
+            </MudItem>
+
+            @if (_stats.Totals.IsEmpty)
+            {
+                <MudItem xs="12">
+                    <MudPaper Elevation="0" Class="apollo-section-card apollo-stats-empty">
+                        <EmptyState Icon="@Icons.Material.Outlined.Insights" Title="@L["Stats_Empty_Title"]" Explanation="@L["Stats_Empty_Text"]" />
+                    </MudPaper>
+                </MudItem>
+            }
+            else
+            {
+                <MudItem xs="12">
+                    <SectionCard Title="@L["Stats_Activity"]">
+                        <ActivityOverTimeChart Days="_stats.Daily" />
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary">@L["Stats_VoiceNote"]</MudText>
+                    </SectionCard>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <SectionCard Title="@L["Stats_ChannelRanking"]">
+                        <ChannelRanking Channels="_stats.Channels" />
+                    </SectionCard>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <SectionCard Title="@L["Stats_Heatmap"]">
+                        <ActivityHeatmap Heatmap="_stats.Heatmap" />
+                    </SectionCard>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    private CancellationTokenSource? _load;
+    private DateRangeSelection _range = null!;
+    private ActivityStatsDto? _stats;
+    private bool _failed;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _range = DateRangePresets.Default(Time);
+        await LoadAsync();
+    }
+
+    private async Task SelectRangeAsync(DateRangeSelection range)
+    {
+        _range = range;
+        await LoadAsync();
+    }
+
+    /// <summary>
+    /// Loads <see cref="_range"/>. A new range cancels the load still running, so a late answer for an older range
+    /// never replaces the newer one; any other failure shows the error until the next range is picked.
+    /// </summary>
+    private async Task LoadAsync()
+    {
+        if (_load is not null)
+        {
+            await _load.CancelAsync();
+            _load.Dispose();
+        }
+
+        var load = _load = new CancellationTokenSource();
+        _stats = null;
+        _failed = false;
+        try
+        {
+            var stats = await Client.GetAsync(_range.From, _range.To, load.Token);
+            if (!load.IsCancellationRequested)
+            {
+                _stats = stats;
+            }
+        }
+        catch (OperationCanceledException) when (load.IsCancellationRequested)
+        {
+            // A newer range or leaving the page replaced this load.
+        }
+#pragma warning disable CA1031 // A timeout, an HTML answer or an empty body all mean "not loaded".
+        catch (Exception)
+#pragma warning restore CA1031
+        {
+            _failed = !load.IsCancellationRequested;
+        }
+    }
+
+    private string PerDay(double average) => L["Stats_PerDay", average.ToString("N1", UiCulture.Culture)];
+
+    public void Dispose()
+    {
+        _load?.Cancel();
+        _load?.Dispose();
+    }
+}
