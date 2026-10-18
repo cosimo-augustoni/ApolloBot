@@ -81,6 +81,12 @@ public static class DataEndpoints
             return Invalid(nameof(page), "The page must be 1 or higher.");
         }
 
+        // The query skips (page - 1) * pageSize rows as an int; a larger offset would overflow into a negative one.
+        if (((long)(page ?? 1) - 1) * size > int.MaxValue)
+        {
+            return Invalid(nameof(page), "The page is too far back.");
+        }
+
         var end = to ?? time.GetUtcNow();
         var start = from ?? end - RawEventQuery.DefaultRange;
         if (start > end)
@@ -88,7 +94,8 @@ public static class DataEndpoints
             return Invalid(nameof(from), "The range must not end before it starts.");
         }
 
-        if (end - start > RawEventQuery.MaxRange)
+        // Zurich wall-clock time, so 366 calendar days are allowed even when they gain an hour at the end of summer time.
+        if (ZurichTime.WallClockSpan(start, end) > RawEventQuery.MaxRange)
         {
             return Invalid(nameof(to), $"The range must not be longer than {RawEventQuery.MaxRange.TotalDays} days.");
         }

@@ -181,6 +181,28 @@ public sealed class DataEndpointsTests(TimescaleFixture fixture) : TimescaleTest
     }
 
     [Fact]
+    public async Task GetEvents_WhenPageOffsetOverflows_ShouldReturn400()
+    {
+        var problem = await GetProblemAsync("/api/admin/data/events?page=10737420&pageSize=200");
+
+        problem.Errors.Keys.ShouldBe(["page"]);
+    }
+
+    [Fact]
+    public async Task GetEvents_When366ZurichDaysAcrossTheEndOfSummerTime_ShouldAcceptTheRange()
+    {
+        // 25.10.2025 00:00 to 26.10.2026 00:00 in Zurich: 366 calendar days, but 366 days and 1 hour of UTC time.
+        await SeedMemberAsync(isAdministrator: true);
+        await using var factory = CreateFactory();
+        using var http = factory.CreateHttpsClient();
+        await SignInAsync(http);
+
+        using var response = await GetAsync(http, "/api/admin/data/events?from=2025-10-24T22:00:00Z&to=2026-10-25T23:00:00Z");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
     public async Task GetEvents_ShouldNotContainMessageContent()
     {
         await SeedMemberAsync(isAdministrator: true);

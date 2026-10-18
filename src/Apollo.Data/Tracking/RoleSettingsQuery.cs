@@ -76,15 +76,19 @@ public sealed class RoleSettingsQuery(ApolloDbContext db)
 
     /// <summary>
     /// How many current, non-bot members the bot's gate tracks with the current tracking role setting and how many it
-    /// does not (the admin data page, #32).
+    /// does not (the admin data page, #32). The members and their roles come from one statement, so a guild sync running
+    /// at the same time cannot make the two counts disagree.
     /// </summary>
     public async Task<MemberTracking> GetMemberTrackingAsync(Guid guildId, PlatformKind platform, CancellationToken cancellationToken)
     {
         var trackingSettings = await LoadTrackingSettingsAsync(await LoadTrackingRoleIdAsync(guildId, platform, cancellationToken), cancellationToken);
-        var members = await db.GuildMembers.AsNoTracking().CountAsync(m => m.GuildId == guildId && m.LeftAt == null && !m.IsBot, cancellationToken);
-        var tracked = (await LoadTrackedAsync(guildId, trackingSettings, cancellationToken)).Count;
+        var members = await db.GuildMembers.AsNoTracking()
+            .Where(m => m.GuildId == guildId && m.LeftAt == null && !m.IsBot)
+            .Select(m => db.MemberRoles.Where(r => r.GuildId == guildId && r.UserId == m.UserId).Select(r => r.RoleId).ToList())
+            .ToListAsync(cancellationToken);
+        var tracked = members.Count(roleIds => TrackingRule.IsTracked(trackingSettings, new TrackingMember(IsCurrentMember: true, roleIds.ToHashSet())));
 
-        return new MemberTracking(tracked, members - tracked, TrackingRule.ModeOf(trackingSettings));
+        return new MemberTracking(tracked, members.Count - tracked, TrackingRule.ModeOf(trackingSettings));
     }
 
     /// <summary>The <paramref name="take"/> newest changes, newest first.</summary>
