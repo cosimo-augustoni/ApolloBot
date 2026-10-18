@@ -1,0 +1,27 @@
+/* Single readable column at every width (wireframe privacy.html); the MudBlazor gutter keeps 16px at 360px. */
+.apollo-privacy {
+    max-width: 760px;
+    margin-inline: auto;
+    padding: 24px 16px;
+}
+
+.apollo-privacy section + section {
+    margin-top: 12px;
+}
+
+.apollo-privacy ul {
+    margin: 0 0 8px;
+    padding-left: 20px;
+}
+
+.apollo-privacy li + li {
+    margin-top: 8px;
+}
+
+.apollo-privacy code {
+    overflow-wrap: anywhere;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--mud-palette-action-default-hover);
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}

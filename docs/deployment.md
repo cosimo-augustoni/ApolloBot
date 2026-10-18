@@ -411,6 +411,7 @@ Run all checks after the first deploy, and the first four after every redeploy. 
     holds the tracking role: Discord marks the reply as visible only to you (*Only you can see this* / *Nur für dich
     sichtbar*). Its first paragraph says since when you are tracked (`Für dich werden seit dem <dd.MM.yyyy> Daten
     erfasst.`), then it lists your stored rows per table, and the last line is `Datenschutz: <PublicWebUrl>/datenschutz`.
+    Open that link in a private browser window: the privacy page (*Datenschutz*) shows without a login.
     Without the role it says no data is recorded for you and points to `/apollo tracking on`. Don't confirm
     `/apollo privacy delete` with an account whose data you want to keep: it erases that data.
 

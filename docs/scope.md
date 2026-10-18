@@ -202,7 +202,7 @@ There are two separate actions: **stop tracking**, which is role-based and rever
 | Not set up | If no tracking role is configured (none set, or the role was deleted), nobody is tracked and `/apollo tracking on\|off` replies "Tracking ist noch nicht eingerichtet"; `status` and `privacy delete` say the same. |
 | Web (M4) | Read-only: the `/me` page shows tracking status, tracked-since date, and explains the commands. **No web toggle or web delete for now** (out of scope, see §3). |
 | Admin view | The member list shows each member's tracking status. |
-| Transparency | A German privacy page explaining what is stored and how the tracking role works. It's linked from every command reply. |
+| Transparency | A German privacy page explaining what is stored and how the tracking role works. It's linked from every command reply. Public at `/datenschutz` (#96, `Pages/Privacy.razor`): no login, content only (no control changes tracking or deletes data); it covers what is recorded (never message content), that only tracking role holders are recorded and references to others are not stored, stop vs. delete with the four commands, who sees the data (Administrators all of it, others nothing) and Zurich time. Its text must stay true to the recorders: a change to what is recorded or to the commands updates it. |
 
 **Implementation:**
 - No opt-out flag. The tracking-role check in the recorder is the only gate.
@@ -291,6 +291,9 @@ Layout (D16, chosen from the wireframe concepts in #27): the member area is a **
   - **Tracking role:** single select from the synced roles, showing role colour and member count, plus a live preview "X Mitglieder werden erfasst". Shows a warning banner while none is set ("Keine Tracking-Rolle festgelegt: niemand wird erfasst") or the set one was deleted, and a role-hierarchy/permission check for the bot
   - **Member access roles:** multi-select, with the same preview
   - **Change history:** who changed what and when
+
+**Public pages**
+- Datenschutz (`/datenschutz`, #96): open without login, a single readable column (max 760px) inside the app shell; the drawer's Info entry and every bot reply link it (§5.4).
 
 ### 7.3 Design process (before real UI work)
 1. **Style guide:**

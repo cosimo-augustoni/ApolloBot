@@ -13,7 +13,7 @@ public sealed partial class StringsTests : ApolloTestContext
 
     /// <summary>Files whose visible text must come from <c>Strings.resx</c> (issue #28).</summary>
     private static readonly string[] _localizedFiles =
-        ["Layout/MainLayout.razor", "Layout/NavMenu.razor", "Layout/UserMenu.razor", "Pages/Home.razor", "Pages/NotFound.razor", "Pages/NoAccess.razor",
+        ["Layout/MainLayout.razor", "Layout/NavMenu.razor", "Layout/UserMenu.razor", "Pages/Home.razor", "Pages/NotFound.razor", "Pages/NoAccess.razor", "Pages/Privacy.razor",
          "Pages/Placeholder.razor", "Pages/Admin/AdminPlaceholder.razor", "Components/AreaPlaceholder.razor", "Pages/Admin/Settings.razor",
          "Pages/Admin/RoleSettings/RoleSettingsPanel.razor", "Pages/Admin/RoleSettings/TrackingRoleCard.razor", "Pages/Admin/RoleSettings/MemberAccessCard.razor",
          "Pages/Admin/RoleSettings/RoleSettingsHistory.razor", "Pages/Admin/RoleSettings/RoleLabel.razor",
