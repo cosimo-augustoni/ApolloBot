@@ -63,7 +63,7 @@ One Discord application serves both the bot and the web login. Set it up once in
    | Permission | Value | Why |
    |---|---|---|
    | View Channels | 1024 | Discord only sends message, reaction and voice events for channels the bot can see |
-   | Read Message History | 65536 | Not needed for live message events; part of the invite so a later history backfill (M6, [scope §9](scope.md#9-milestones)) needs no new invite |
+   | Read Message History | 65536 | Not needed for live message events; part of the invite so a later history backfill (M7, [scope §9](scope.md#9-milestones)) needs no new invite |
    | View Audit Log | 128 | Discord sends ban and unban events only to bots with *View Audit Log* or *Ban Members* (`membership_events`, [platform parity](platform-parity.md)). *View Audit Log* is the read-only one of the two |
    | Manage Roles | 268435456 | `/apollo tracking on\|off` and `/apollo privacy delete` add and remove the tracking role (#21, #22) |
 
