@@ -4,7 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Apollo.Web.Admin;
 
-/// <summary>The guilds the admin pages show: the configured guild of each identity provider (scope §4.3).</summary>
+/// <summary>
+/// The guilds the admin data page (#32) shows: the configured guild of each identity provider (scope §4.3).
+/// <c>BotStatusQuery</c> still has its own copy; #91 may switch it to this one.
+/// </summary>
 public static class ConfiguredGuilds
 {
     /// <summary>The internal IDs of the configured guilds the bot has seen; empty before it saw any.</summary>
