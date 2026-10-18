@@ -40,7 +40,8 @@
         _options.Stroke = new Stroke { Curve = Curve.Smooth, Width = 2 };
         _options.Xaxis.Labels.HideOverlappingLabels = true;
         _options.Xaxis.Labels.Rotate = 0;
-        _options.Xaxis.TickAmount = 8;
+        // About 60px per label, so the days do not overlap at 360px.
+        _options.Xaxis.TickAmount = 5;
     }
 
     private string SeriesName => _metric == ActivityMetric.Messages ? L["Stats_Messages"] : L["Stats_VoiceHours"];

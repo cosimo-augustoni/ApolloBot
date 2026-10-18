@@ -15,7 +15,7 @@
     </MudToggleGroup>
     @if (Preset == DateRangePreset.Custom)
     {
-        <MudDateRangePicker @ref="_picker" Class="apollo-range-picker" Label="@L["Stats_RangePicker"]" DateRange="PickerRange" DateRangeChanged="PickAsync"
+        <MudDateRangePicker @ref="_picker" Class="apollo-range-picker" Label="@L["Stats_RangePicker"]" DateRange="_pickerRange" DateRangeChanged="PickAsync" DisplayMonths="1"
                             MaxDate="@Today.ToDateTime(TimeOnly.MinValue)" DateFormat="dd.MM.yyyy" Culture="UiCulture.Culture"
                             Variant="Variant.Outlined" Margin="Margin.Dense" AutoClose="true" />
     }
@@ -27,6 +27,8 @@
 
 @code {
     private MudDateRangePicker? _picker;
+    private DateRange? _pickerRange;
+    private DateRangeSelection? _shownValue;
     private bool _customChosen;
     private bool _openPicker;
 
@@ -38,12 +40,20 @@
     [Parameter]
     public EventCallback<DateRangeSelection> ValueChanged { get; set; }
 
-    // "Benutzerdefiniert" shows the picker with the current days before the page gets a custom range.
     private DateRangePreset Preset => _customChosen ? DateRangePreset.Custom : Value.Preset;
 
     private DateOnly Today => UiTime.DayOf(Time.GetUtcNow());
 
-    private DateRange PickerRange => new(Value.From.ToDateTime(TimeOnly.MinValue), Value.To.ToDateTime(TimeOnly.MinValue));
+    // The picker keeps its own range: handing it Value on every render would give it back the old range while the
+    // page is still loading the new one, and the picker reports that one again when it closes.
+    protected override void OnParametersSet()
+    {
+        if (Value != _shownValue)
+        {
+            _shownValue = Value;
+            _pickerRange = new DateRange(Value.From.ToDateTime(TimeOnly.MinValue), Value.To.ToDateTime(TimeOnly.MinValue));
+        }
+    }
 
     // "Benutzerdefiniert" keeps the current days until the user picks others, so it does not reload by itself.
     private async Task SelectAsync(DateRangePreset preset)
@@ -59,9 +69,15 @@
         await ValueChanged.InvokeAsync(DateRangePresets.Resolve(preset, Time));
     }
 
-    // The picker reports the start alone while the user is still choosing the end.
+    // The picker reports the start alone while the user is still choosing the end, and the same days again when nothing changed.
     private async Task PickAsync(DateRange? range)
     {
+        if (Equals(range, _pickerRange))
+        {
+            return;
+        }
+
+        _pickerRange = range;
         if (range is { Start: { } start, End: { } end })
         {
             await ValueChanged.InvokeAsync(DateRangeSelection.Custom(DateOnly.FromDateTime(start), DateOnly.FromDateTime(end)));

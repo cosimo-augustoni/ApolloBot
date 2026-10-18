@@ -64,6 +64,21 @@ public sealed class DateRangeSelectorTests : ApolloTestContext
         _changes.ShouldBeEmpty();
     }
 
+    [Fact]
+    public async Task DateRangeSelector_WhileThePageLoadsThePickedDays_ShouldKeepThemInThePicker()
+    {
+        // Regression: the picker got the old range back on the next render and reported it again when it closed.
+        var selector = RenderSelector(DateRangeSelection.Custom(new DateOnly(2026, 10, 1), _today));
+        var picked = new DateRange(new DateTime(2026, 10, 5), new DateTime(2026, 10, 9));
+
+        await selector.InvokeAsync(() => selector.FindComponent<MudDateRangePicker>().Instance.DateRangeChanged.InvokeAsync(picked));
+        selector.Render();
+        await selector.InvokeAsync(() => selector.FindComponent<MudDateRangePicker>().Instance.DateRangeChanged.InvokeAsync(picked));
+
+        selector.FindComponent<MudDateRangePicker>().Instance.DateRange.ShouldBe(picked);
+        _changes.ShouldBe([DateRangeSelection.Custom(new DateOnly(2026, 10, 5), new DateOnly(2026, 10, 9))]);
+    }
+
     private IRenderedComponent<DateRangeSelector> RenderSelector(DateRangeSelection value) =>
         Render<DateRangeSelector>(p => p
             .Add(s => s.Value, value)
