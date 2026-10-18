@@ -61,7 +61,8 @@ public sealed class ActivityStatsService(ApolloDbContext db, TimeProvider time) 
                 .Select(p => new TrackingSpan(p.From, p.To))
                 .ToListAsync(cancellationToken);
             trackedDays = TrackedDays.Count(periods, query.From, query.To, time.GetUtcNow());
-            trackedSince = periods.Count == 0 ? null : ZurichCalendar.DayOf(periods.Min(p => p.From));
+            // The open period (at most one per member): "Erfasst seit …" means since when they are tracked now.
+            trackedSince = periods.Where(p => p.To is null).Select(p => (DateOnly?)ZurichCalendar.DayOf(p.From)).SingleOrDefault();
         }
 
         return new ActivityStatsDto

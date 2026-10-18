@@ -217,7 +217,7 @@ public sealed class ActivityStatsServiceTests(TimescaleFixture fixture) : Timesc
 
         var stats = await GetAsync(db, new ActivityStatsQuery(seed.GuildId, seed.Alice, new DateOnly(2025, 11, 1), new DateOnly(2025, 11, 30)));
 
-        (stats.TrackedDays, stats.TrackedSince).ShouldBe(((int?)10, (DateOnly?)new DateOnly(2025, 11, 11)));
+        (stats.TrackedDays, stats.TrackedSince).ShouldBe(((int?)10, (DateOnly?)null));
         stats.Averages.ShouldBe(new ActivityAverages(Messages: 2, Characters: 10, ReactionsGiven: 0, ReactionsReceived: 0, VoiceSeconds: 0));
     }
 
@@ -235,7 +235,7 @@ public sealed class ActivityStatsServiceTests(TimescaleFixture fixture) : Timesc
 
         var stats = await GetAsync(db, new ActivityStatsQuery(seed.GuildId, seed.Alice, new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31)));
 
-        (stats.TrackedDays, stats.TrackedSince).ShouldBe(((int?)10, (DateOnly?)new DateOnly(2025, 12, 1)));
+        (stats.TrackedDays, stats.TrackedSince).ShouldBe(((int?)10, (DateOnly?)new DateOnly(2026, 1, 6)));
         stats.Averages.Messages.ShouldBe(0.1);
     }
 
@@ -327,6 +327,22 @@ public sealed class ActivityStatsServiceTests(TimescaleFixture fixture) : Timesc
 
         JsonSerializer.Serialize(copy).ShouldBe(json);
         copy!.Heatmap[0][11].ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task GetAsync_OnTheSpringForwardDay_ShouldLoseNothingAlthoughThereIsNoTwoOClock()
+    {
+        await using var db = Fixture.CreateDbContext();
+        var seed = await SeedAsync(db);
+        await AddAsync(
+            db,
+            Message(seed, seed.Alice, "2026-03-29T00:30:00Z"), // Sunday 29 Mar 01:30 CET
+            Message(seed, seed.Alice, "2026-03-29T01:30:00Z")); // Sunday 29 Mar 03:30 CEST
+
+        var stats = await GetAsync(db, new ActivityStatsQuery(seed.GuildId, null, Date("2026-03-29"), Date("2026-03-29")));
+
+        (stats.Heatmap[6][1], stats.Heatmap[6][2], stats.Heatmap[6][3]).ShouldBe((1L, 0L, 1L));
+        stats.Heatmap.Sum(day => day.Sum()).ShouldBe(2);
     }
 
     private async Task<ActivityStatsDto> GetAsync(ApolloDbContext db, ActivityStatsQuery query)
