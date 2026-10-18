@@ -20,12 +20,14 @@ public sealed class ContinuousAggregateRefresherTests(TimescaleFixture fixture) 
     /// <summary>
     /// Messages at the first and last hour of a Zurich day and on the days around it are materialized, then all of them
     /// are deleted from the raw table. Refreshing one instant of the day must drop the whole day from every aggregate,
-    /// DST days included, and leave the neighbouring days as they were materialized.
+    /// DST days included, and leave the neighbouring days as they were materialized. All days lie in the past of the
+    /// container's clock: materializing future buckets would move the shared watermark past now and break the tests that
+    /// rely on real-time aggregation.
     /// </summary>
     [Theory]
     [InlineData("2026-01-14T23:00:00Z", "2026-01-15T23:00:00Z")] // a 24 h winter day
-    [InlineData("2026-03-28T23:00:00Z", "2026-03-29T22:00:00Z")] // spring forward: 23 h
-    [InlineData("2026-10-24T22:00:00Z", "2026-10-25T23:00:00Z")] // fall back: 25 h
+    [InlineData("2025-03-29T23:00:00Z", "2025-03-30T22:00:00Z")] // spring forward: 23 h
+    [InlineData("2025-10-25T22:00:00Z", "2025-10-26T23:00:00Z")] // fall back: 25 h
     public async Task RefreshAsync_ShouldRematerializeTheWholeZurichDaysOfTheRangeAndNothingElse(string dayStartUtc, string nextDayStartUtc)
     {
         await using var db = Fixture.CreateDbContext();
