@@ -1,0 +1,59 @@
+@inject IStringLocalizer<Strings> L
+
+@*
+    One check of the Datenprüfung (#40): its count, what it looks for, and the newest example rows. A check that must
+    find nothing (MustBeZero) shows a non-zero count in the error colour, any other check in the warning colour; zero is
+    the success colour either way.
+*@
+<MudPaper Elevation="0" Class="@($"apollo-section-card pa-4 apollo-sanity-check apollo-sanity-check-{Name}")">
+    <div class="d-flex align-center justify-space-between gap-2 mb-1">
+        <MudText Typo="Typo.h6">@Title</MudText>
+        <MudText Typo="Typo.h5" Color="CountColor" Class="apollo-sanity-count apollo-numeric">@Count.ToString("N0", UiCulture.Culture)</MudText>
+    </div>
+    <MudText Typo="Typo.body2" Class="mud-text-secondary mb-3">@Description</MudText>
+    @if (Count == 0)
+    {
+        <MudText Typo="Typo.body2" Class="apollo-sanity-clean">@L["Sanity_Clean"]</MudText>
+    }
+    else
+    {
+        @if (Count > Shown)
+        {
+            <MudText Typo="Typo.caption" Class="apollo-sanity-shown mud-text-secondary">@L["Sanity_Shown", Shown, Count.ToString("N0", UiCulture.Culture)]</MudText>
+        }
+        <div class="apollo-sanity-examples">
+            @ChildContent
+        </div>
+    }
+</MudPaper>
+
+@code {
+    /// <summary>The check's CSS name, e.g. <c>heartbeat-gaps</c> (class <c>apollo-sanity-check-{Name}</c>).</summary>
+    [Parameter, EditorRequired]
+    public string Name { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>What the check looks for, in one sentence.</summary>
+    [Parameter, EditorRequired]
+    public string Description { get; set; } = string.Empty;
+
+    /// <summary>How many rows the check found.</summary>
+    [Parameter]
+    public int Count { get; set; }
+
+    /// <summary>How many of them <see cref="ChildContent"/> shows.</summary>
+    [Parameter]
+    public int Shown { get; set; }
+
+    /// <summary>Whether any row at all is an error (the untracked checks, scope §5.1.1).</summary>
+    [Parameter]
+    public bool MustBeZero { get; set; }
+
+    /// <summary>The example rows.</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private Color CountColor => Count == 0 ? Color.Success : MustBeZero ? Color.Error : Color.Warning;
+}

@@ -4,7 +4,7 @@ namespace Apollo.Web.Client.Layout;
 
 /// <summary>
 /// The areas of the app (scope §7.2), as shown in the navigation drawer. Routes, labels and grouping follow the
-/// wireframes in <c>docs/design/wireframes</c> (#27).
+/// wireframes in <c>docs/design/wireframes</c> (#27); "Datenprüfung" (#40) has no wireframe and sits after "Daten".
 /// </summary>
 public static class NavigationAreas
 {
@@ -17,6 +17,7 @@ public static class NavigationAreas
             new("admin/members", "Nav_Members", "Nav_Members", Icons.Material.Outlined.People),
             new("admin/recaps", "Nav_ServerRecaps", "Page_ServerRecaps", Icons.Material.Outlined.AutoAwesome),
             new("admin/data", "Nav_Data", "Nav_Data", Icons.Material.Outlined.Storage),
+            new("admin/sanity", "Nav_Sanity", "Nav_Sanity", Icons.Material.Outlined.FactCheck),
             new("admin/settings", "Nav_Settings", "Nav_Settings", Icons.Material.Outlined.Settings),
         ]),
         new("Nav_SectionMember",

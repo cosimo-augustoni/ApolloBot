@@ -24,6 +24,7 @@ public static class ApiClientServiceCollectionExtensions
             services.AddScoped<IDataOverviewClient, MockDataOverviewClient>();
             services.AddScoped<IServerStatsClient, MockServerStatsClient>();
             services.AddScoped<IMemberStatsClient, MockMemberStatsClient>();
+            services.AddScoped<IDataSanityClient, MockDataSanityClient>();
         }
         else
         {
@@ -34,6 +35,7 @@ public static class ApiClientServiceCollectionExtensions
             services.AddScoped<IDataOverviewClient, HttpDataOverviewClient>();
             services.AddScoped<IServerStatsClient, HttpServerStatsClient>();
             services.AddScoped<IMemberStatsClient, HttpMemberStatsClient>();
+            services.AddScoped<IDataSanityClient, HttpDataSanityClient>();
         }
 
         return services;

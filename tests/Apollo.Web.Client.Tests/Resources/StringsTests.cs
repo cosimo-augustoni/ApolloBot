@@ -21,7 +21,8 @@ public sealed partial class StringsTests : ApolloTestContext
          "Pages/Admin/Data.razor", "Pages/Admin/Events/EventBrowser.razor", "Pages/Admin/Events/EventsPerDayChart.razor",
          "Pages/Admin/ServerOverview.razor", "Components/Stats/DateRangeSelector.razor", "Components/Stats/ActivityOverTimeChart.razor",
          "Components/Stats/ChannelRanking.razor", "Components/Stats/ActivityHeatmap.razor",
-         "Pages/Admin/MemberStats.razor", "Components/Stats/MemberMagazineView.razor", "Components/Stats/RankList.razor"];
+         "Pages/Admin/MemberStats.razor", "Components/Stats/MemberMagazineView.razor", "Components/Stats/RankList.razor",
+         "Pages/Admin/DataSanity.razor", "Pages/Admin/Sanity/SanityCheckCard.razor"];
 
     [Fact]
     public void Strings_ShouldContainAllKeysUsedInRazorFiles()
