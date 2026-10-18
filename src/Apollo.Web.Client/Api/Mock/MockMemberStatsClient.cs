@@ -61,6 +61,7 @@ public sealed class MockMemberStatsClient : IMemberStatsClient
             Daily = daily,
             Channels = [.. server.Channels.Select(c => c with { Messages = Share(c.Messages), VoiceSeconds = Share(c.VoiceSeconds) })],
             Heatmap = [.. server.Heatmap.Select(day => (IReadOnlyList<long>)[.. day.Select(Share)])],
+            VoiceHeatmap = [.. server.VoiceHeatmap.Select(day => (IReadOnlyList<long>)[.. day.Select(Share)])],
         };
 
         var hours = Math.Max(1, totals.VoiceSeconds / 3600);

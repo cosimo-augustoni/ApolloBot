@@ -93,17 +93,18 @@ public sealed class MockServerStatsClient : IServerStatsClient
                     .OrderByDescending(c => c.Messages)
                     .ThenByDescending(c => c.VoiceSeconds),
             ],
-            Heatmap(totals.Messages));
+            Heatmap(totals.Messages),
+            Heatmap(totals.VoiceSeconds));
     }
 
-    // Evenings and weekends busiest; the cells add up to roughly the total.
-    private static IReadOnlyList<IReadOnlyList<long>> Heatmap(long messages)
+    // Evenings and weekends busiest; the cells add up to roughly the total (messages, or voice seconds).
+    private static IReadOnlyList<IReadOnlyList<long>> Heatmap(long total)
     {
         var weights = Enumerable.Range(0, 7)
             .Select(day => Enumerable.Range(0, 24).Select(hour => Weight(day, hour)).ToArray())
             .ToArray();
         var sum = weights.Sum(day => day.Sum());
-        return [.. weights.Select(day => (IReadOnlyList<long>)[.. day.Select(w => (long)Math.Round(messages * w / sum))])];
+        return [.. weights.Select(day => (IReadOnlyList<long>)[.. day.Select(w => (long)Math.Round(total * w / sum))])];
     }
 
     private static double Weight(int day, int hour)
