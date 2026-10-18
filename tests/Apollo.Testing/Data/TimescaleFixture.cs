@@ -106,6 +106,38 @@ public sealed class TimescaleFixture : IAsyncLifetime
         await respawner.ResetAsync(connection);
     }
 
+    /// <summary>
+    /// Materializes every continuous aggregate over its whole range, as the refresh policies would over theirs. Call it
+    /// after seeding, before asserting on an aggregate (coding-guidelines §4). Runs outside a transaction, which
+    /// <c>refresh_continuous_aggregate</c> requires.
+    /// </summary>
+    public async Task RefreshContinuousAggregatesAsync(CancellationToken cancellationToken = default)
+    {
+        await using var connection = new NpgsqlConnection(ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        var refreshes = new List<string>();
+        await using (var command = new NpgsqlCommand(
+            """
+            SELECT format('CALL refresh_continuous_aggregate(%L, NULL, NULL)', format('%I.%I', view_schema, view_name))
+            FROM timescaledb_information.continuous_aggregates
+            """,
+            connection))
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+        {
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                refreshes.Add(reader.GetString(0));
+            }
+        }
+
+        foreach (var refresh in refreshes)
+        {
+            await using var command = new NpgsqlCommand(refresh, connection);
+            await command.ExecuteNonQueryAsync(cancellationToken);
+        }
+    }
+
     private static async Task<bool> HasTablesToResetAsync(NpgsqlConnection connection, CancellationToken cancellationToken)
     {
         await using var command = new NpgsqlCommand(

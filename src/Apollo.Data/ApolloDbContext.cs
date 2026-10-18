@@ -1,3 +1,4 @@
+using Apollo.Data.Activity;
 using Apollo.Data.DataProtection;
 using Apollo.Data.Guilds;
 using Apollo.Data.Identity;
@@ -70,6 +71,15 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
 
     public DbSet<UserSignOut> UserSignOuts => Set<UserSignOut>();
 
+    /// <summary>Per Zurich day, user and channel (#34); read-only.</summary>
+    public DbSet<DailyUserChannelActivity> DailyUserChannelActivity => Set<DailyUserChannelActivity>();
+
+    /// <summary>Per Zurich day and guild (#34); read-only.</summary>
+    public DbSet<DailyGuildActivity> DailyGuildActivity => Set<DailyGuildActivity>();
+
+    /// <summary>Messages per hour and user (#34); read-only.</summary>
+    public DbSet<HourlyActivityHeatmap> HourlyActivityHeatmap => Set<HourlyActivityHeatmap>();
+
     /// <summary>The web host's data protection keys (<c>PersistKeysToDbContext</c>).</summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
@@ -98,5 +108,6 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
         PresenceModel.Configure(modelBuilder);
         DataProtectionModel.Configure(modelBuilder);
         SessionModel.Configure(modelBuilder);
+        ActivityModel.Configure(modelBuilder);
     }
 }

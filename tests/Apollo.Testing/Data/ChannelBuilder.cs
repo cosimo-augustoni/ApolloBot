@@ -36,6 +36,16 @@ public sealed class ChannelBuilder : TestDataBuilder<ChannelBuilder, Channel>
         return c;
     });
 
+    /// <summary>
+    /// A thread of <paramref name="parentId"/> (an internal ID).
+    /// </summary>
+    public ChannelBuilder AsThreadOf(Guid parentId) => With(c =>
+    {
+        c.Type = PlatformChannelType.Thread;
+        c.ThreadParentId = parentId;
+        return c;
+    });
+
     public ChannelBuilder DeletedAt(DateTimeOffset deletedAt) => With(c =>
     {
         c.DeletedAt = deletedAt;
