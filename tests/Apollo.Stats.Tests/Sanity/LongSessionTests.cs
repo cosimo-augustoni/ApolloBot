@@ -1,6 +1,6 @@
 using Apollo.Domain.Voice;
-using Apollo.Stats.Tests.Raw;
 using Apollo.Stats.Sanity;
+using Apollo.Stats.Tests.Raw;
 using Apollo.Testing.Data;
 
 namespace Apollo.Stats.Tests.Sanity;

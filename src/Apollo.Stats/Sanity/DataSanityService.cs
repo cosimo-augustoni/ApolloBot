@@ -16,7 +16,7 @@ public sealed class DataSanityService(ApolloDbContext db, TimeProvider time) : I
     /// A ban counts as tracked when the user's leave is at most this much older (<c>MembershipRecorder.BanGrace</c> in
     /// Apollo.Bot, #18): Discord sends the member remove of a ban first, and it closes the tracking period.
     /// </summary>
-    private static readonly TimeSpan BanGrace = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan _banGrace = TimeSpan.FromSeconds(10);
 
     public async Task<DataSanityReport> GetAsync(DataSanityQuery query, CancellationToken cancellationToken)
     {
@@ -115,12 +115,12 @@ public sealed class DataSanityService(ApolloDbContext db, TimeProvider time) : I
             .Concat(db.MembershipEvents
                 .Where(e => e.GuildId == guildId && e.OccurredAt >= range.Start && e.OccurredAt < range.End)
                 // The recorder keeps a leave or ban that ends the tracking (both ends of the period inclusive), and a ban
-                // up to BanGrace after the leave that closed the period (#18).
+                // up to 10 s after the leave that closed the period (#18).
                 .Where(e => e.Kind != MembershipEventKind.Ban || !db.MembershipEvents.Any(l => l.GuildId == e.GuildId
                     && l.UserId == e.UserId
                     && l.Kind == MembershipEventKind.Leave
                     && l.OccurredAt <= e.OccurredAt
-                    && l.OccurredAt >= e.OccurredAt - BanGrace))
+                    && l.OccurredAt >= e.OccurredAt - _banGrace))
                 .Select(e => new Row
                 {
                     Table = "membership_events",
