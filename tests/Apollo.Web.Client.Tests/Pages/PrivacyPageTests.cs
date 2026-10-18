@@ -31,7 +31,7 @@ public sealed class PrivacyPageTests : ApolloTestContext
     {
         var page = Render<Privacy>();
 
-        page.FindAll("code").Select(c => c.TextContent.Trim()).ShouldBe(
+        page.FindAll("code").Select(c => c.TextContent.Trim()).Distinct().ShouldBe(
             ["/apollo tracking off", "/apollo tracking on", "/apollo tracking status", "/apollo privacy delete"],
             ignoreOrder: true);
     }
@@ -80,6 +80,41 @@ public sealed class PrivacyPageTests : ApolloTestContext
 
         page.Find(".apollo-privacy-visibility").TextContent.ShouldContain("Administrator");
         page.Find(".apollo-privacy-recorded").TextContent.ShouldContain("Europe/Zurich");
+    }
+
+    [Fact]
+    public void Render_ShouldShowCommandsInsideSentencesInCodeFont()
+    {
+        var page = Render<Privacy>();
+
+        var remains = page.Find(".apollo-privacy-remains");
+        remains.QuerySelector("code")!.TextContent.Trim().ShouldBe("/apollo privacy delete");
+        remains.TextContent.ShouldContain("Nur /apollo privacy delete entfernt deine Daten.");
+        var others = page.Find(".apollo-privacy-visibility-others");
+        others.QuerySelector("code")!.TextContent.Trim().ShouldBe("/apollo tracking status");
+        others.TextContent.ShouldContain("Du selbst siehst mit /apollo tracking status, ob du erfasst wirst");
+    }
+
+    [Fact]
+    public void Render_ShouldSayThatRoleSettingChangesOfAnAdminStayAfterADeletion()
+    {
+        var page = Render<Privacy>();
+
+        page.Find(".apollo-privacy-remains").TextContent.ShouldContain("bleibt im Verlauf, dass du sie geändert hast");
+    }
+
+    [Fact]
+    public void Render_ShouldNameTheStoredMessageIdAndOnlyTheActivityTypeAndName()
+    {
+        var page = Render<Privacy>();
+
+        var recorded = page.FindAll(".apollo-privacy-recorded li").Select(li => li.TextContent).ToList();
+
+        recorded[0].ShouldContain("Nachrichten-ID");
+        recorded[1].ShouldContain("welchem Sprachkanal du wann beitrittst");
+        recorded[3].ShouldContain("Ein Kick zählt als Austritt.");
+        recorded[4].ShouldContain("Art und Name");
+        recorded[4].ShouldNotContain("hörst");
     }
 
     [Fact]

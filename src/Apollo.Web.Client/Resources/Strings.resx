@@ -922,11 +922,11 @@
     <comment>Public privacy page /datenschutz (#96)</comment>
   </data>
   <data name="Privacy_Recorded_Messages" xml:space="preserve">
-    <value>Nachrichten: Zeitpunkt, Kanal und Länge; die Anzahl Wörter, Emojis, Anhänge, Embeds und Erwähnungen; ob Text, Links, Erwähnungen, Emojis oder Anhänge vorkommen; wen du erwähnst und wem du antwortest. Bearbeitungen werden mit den neuen Zahlen erfasst, Löschungen mit ihrem Zeitpunkt.</value>
+    <value>Nachrichten: Zeitpunkt, Kanal, Nachrichten-ID und Länge; die Anzahl Wörter, Emojis, Anhänge, Embeds und Erwähnungen; ob Text, Links, Erwähnungen, Emojis oder Anhänge vorkommen; wen du erwähnst und wem du antwortest. Bearbeitungen werden mit den neuen Zahlen erfasst, Löschungen mit ihrem Zeitpunkt.</value>
     <comment>Public privacy page /datenschutz (#96)</comment>
   </data>
   <data name="Privacy_Recorded_Voice" xml:space="preserve">
-    <value>Voice: wann du einem Sprachkanal beitrittst, in einen anderen wechselst oder ihn verlässt, und wann du dich selbst stumm oder taub schaltest, streamst oder deine Kamera einschaltest.</value>
+    <value>Voice: welchem Sprachkanal du wann beitrittst, wann du in einen anderen wechselst oder ihn verlässt, und wann du dich selbst stumm oder taub schaltest, streamst oder deine Kamera einschaltest.</value>
     <comment>Public privacy page /datenschutz (#96)</comment>
   </data>
   <data name="Privacy_Recorded_Reactions" xml:space="preserve">
@@ -934,11 +934,11 @@
     <comment>Public privacy page /datenschutz (#96)</comment>
   </data>
   <data name="Privacy_Recorded_Membership" xml:space="preserve">
-    <value>Beitritte, Austritte (auch Kicks), Banns und deren Aufhebung, sofern du dabei erfasst wirst.</value>
+    <value>Beitritte, Austritte, Banns und deren Aufhebung, sofern du dabei erfasst wirst. Ein Kick zählt als Austritt.</value>
     <comment>Public privacy page /datenschutz (#96)</comment>
   </data>
   <data name="Privacy_Recorded_Activities" xml:space="preserve">
-    <value>Aktivitäten (nur Discord): zum Beispiel welches Spiel du spielst oder was du hörst oder schaust, von wann bis wann, sofern du deine Aktivität auf Discord teilst. Gespeichert wird erst ab einer Minute, dein eigener Status-Text nie. Diese Daten sind unvollständig, etwa wenn du deine Aktivität verbirgst.</value>
+    <value>Aktivitäten (nur Discord): welche Aktivität du zeigst (Art und Name, z. B. das Spiel oder «Spotify»), von wann bis wann, sofern du deine Aktivität auf Discord teilst. Gespeichert wird erst ab einer Minute, dein eigener Status-Text nie. Diese Daten sind unvollständig, etwa wenn du deine Aktivität verbirgst.</value>
     <comment>Public privacy page /datenschutz (#96)</comment>
   </data>
   <data name="Privacy_ContentNeverStored" xml:space="preserve">
@@ -1013,10 +1013,6 @@
     <value>Löscht nach einer Bestätigung alle über dich erfassten Aktivitäten endgültig und entfernt dir die Tracking-Rolle, damit die Erfassung nicht weiterläuft. Wo andere dir geantwortet, dich erwähnt oder auf deine Nachrichten reagiert haben, wird der Verweis auf dich entfernt. Das kann nicht rückgängig gemacht werden.</value>
     <comment>Public privacy page /datenschutz (#96)</comment>
   </data>
-  <data name="Privacy_Commands_Remains" xml:space="preserve">
-    <value>Beenden ist nicht Löschen: Nur /apollo privacy delete entfernt deine Daten. Danach bleibt nur, was Apollo von allen Mitgliedern kennt (siehe «Die Tracking-Rolle»), und der Zeitpunkt deiner letzten Abmeldung von der Website.</value>
-    <comment>Public privacy page /datenschutz (#96)</comment>
-  </data>
   <data name="Privacy_Commands_NotOnWebsite" xml:space="preserve">
     <value>Auf der Website kannst du deine Erfassung nicht ändern und keine Daten löschen.</value>
     <comment>Public privacy page /datenschutz (#96)</comment>
@@ -1029,8 +1025,20 @@
     <value>Admins des Servers, also Mitglieder mit der Berechtigung «Administrator», sehen nach der Anmeldung auf der Website alle erfassten Daten.</value>
     <comment>Public privacy page /datenschutz (#96)</comment>
   </data>
-  <data name="Privacy_Visibility_Others" xml:space="preserve">
-    <value>Andere Mitglieder sehen deine Daten nicht. Du selbst siehst mit /apollo tracking status, ob du erfasst wirst und wie viele Einträge von dir gespeichert sind.</value>
-    <comment>Public privacy page /datenschutz (#96)</comment>
+  <data name="Privacy_Commands_Remains_BeforeCommand" xml:space="preserve">
+    <value>Beenden ist nicht Löschen: Nur</value>
+    <comment>Public privacy page /datenschutz (#96); the command in code font goes between the BeforeCommand and AfterCommand parts</comment>
+  </data>
+  <data name="Privacy_Commands_Remains_AfterCommand" xml:space="preserve">
+    <value>entfernt deine Daten. Danach bleibt nur, was Apollo von allen Mitgliedern kennt (siehe «Die Tracking-Rolle»), und der Zeitpunkt deiner letzten Abmeldung von der Website. Hast du als Admin Rolleneinstellungen geändert, bleibt im Verlauf, dass du sie geändert hast.</value>
+    <comment>Public privacy page /datenschutz (#96); the command in code font goes between the BeforeCommand and AfterCommand parts</comment>
+  </data>
+  <data name="Privacy_Visibility_Others_BeforeCommand" xml:space="preserve">
+    <value>Andere Mitglieder sehen deine Daten nicht. Du selbst siehst mit</value>
+    <comment>Public privacy page /datenschutz (#96); the command in code font goes between the BeforeCommand and AfterCommand parts</comment>
+  </data>
+  <data name="Privacy_Visibility_Others_AfterCommand" xml:space="preserve">
+    <value>, ob du erfasst wirst und wie viele Einträge von dir gespeichert sind.</value>
+    <comment>Public privacy page /datenschutz (#96); the command in code font goes between the BeforeCommand and AfterCommand parts</comment>
   </data>
 </root>
