@@ -1,5 +1,6 @@
 using Apollo.Bot.Tracking;
 using Apollo.Data;
+using Apollo.Data.Activity;
 using Apollo.Data.Identity;
 using Apollo.Platform.Abstractions;
 
@@ -15,7 +16,14 @@ namespace Apollo.Bot.Privacy;
 /// deleted. Rows the close writes are deleted in step 2, so nothing written before the deletion survives it.
 /// </item>
 /// <item>
-/// One transaction runs every <see cref="IUserDataEraserStep"/>, so a failure deletes nothing.
+/// One transaction runs every <see cref="IUserDataEraserStep"/>, so a failure deletes nothing. It first reads the
+/// time range of the rows the steps change (<see cref="IUserDataEraserStep.FindRangeAsync"/>).
+/// </item>
+/// <item>
+/// After the commit, the continuous aggregates are refreshed over that range (#39): a refresh policy only re-materializes
+/// its own window, so older aggregate rows would keep the deleted numbers. A refresh cannot run in a transaction, and
+/// when it fails the deletion stays: the error is logged, and the aggregates are fixed by a manual refresh
+/// (docs/scope.md §5.4). Without rows there is nothing to refresh.
 /// </item>
 /// <item>
 /// Only then is the tracking role removed: after a failed deletion the member keeps their role and their data as before,
@@ -36,6 +44,7 @@ internal sealed partial class UserDataEraser(
     TrackingGate gate,
     IChatPlatform platform,
     IEnumerable<IUserDataEraserStep> steps,
+    IAggregateRefresher aggregates,
     ILogger<UserDataEraser> logger) : IUserDataEraser
 {
     public async Task<UserDataErasureOutcome> EraseAsync(PlatformRef guild, PlatformRef member, CancellationToken cancellationToken)
@@ -56,15 +65,21 @@ internal sealed partial class UserDataEraser(
         var markEndsWithRoleRemoval = false;
         try
         {
+            ErasedRange? range;
             try
             {
                 mark = await gate.MarkUntrackedAsync(guildId, userId, cancellationToken);
-                await EraseRowsAsync(guildId, userId, cancellationToken);
+                range = await EraseRowsAsync(guildId, userId, cancellationToken);
             }
             catch (Exception exception) when (!IsCancellation(exception, cancellationToken))
             {
                 LogEraseFailed(exception, userId);
                 return UserDataErasureOutcome.Failed;
+            }
+
+            if (range is not null)
+            {
+                await RefreshAggregatesAsync(userId, range, cancellationToken);
             }
 
             // With a tracking role, the gate tracks exactly its holders (see TrackingRoleSwitch). A mark another deletion
@@ -104,11 +119,21 @@ internal sealed partial class UserDataEraser(
     private static UserDataErasureOutcome WithoutRoleRemoval(ITrackingView view) =>
         view.TrackingRole is not null ? UserDataErasureOutcome.Deleted : UserDataErasureOutcome.DeletedNotSetUp;
 
-    private async Task EraseRowsAsync(Guid guildId, Guid userId, CancellationToken cancellationToken)
+    private async Task<ErasedRange?> EraseRowsAsync(Guid guildId, Guid userId, CancellationToken cancellationToken)
     {
         var erased = new List<ErasedRows>();
+        ErasedRange? range = null;
         await using (var transaction = await db.Database.BeginTransactionAsync(cancellationToken))
         {
+            // Before any step erases: a step may clear what another one's range is read from.
+            foreach (var step in steps)
+            {
+                if (await step.FindRangeAsync(guildId, userId, cancellationToken) is { } stepRange)
+                {
+                    range = range?.Union(stepRange) ?? stepRange;
+                }
+            }
+
             foreach (var step in steps)
             {
                 erased.AddRange(await step.EraseAsync(guildId, userId, cancellationToken));
@@ -122,10 +147,32 @@ internal sealed partial class UserDataEraser(
             erased.Sum(e => e.Deleted),
             erased.Sum(e => e.Cleared),
             string.Join("; ", erased.Select(e => e.Cleared > 0 ? $"{e.Table}: {e.Deleted} deleted, {e.Cleared} cleared" : $"{e.Table}: {e.Deleted} deleted")));
+        return range;
+    }
+
+    private async Task RefreshAggregatesAsync(Guid userId, ErasedRange range, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await aggregates.RefreshAsync(range.From, range.To, cancellationToken);
+            LogRefreshed(userId, range.From, range.To);
+        }
+        catch (Exception exception) when (!IsCancellation(exception, cancellationToken))
+        {
+            LogRefreshFailed(exception, userId, range.From, range.To);
+        }
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Erased the data of {UserId}: {DeletedRows} rows deleted, {ClearedReferences} references cleared ({Tables})")]
     private partial void LogErased(Guid userId, int deletedRows, int clearedReferences, string tables);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Refreshed the aggregates after erasing the data of {UserId}, over {From} to {To}")]
+    private partial void LogRefreshed(Guid userId, DateTimeOffset from, DateTimeOffset to);
+
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Erased the data of {UserId}, but could not refresh the aggregates over {From} to {To}; they keep the erased numbers until refreshed by hand (docs/deployment.md, Refresh the aggregates by hand)")]
+    private partial void LogRefreshFailed(Exception exception, Guid userId, DateTimeOffset from, DateTimeOffset to);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Erasing the data of {UserId} failed; nothing was deleted")]
     private partial void LogEraseFailed(Exception exception, Guid userId);

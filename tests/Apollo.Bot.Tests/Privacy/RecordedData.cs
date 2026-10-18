@@ -26,9 +26,10 @@ internal static class RecordedData
     /// <summary>
     /// Seeds one row of <paramref name="user"/> in every event table, plus a closed earlier tracking period. Their
     /// message replies to and mentions <paramref name="referenced"/>, and their reaction is on a message of
-    /// <paramref name="referenced"/>.
+    /// <paramref name="referenced"/>. Every row starts <paramref name="at"/>, by default three days before
+    /// <see cref="TestTime.Now"/> (long before the database's own clock, so outside every aggregate refresh policy window).
     /// </summary>
-    public static Task SeedAsync(TrackingHost host, PlatformRef user, PlatformRef referenced) =>
+    public static Task SeedAsync(TrackingHost host, PlatformRef user, PlatformRef referenced, DateTimeOffset? at = null) =>
         host.InScopeAsync(async (db, ids) =>
         {
             var cancellationToken = TestContext.Current.CancellationToken;
@@ -36,7 +37,7 @@ internal static class RecordedData
             var userId = await ids.ResolveUserAsync(user, cancellationToken);
             var referencedId = await ids.ResolveUserAsync(referenced, cancellationToken);
             var channelId = await ids.ResolveChannelAsync(TestPlatform.Guild, TestPlatform.Channel("general"), cancellationToken);
-            var at = TestTime.Now - TimeSpan.FromDays(3);
+            var occurredAt = at ?? TestTime.Now - TimeSpan.FromDays(3);
             var message = $"message-of-{user.ExternalId}";
 
             db.MessageEvents.Add(new MessageEvent
@@ -44,7 +45,7 @@ internal static class RecordedData
                 GuildId = guildId,
                 UserId = userId,
                 ChannelId = channelId,
-                OccurredAt = at,
+                OccurredAt = occurredAt,
                 MessageExtId = message,
                 Kind = MessageEventKind.Create,
                 Length = 42,
@@ -55,7 +56,7 @@ internal static class RecordedData
                 GuildId = guildId,
                 UserId = userId,
                 ChannelId = channelId,
-                OccurredAt = at,
+                OccurredAt = occurredAt,
                 MessageExtId = message,
                 MentionedUserId = referencedId,
             });
@@ -64,30 +65,30 @@ internal static class RecordedData
                 GuildId = guildId,
                 UserId = userId,
                 ChannelId = channelId,
-                OccurredAt = at,
+                OccurredAt = occurredAt,
                 MessageExtId = $"message-of-{referenced.ExternalId}",
                 MessageAuthorId = referencedId,
                 EmojiName = "👍",
                 Kind = ReactionEventKind.Add,
             });
-            db.MembershipEvents.Add(new MembershipEvent { GuildId = guildId, UserId = userId, OccurredAt = at, Kind = MembershipEventKind.Join });
+            db.MembershipEvents.Add(new MembershipEvent { GuildId = guildId, UserId = userId, OccurredAt = occurredAt, Kind = MembershipEventKind.Join });
             db.PresenceActivitySessions.Add(new PresenceActivitySession
             {
                 GuildId = guildId,
                 UserId = userId,
-                OccurredAt = at,
-                EndedAt = at.AddHours(1),
+                OccurredAt = occurredAt,
+                EndedAt = occurredAt.AddHours(1),
                 ActivityType = PresenceActivityType.Playing,
                 ActivityName = "Factorio",
             });
-            db.TrackingPeriods.Add(new TrackingPeriod { GuildId = guildId, UserId = userId, From = at.AddDays(-1), To = at.AddDays(1) });
+            db.TrackingPeriods.Add(new TrackingPeriod { GuildId = guildId, UserId = userId, From = occurredAt.AddDays(-1), To = occurredAt.AddDays(1) });
             var session = new VoiceSession
             {
                 GuildId = guildId,
                 UserId = userId,
                 ChannelId = channelId,
-                OccurredAt = at,
-                EndedAt = at.AddMinutes(30),
+                OccurredAt = occurredAt,
+                EndedAt = occurredAt.AddMinutes(30),
                 EndReason = VoiceSessionEndReason.Left,
             };
             db.VoiceSessions.Add(session);
@@ -97,8 +98,8 @@ internal static class RecordedData
                 GuildId = guildId,
                 UserId = userId,
                 SessionId = session.Id,
-                OccurredAt = at,
-                EndedAt = at.AddMinutes(30),
+                OccurredAt = occurredAt,
+                EndedAt = occurredAt.AddMinutes(30),
             });
             return await db.SaveChangesAsync(cancellationToken);
         });
