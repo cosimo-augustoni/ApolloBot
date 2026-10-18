@@ -913,4 +913,124 @@
     <value>Pro Seite</value>
     <comment>Data page: pager</comment>
   </data>
+  <data name="Privacy_Intro" xml:space="preserve">
+    <value>Apollo ist der Statistik-Bot unseres Servers. Er erfasst, wann und wo Mitglieder aktiv sind, damit daraus Statistiken und Rückblicke entstehen. Hier steht, was Apollo speichert, von wem, wer es sieht und wie du die Erfassung beendest oder deine Daten löschst.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_RecordedTitle" xml:space="preserve">
+    <value>Was erfasst wird</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_Recorded_Messages" xml:space="preserve">
+    <value>Nachrichten: Zeitpunkt, Kanal und Länge; die Anzahl Wörter, Emojis, Anhänge, Embeds und Erwähnungen; ob Text, Links, Erwähnungen, Emojis oder Anhänge vorkommen; wen du erwähnst und wem du antwortest. Bearbeitungen werden mit den neuen Zahlen erfasst, Löschungen mit ihrem Zeitpunkt.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_Recorded_Voice" xml:space="preserve">
+    <value>Voice: wann du einem Sprachkanal beitrittst, in einen anderen wechselst oder ihn verlässt, und wann du dich selbst stumm oder taub schaltest, streamst oder deine Kamera einschaltest.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_Recorded_Reactions" xml:space="preserve">
+    <value>Reaktionen: welches Emoji du wann und in welchem Kanal setzt oder entfernst, an welcher Nachricht und wem diese gehört.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_Recorded_Membership" xml:space="preserve">
+    <value>Beitritte, Austritte (auch Kicks), Banns und deren Aufhebung, sofern du dabei erfasst wirst.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_Recorded_Activities" xml:space="preserve">
+    <value>Aktivitäten (nur Discord): zum Beispiel welches Spiel du spielst oder was du hörst oder schaust, von wann bis wann, sofern du deine Aktivität auf Discord teilst. Gespeichert wird erst ab einer Minute, dein eigener Status-Text nie. Diese Daten sind unvollständig, etwa wenn du deine Aktivität verbirgst.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_ContentNeverStored" xml:space="preserve">
+    <value>Der Inhalt deiner Nachrichten wird nie gespeichert.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_ContentNeverStored_Detail" xml:space="preserve">
+    <value>Apollo verwendet ihn nur beim Empfang, um die Zahlen oben zu berechnen, und verwirft ihn danach.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_Times" xml:space="preserve">
+    <value>Zeitpunkte werden in UTC gespeichert und nach Schweizer Zeit (Europe/Zurich) in Tage und Stunden eingeteilt.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_TrackingRoleTitle" xml:space="preserve">
+    <value>Die Tracking-Rolle</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_TrackingRole_Only" xml:space="preserve">
+    <value>Apollo erfasst nur Mitglieder mit der Tracking-Rolle. Ohne diese Rolle wird keine Aktivität von dir gespeichert, auch bei Admins nicht. Ist keine Tracking-Rolle eingerichtet, wird niemand erfasst.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_TrackingRole_Live" xml:space="preserve">
+    <value>Eine Änderung wirkt sofort, egal ob du die Rolle selbst mit einem Befehl änderst oder ein Admin sie dir gibt oder nimmt. Admins legen ausserdem fest, welche Rolle die Tracking-Rolle ist.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_TrackingRole_Others" xml:space="preserve">
+    <value>Antwortest du jemandem ohne Tracking-Rolle, erwähnst du die Person oder reagierst du auf ihre Nachricht, wird deine Aktivität gespeichert, aber nicht, wen sie betrifft.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_TrackingRole_References" xml:space="preserve">
+    <value>Damit Rollen und die Anmeldung auf der Website funktionieren, kennt Apollo von allen Mitgliedern, auch ohne Tracking-Rolle, die Discord-ID, den Anzeigenamen, den Avatar, die Rollen, ob sie Administrator sind und wann sie dem Server beigetreten sind oder ihn verlassen haben.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_CommandsTitle" xml:space="preserve">
+    <value>Erfassung beenden oder Daten löschen</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_Commands_Intro" xml:space="preserve">
+    <value>Du steuerst deine Erfassung selbst mit diesen Befehlen auf dem Server. Die Antworten siehst nur du.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_Command_TrackingOff" xml:space="preserve">
+    <value>/apollo tracking off</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_Command_TrackingOff_Text" xml:space="preserve">
+    <value>Beendet die Erfassung sofort: Apollo entfernt dir die Tracking-Rolle. Bereits erfasste Daten bleiben gespeichert.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_Command_TrackingOn" xml:space="preserve">
+    <value>/apollo tracking on</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_Command_TrackingOn_Text" xml:space="preserve">
+    <value>Apollo gibt dir die Tracking-Rolle (wieder) und erfasst dich ab dann. Das geht jederzeit, auch nach einer Löschung; die Zeit ohne Rolle bleibt eine Lücke.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_Command_TrackingStatus" xml:space="preserve">
+    <value>/apollo tracking status</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_Command_TrackingStatus_Text" xml:space="preserve">
+    <value>Zeigt, ob und seit wann du erfasst wirst und wie viele Einträge von dir gespeichert sind.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_Command_PrivacyDelete" xml:space="preserve">
+    <value>/apollo privacy delete</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_Command_PrivacyDelete_Text" xml:space="preserve">
+    <value>Löscht nach einer Bestätigung alle über dich erfassten Aktivitäten endgültig und entfernt dir die Tracking-Rolle, damit die Erfassung nicht weiterläuft. Wo andere dir geantwortet, dich erwähnt oder auf deine Nachrichten reagiert haben, wird der Verweis auf dich entfernt. Das kann nicht rückgängig gemacht werden.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_Commands_Remains" xml:space="preserve">
+    <value>Beenden ist nicht Löschen: Nur /apollo privacy delete entfernt deine Daten. Danach bleibt nur, was Apollo von allen Mitgliedern kennt (siehe «Die Tracking-Rolle»), und der Zeitpunkt deiner letzten Abmeldung von der Website.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_Commands_NotOnWebsite" xml:space="preserve">
+    <value>Auf der Website kannst du deine Erfassung nicht ändern und keine Daten löschen.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_VisibilityTitle" xml:space="preserve">
+    <value>Wer deine Daten sieht</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_Visibility_Admins" xml:space="preserve">
+    <value>Admins des Servers, also Mitglieder mit der Berechtigung «Administrator», sehen nach der Anmeldung auf der Website alle erfassten Daten.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
+  <data name="Privacy_Visibility_Others" xml:space="preserve">
+    <value>Andere Mitglieder sehen deine Daten nicht. Du selbst siehst mit /apollo tracking status, ob du erfasst wirst und wie viele Einträge von dir gespeichert sind.</value>
+    <comment>Public privacy page /datenschutz (#96)</comment>
+  </data>
 </root>

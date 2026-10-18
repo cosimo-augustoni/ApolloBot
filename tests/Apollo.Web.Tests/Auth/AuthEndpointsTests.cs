@@ -206,6 +206,17 @@ public sealed class AuthEndpointsTests(ApolloWebApplicationFactory factory) : IC
     }
 
     [Fact]
+    public async Task DatenschutzPage_WhenAnonymous_ShouldServeTheAppWithoutLogin()
+    {
+        using var http = factory.CreateHttpsClient();
+
+        using var response = await http.GetAsync(new Uri("/datenschutz", UriKind.Relative), Ct);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        response.Content.Headers.ContentType!.MediaType.ShouldBe("text/html");
+    }
+
+    [Fact]
     public async Task AdminApi_WhenAuthenticatedWithoutAdminClaim_ShouldReturnBare403()
     {
         using var http = factory.CreateHttpsClient();

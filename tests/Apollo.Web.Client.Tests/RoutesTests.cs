@@ -26,7 +26,6 @@ public sealed class RoutesTests : ApolloTestContext
         { "admin/members", "Mitglieder" },
         { "admin/recaps", "Server-Rückblicke" },
         { "me", "Meine Statistik" },
-        { "datenschutz", "Datenschutz" },
     };
 
     [Fact]
@@ -67,6 +66,30 @@ public sealed class RoutesTests : ApolloTestContext
         routes.WaitForAssertion(() => routes.FindComponents<Apollo.Web.Client.Pages.Admin.Data>().ShouldHaveSingleItem());
         routes.Find("h1").TextContent.Trim().ShouldBe("Daten");
         routes.FindComponents<AreaPlaceholder>().ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Router_WhenRouteIsDatenschutz_ShouldShowThePrivacyPage()
+    {
+        var routes = RenderAt("datenschutz");
+
+        routes.WaitForAssertion(() => routes.FindComponents<Privacy>().ShouldHaveSingleItem());
+        routes.Find("h1").TextContent.Trim().ShouldBe("Datenschutz");
+        routes.FindComponents<AreaPlaceholder>().ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Router_WhenAnonymousOpensDatenschutz_ShouldShowThePrivacyPageWithoutLogin()
+    {
+        UseApiClients(useMockData: false, _appInfo, currentUser: null);
+        var navigation = Services.GetRequiredService<BunitNavigationManager>();
+
+        var routes = RenderAt("datenschutz");
+
+        routes.WaitForAssertion(() => routes.FindComponents<Privacy>().ShouldHaveSingleItem());
+        routes.FindComponents<MainLayout>().ShouldHaveSingleItem();
+        routes.FindComponents<RedirectToLogin>().ShouldBeEmpty();
+        navigation.History.ShouldNotContain(h => h.Uri.StartsWith("/auth/login", StringComparison.Ordinal));
     }
 
     [Fact]

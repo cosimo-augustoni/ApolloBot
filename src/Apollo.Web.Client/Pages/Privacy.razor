@@ -1,0 +1,73 @@
+@page "/datenschutz"
+@using Microsoft.AspNetCore.Authorization
+@attribute [AllowAnonymous]
+@inject IStringLocalizer<Strings> L
+
+@*
+    Public privacy page (scope §5.4 "Transparency"), linked from every bot reply. Content only: tracking and deletion
+    happen through the /apollo commands, never on the website (scope §3). Every statement must match what the bot does.
+*@
+<PageTitle>@L["PageTitle", L["Nav_PrivacyPolicy"]]</PageTitle>
+
+<div class="apollo-privacy">
+    <MudText Typo="Typo.h1" Class="mb-2">@L["Nav_PrivacyPolicy"]</MudText>
+    <MudText Typo="Typo.body1" Class="mb-4">@L["Privacy_Intro"]</MudText>
+
+    <section class="apollo-privacy-recorded">
+        <SectionCard Title="@L["Privacy_RecordedTitle"]">
+            <ul>
+                <li><MudText Typo="Typo.body1">@L["Privacy_Recorded_Messages"]</MudText></li>
+                <li><MudText Typo="Typo.body1">@L["Privacy_Recorded_Voice"]</MudText></li>
+                <li><MudText Typo="Typo.body1">@L["Privacy_Recorded_Reactions"]</MudText></li>
+                <li><MudText Typo="Typo.body1">@L["Privacy_Recorded_Membership"]</MudText></li>
+                <li><MudText Typo="Typo.body1">@L["Privacy_Recorded_Activities"]</MudText></li>
+            </ul>
+            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true" Class="apollo-privacy-content-never-stored my-3">
+                <strong>@L["Privacy_ContentNeverStored"]</strong> @L["Privacy_ContentNeverStored_Detail"]
+            </MudAlert>
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">@L["Privacy_Times"]</MudText>
+        </SectionCard>
+    </section>
+
+    <section class="apollo-privacy-tracking-role">
+        <SectionCard Title="@L["Privacy_TrackingRoleTitle"]">
+            <MudText Typo="Typo.body1" Class="mb-2">@L["Privacy_TrackingRole_Only"]</MudText>
+            <MudText Typo="Typo.body1" Class="mb-2">@L["Privacy_TrackingRole_Live"]</MudText>
+            <MudText Typo="Typo.body1" Class="mb-2">@L["Privacy_TrackingRole_Others"]</MudText>
+            <MudText Typo="Typo.body1">@L["Privacy_TrackingRole_References"]</MudText>
+        </SectionCard>
+    </section>
+
+    <section class="apollo-privacy-commands">
+        <SectionCard Title="@L["Privacy_CommandsTitle"]">
+            <MudText Typo="Typo.body1">@L["Privacy_Commands_Intro"]</MudText>
+            <ul>
+                <li>
+                    <code>@L["Privacy_Command_TrackingOff"]</code>
+                    <MudText Typo="Typo.body1">@L["Privacy_Command_TrackingOff_Text"]</MudText>
+                </li>
+                <li>
+                    <code>@L["Privacy_Command_TrackingOn"]</code>
+                    <MudText Typo="Typo.body1">@L["Privacy_Command_TrackingOn_Text"]</MudText>
+                </li>
+                <li>
+                    <code>@L["Privacy_Command_TrackingStatus"]</code>
+                    <MudText Typo="Typo.body1">@L["Privacy_Command_TrackingStatus_Text"]</MudText>
+                </li>
+                <li>
+                    <code>@L["Privacy_Command_PrivacyDelete"]</code>
+                    <MudText Typo="Typo.body1">@L["Privacy_Command_PrivacyDelete_Text"]</MudText>
+                </li>
+            </ul>
+            <MudText Typo="Typo.body1" Class="mb-2">@L["Privacy_Commands_Remains"]</MudText>
+            <MudText Typo="Typo.body1">@L["Privacy_Commands_NotOnWebsite"]</MudText>
+        </SectionCard>
+    </section>
+
+    <section class="apollo-privacy-visibility">
+        <SectionCard Title="@L["Privacy_VisibilityTitle"]">
+            <MudText Typo="Typo.body1" Class="mb-2">@L["Privacy_Visibility_Admins"]</MudText>
+            <MudText Typo="Typo.body1">@L["Privacy_Visibility_Others"]</MudText>
+        </SectionCard>
+    </section>
+</div>
