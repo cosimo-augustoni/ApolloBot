@@ -2,6 +2,7 @@ using ApexCharts;
 using Apollo.Data;
 using Apollo.Data.Tracking;
 using Apollo.Platform.Discord.Identity;
+using Apollo.Stats;
 using Apollo.Web.Admin;
 using Apollo.Web.Api;
 using Apollo.Web.Auth;
@@ -32,6 +33,10 @@ builder.Services.AddScoped<BotStatusQuery>();
 // Admin data page (#32): event counts, tracked members and the raw event browser.
 builder.Services.AddScoped<DataOverviewQuery>();
 builder.Services.AddScoped<RawEventQuery>();
+
+// Admin server dashboard (#37): the activity stats layer (#35) for the configured guild.
+builder.Services.AddActivityStats();
+builder.Services.AddScoped<ServerStatsQuery>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -91,6 +96,7 @@ app.MapRazorComponents<App>()
 app.MapAppInfoEndpoints();
 app.MapBotStatusEndpoints();
 app.MapDataEndpoints();
+app.MapStatsEndpoints();
 app.MapRoleSettingsEndpoints();
 app.MapAuthEndpoints();
 app.MapDefaultEndpoints();
