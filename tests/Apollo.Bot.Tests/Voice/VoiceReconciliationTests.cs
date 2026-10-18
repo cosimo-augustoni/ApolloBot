@@ -446,6 +446,32 @@ public sealed class VoiceReconciliationTests(TimescaleFixture fixture) : Timesca
         Store(host).CountOpenSessions().ShouldBe(0);
     }
 
+    [Fact]
+    public async Task VoiceEvent_WhenItArrivesWhileTheSyncReconciliationRuns_ShouldWin()
+    {
+        await using var host = Create(Fixture, _meters);
+        await StartAndSyncAsync(host);
+        await ChangeOnPlatformAsync(host, VoiceOf(Alice, Lounge));
+        var aliceId = await host.UserIdAsync(Alice);
+        host.Time.Advance(_stay);
+        await ConnectionAsync(host, PlatformConnectionState.Disconnected);
+        host.Time.Advance(TimeSpan.FromMinutes(1));
+        await ConnectionAsync(host, PlatformConnectionState.Connected);
+        host.Platform.HoldVoiceStateListings();
+        var sync = SyncAsync(host);
+        await host.Platform.VoiceStateListingHeld.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        var leftAt = host.Time.GetUtcNow();
+
+        var leave = ChangeOnPlatformAsync(host, VoiceOf(Alice, channel: null));
+        await TrackingHost.WaitUntilAsync(() => Store(host).HasPendingEvents(aliceId), "the leave is on its way");
+        host.Platform.ReleaseVoiceStateListings();
+        await sync;
+        await leave;
+
+        (await EndsAsync(host)).ShouldBe([(leftAt, VoiceSessionEndReason.Left)]);
+        Store(host).CountOpenSessions().ShouldBe(0);
+    }
+
     public void Dispose() => _meters.Dispose();
 
     /// <summary>

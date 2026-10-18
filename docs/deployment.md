@@ -491,7 +491,7 @@ metrics view for the `bot` resource.
 All data is in the `PostgresDataPath` bind mount. A file copy is consistent only while Postgres is stopped, so stop the
 writers first (on a graceful shutdown the bot stores its open presence sessions; open voice sessions stay open, and on
 the next start the bot continues them if the pause was at most `Apollo:Voice:Reconciliation:MaxGap` and the member is
-still in the same channel, otherwise it ends them at its last heartbeat), then the database:
+still in the same channel, otherwise it ends them at its last connected heartbeat), then the database:
 
 ```bash
 docker service scale apollo_bot=0 apollo_apollo-web=0
