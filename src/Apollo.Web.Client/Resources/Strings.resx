@@ -1111,6 +1111,7 @@
   </data>
   <data name="Stats_Channel_Sort" xml:space="preserve">
     <value>Sortieren nach</value>
+    <comment>Stats: label of the channel ranking sort toggle</comment>
   </data>
   <data name="Stats_Channel_Deleted" xml:space="preserve">
     <value>{0} (gelöscht)</value>
@@ -1146,9 +1147,11 @@
   </data>
   <data name="Stats_Heatmap_CaptionVoice" xml:space="preserve">
     <value>Voice-Zeit pro Stunde</value>
+    <comment>Stats: heatmap caption, voice time</comment>
   </data>
   <data name="Stats_Heatmap_CaptionVoiceBlocks" xml:space="preserve">
     <value>Voice-Zeit pro 3 Stunden</value>
+    <comment>Stats: heatmap caption on phones, voice time</comment>
   </data>
   <data name="Stats_Empty_Title" xml:space="preserve">
     <value>Keine Daten im gewählten Zeitraum</value>
@@ -1268,6 +1271,7 @@
   </data>
   <data name="Member_Times_KeySubVoice" xml:space="preserve">
     <value>deine aktivste Stunde im Voice</value>
+    <comment>Member stats: under the hour with the most voice time</comment>
   </data>
   <data name="Member_Games_Title" xml:space="preserve">
     <value>Spiele</value>

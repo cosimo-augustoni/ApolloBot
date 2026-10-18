@@ -194,6 +194,57 @@ public sealed class MemberMagazineViewTests : BunitContext
     }
 
     [Fact]
+    public void MemberMagazineView_WithVoiceAndMessagesBusiestAtDifferentHours_ShouldLeadTheTimesWithTheVoiceHour()
+    {
+        var stats = MockMemberStatsClient.Sample(_anna, _from, _to);
+        stats = stats with
+        {
+            Activity = stats.Activity with
+            {
+                Heatmap = Heatmap((0, 9, 50), (4, 20, 1)),
+                VoiceHeatmap = Heatmap((0, 9, 60), (4, 20, 7200)),
+            },
+        };
+
+        var view = RenderView(stats);
+
+        Key(view, "zeiten").ShouldBe(("Fr, 20 Uhr", "deine aktivste Stunde im Voice"));
+        view.FindComponent<ActivityHeatmap>().Instance.InitialMetric.ShouldBe(StatsMetric.VoiceHours);
+        HeatmapMetric(view).ShouldBe("Voice-Zeit");
+    }
+
+    [Theory]
+    [InlineData(0L, StatsMetric.Messages, "Nachrichten")]
+    [InlineData(1800L, StatsMetric.VoiceHours, "Voice-Stunden")]
+    public void MemberMagazineView_WithOrWithoutVoiceTime_ShouldOpenTheChartAndTheRankingOnThatMetric(long voiceSeconds, StatsMetric expected, string toggle)
+    {
+        var empty = MockMemberStatsClient.NeverTracked(_anna, _from, _to);
+        var stats = empty with
+        {
+            Activity = empty.Activity with
+            {
+                Totals = empty.Activity.Totals with { Messages = 12, VoiceSeconds = voiceSeconds },
+                ActiveDays = 1,
+                Channels =
+                [
+                    new ChannelActivityDto(Guid.NewGuid(), "allgemein", false, 12, 0),
+                    new ChannelActivityDto(Guid.NewGuid(), "Voice-Lounge", false, 0, voiceSeconds),
+                ],
+            },
+        };
+
+        var view = RenderView(stats);
+
+        var chart = view.FindComponent<ActivityOverTimeChart>();
+        chart.Instance.InitialMetric.ShouldBe(expected);
+        chart.FindComponent<ApexPointSeries<DailyActivityDto>>().Instance.Name.ShouldBe(toggle);
+        var ranking = view.FindComponent<ChannelRanking>();
+        ranking.Instance.InitialMetric.ShouldBe(expected);
+        ranking.FindAll(".mud-toggle-item").Single(b => b.ClassList.Contains("mud-toggle-item-selected")).TextContent.Trim().ShouldBe(toggle);
+        ranking.Find("tbody tr td:nth-child(2)").TextContent.Trim().ShouldBe(voiceSeconds > 0 ? "Voice-Lounge" : "allgemein");
+    }
+
+    [Fact]
     public void MemberMagazineView_WhenGameData_ShouldShowTheGamesChapter()
     {
         var stats = MockMemberStatsClient.Sample(_anna, _from, _to);
