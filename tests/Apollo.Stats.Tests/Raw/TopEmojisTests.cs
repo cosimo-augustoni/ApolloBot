@@ -66,6 +66,22 @@ public sealed class TopEmojisTests(TimescaleFixture fixture) : TimescaleTest(fix
     }
 
     [Fact]
+    public async Task GetTopEmojisAsync_WhenNameAndCountAreEqual_ShouldPutUnicodeBeforeCustom()
+    {
+        await using var db = Fixture.CreateDbContext();
+        var seed = await RawStatsSeed.CreateAsync(db, Ct);
+        await RawStatsSeed.AddAsync(
+            db,
+            Ct,
+            Reaction(seed, seed.Alice).WithCustomEmoji("111", "🔥").Build(),
+            Reaction(seed, seed.Alice).WithEmoji("🔥").Build());
+
+        var emojis = await new RawStatsService(db).GetTopEmojisAsync(seed.Query(), Ct);
+
+        emojis.ShouldBe([new EmojiUsage("🔥", null, 1), new EmojiUsage("🔥", "111", 1)]);
+    }
+
+    [Fact]
     public async Task GetTopEmojisAsync_ShouldLeaveOutReactionsByBotsUnlessIncluded()
     {
         await using var db = Fixture.CreateDbContext();

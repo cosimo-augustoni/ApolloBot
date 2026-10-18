@@ -29,6 +29,24 @@ public sealed class LongestVoiceSessionTests(TimescaleFixture fixture) : Timesca
     }
 
     [Fact]
+    public async Task GetLongestVoiceSessionAsync_WhenSessionsTie_ShouldPickTheSmallerUserId()
+    {
+        await using var db = Fixture.CreateDbContext();
+        var seed = await RawStatsSeed.CreateAsync(db, Ct);
+        await RawStatsSeed.AddAsync(
+            db,
+            Ct,
+            seed.Voice(seed.Alice, seed.Lounge, "2026-01-11T19:00:00Z", "2026-01-11T20:00:00Z").Build(),
+            seed.Voice(seed.Bob, seed.Lobby, "2026-01-11T19:00:00Z", "2026-01-11T20:00:00Z").Build());
+
+        var longest = await new RawStatsService(db).GetLongestVoiceSessionAsync(seed.Query(), Ct);
+
+        // Postgres orders uuids by their bytes, which is the ordinal order of their text.
+        var expected = string.CompareOrdinal(seed.Alice.ToString(), seed.Bob.ToString()) < 0 ? seed.Alice : seed.Bob;
+        longest.ShouldNotBeNull().UserId.ShouldBe(expected);
+    }
+
+    [Fact]
     public async Task GetLongestVoiceSessionAsync_ShouldIncludeUnobservedEnds()
     {
         await using var db = Fixture.CreateDbContext();
