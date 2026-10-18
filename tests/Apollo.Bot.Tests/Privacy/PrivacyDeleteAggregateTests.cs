@@ -1,9 +1,11 @@
+using Apollo.Bot.Privacy;
 using Apollo.Bot.Tests.Tracking;
 using Apollo.Platform.Abstractions;
 using Apollo.Testing;
 using Apollo.Testing.Data;
 using Apollo.Testing.Platform;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using static Apollo.Bot.Tests.Privacy.PrivacyCommandHost;
 using static Apollo.Bot.Tests.Privacy.RecordedData;
@@ -124,6 +126,37 @@ public sealed class PrivacyDeleteAggregateTests(TimescaleFixture fixture) : Time
         var record = host.Logs.GetSnapshot().Where(r => r.Level == LogLevel.Error).ShouldHaveSingleItem();
         record.Exception.ShouldBe(refreshes.Failure);
         record.StructuredState!.ToDictionary(kv => kv.Key, kv => kv.Value)["UserId"].ShouldBe((await host.UserIdAsync(Alice)).ToString());
+    }
+
+    /// <summary>
+    /// A shutdown while the refresh runs must not skip the role removal: the data is already deleted, and without the
+    /// removal the member, who still holds the tracking role, would be recorded again.
+    /// </summary>
+    [Fact]
+    public async Task Erase_WhenCancelledDuringTheRefresh_ShouldHaveRemovedTheRoleAndKeepTheMemberUntracked()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var refreshes = new AggregateRefreshLog
+        {
+            During = () =>
+            {
+                cancellation.Cancel();
+                cancellation.Token.ThrowIfCancellationRequested();
+            },
+        };
+        await using var host = await CreatePrivacyHostInTrackingRoleModeAsync(Fixture, configure: RecordingAggregateRefresher.Replace(refreshes));
+        await SeedAsync(host, Alice, Bob);
+
+        await Should.ThrowAsync<OperationCanceledException>(() => host.InScopeAsync(async (_, _) =>
+        {
+            await using var scope = host.Services.CreateAsyncScope();
+            return await scope.ServiceProvider.GetRequiredService<IUserDataEraser>()
+                .EraseAsync(TestPlatform.Guild, Alice, cancellation.Token);
+        }));
+
+        refreshes.Calls.ShouldHaveSingleItem();
+        host.Platform.RoleChanges.ShouldBe([new FakeRoleChange(Alice, Statistik, FakeRoleChangeKind.Removed)]);
+        host.Gate.IsTracked(await host.UserIdAsync(Alice)).ShouldBeFalse();
     }
 
     [Fact]
