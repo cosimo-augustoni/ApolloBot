@@ -28,6 +28,18 @@ public sealed class DataEventTextTests : ApolloTestContext
         DataEventText.TableName(type).ShouldBe(table);
     }
 
+    [Theory]
+    [InlineData(DataEventType.Message, "Nachricht")]
+    [InlineData(DataEventType.VoiceSession, "Voice-Session")]
+    [InlineData(DataEventType.VoiceStateSegment, "Voice-Abschnitt")]
+    [InlineData(DataEventType.Reaction, "Reaktion")]
+    [InlineData(DataEventType.Membership, "Mitgliedschaft")]
+    [InlineData(DataEventType.PresenceActivity, "Aktivität")]
+    public void TypeName_ShouldNameOneRowInGerman(DataEventType type, string name)
+    {
+        DataEventText.TypeName(L, type).ShouldBe(name);
+    }
+
     [Fact]
     public void TypeLabel_ShouldNameTheTypeAndKind()
     {

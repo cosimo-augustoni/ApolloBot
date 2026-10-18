@@ -12,6 +12,21 @@ public static class DataEventText
 {
     private const string Separator = " · ";
 
+    /// <summary>One row of the table in German, e.g. "Nachricht".</summary>
+    public static string TypeName(IStringLocalizer localizer, DataEventType type)
+    {
+        ArgumentNullException.ThrowIfNull(localizer);
+        return type switch
+        {
+            DataEventType.Message => localizer["Data_Type_Message"],
+            DataEventType.VoiceSession => localizer["Data_Type_VoiceSession"],
+            DataEventType.VoiceStateSegment => localizer["Data_Type_VoiceStateSegment"],
+            DataEventType.Reaction => localizer["Data_Type_Reaction"],
+            DataEventType.Membership => localizer["Data_Type_Membership"],
+            _ => localizer["Data_Type_PresenceActivity"],
+        };
+    }
+
     /// <summary>The table in German, e.g. "Nachrichten".</summary>
     public static string TableLabel(IStringLocalizer localizer, DataEventType type)
     {

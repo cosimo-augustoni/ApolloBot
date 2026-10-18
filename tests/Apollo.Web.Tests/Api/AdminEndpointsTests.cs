@@ -73,7 +73,18 @@ public sealed class AdminEndpointsTests(TimescaleFixture fixture) : TimescaleTes
         var status = (await http.GetFromJsonAsync<BotStatusDto>(new Uri(BotStatusPath, UriKind.Relative), Ct)).ShouldNotBeNull();
 
         status.ShouldBe(new BotStatusDto(
-            TestTime.Now, TestTime.Now - TimeSpan.FromSeconds(30), true, 84, TestTime.Now - TimeSpan.FromSeconds(12), 3, IsStale: false, status.EventsPerHour));
+            TestTime.Now,
+            TestTime.Now - TimeSpan.FromSeconds(30),
+            Connected: true,
+            LastConnectedAt: TestTime.Now - TimeSpan.FromSeconds(30),
+            GatewayLatencyMeanMs: 84,
+            TestTime.Now - TimeSpan.FromSeconds(12),
+            LastRecordedEvent: null,
+            status.OpenVoiceSessions,
+            IsStale: false,
+            NoTrackingRole: false,
+            status.EventsPerHour));
+        status.OpenVoiceSessions.ShouldBeEmpty();
     }
 
     [Fact]
