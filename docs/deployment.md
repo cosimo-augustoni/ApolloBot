@@ -486,6 +486,22 @@ counts only guild events, not reconnects, so far behind `occurred_at` on a conne
 (tag `event_type`) and `apollo.events.dropped` (tag `reason`) of meter `Apollo.Bot` are in the Aspire dashboard's
 metrics view for the `bot` resource.
 
+**Refresh the aggregates by hand:** the stats read continuous aggregates whose refresh policy only covers the last 7
+days (scope.md §5.2). After `/apollo privacy delete` the bot refreshes them over the deleted rows' days itself (#39); if
+that fails, the bot logs `Erased the data of <UserId>, but could not refresh the aggregates over <From> to <To>` at Error
+and the deleted member's numbers stay in older aggregate rows until a refresh. The deletion itself is done. Refresh every
+continuous aggregate in pgAdmin's Query Tool (auto-commit on: `CALL refresh_continuous_aggregate` refuses to run inside
+a transaction):
+
+```sql
+SELECT format('CALL refresh_continuous_aggregate(%L, NULL, NULL);', format('%I.%I', view_schema, view_name))
+FROM timescaledb_information.continuous_aggregates;
+```
+
+and run each `CALL` line it returns, one at a time. `NULL, NULL` covers all time but only re-materializes the days that
+changed since the last refresh (the deletion marked them), so it is cheap. The same fixes any other change older than
+7 days, e.g. a voice session closed more than a week after it started.
+
 ### Back up the database
 
 All data is in the `PostgresDataPath` bind mount. A file copy is consistent only while Postgres is stopped, so stop the
