@@ -27,6 +27,11 @@ public sealed class MessageEventBuilder : TestDataBuilder<MessageEventBuilder, M
 
     public MessageEventBuilder FromBot() => With(e => Copy(e, isBot: true));
 
+    /// <summary>
+    /// A reply to a message by <paramref name="userId"/> (a tracked user's internal ID, as the recorder stores it).
+    /// </summary>
+    public MessageEventBuilder ReplyTo(Guid userId) => With(e => Copy(e, replyToUserId: userId));
+
     protected override MessageEvent CreateDefault() => new()
     {
         OccurredAt = TestTime.Now,
@@ -51,7 +56,8 @@ public sealed class MessageEventBuilder : TestDataBuilder<MessageEventBuilder, M
         DateTimeOffset? occurredAt = null,
         MessageEventKind? kind = null,
         int? length = null,
-        bool? isBot = null) => new()
+        bool? isBot = null,
+        Guid? replyToUserId = null) => new()
         {
             GuildId = guildId ?? e.GuildId,
             UserId = userId ?? e.UserId,
@@ -69,7 +75,7 @@ public sealed class MessageEventBuilder : TestDataBuilder<MessageEventBuilder, M
             RoleMentionCount = e.RoleMentionCount,
             MentionsEveryone = e.MentionsEveryone,
             ContentParts = e.ContentParts,
-            ReplyToUserId = e.ReplyToUserId,
+            ReplyToUserId = replyToUserId ?? e.ReplyToUserId,
             IsBot = isBot ?? e.IsBot,
         };
 }
