@@ -43,6 +43,10 @@ builder.Services.AddRawStats();
 builder.Services.AddTrackingStatus();
 builder.Services.AddScoped<MemberStatsQuery>();
 
+// Admin data sanity page (#40): heartbeat gaps, long sessions and data of untracked members.
+builder.Services.AddDataSanity();
+builder.Services.AddScoped<SanityReportQuery>();
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
@@ -103,6 +107,7 @@ app.MapBotStatusEndpoints();
 app.MapDataEndpoints();
 app.MapStatsEndpoints();
 app.MapMemberEndpoints();
+app.MapSanityEndpoints();
 app.MapRoleSettingsEndpoints();
 app.MapAuthEndpoints();
 app.MapDefaultEndpoints();
