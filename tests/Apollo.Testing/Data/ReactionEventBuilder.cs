@@ -25,6 +25,16 @@ public sealed class ReactionEventBuilder : TestDataBuilder<ReactionEventBuilder,
 
     public ReactionEventBuilder Removed() => With(e => Copy(e, kind: ReactionEventKind.Remove));
 
+    /// <summary>
+    /// A unicode emoji, stored as its name without a custom ID.
+    /// </summary>
+    public ReactionEventBuilder WithEmoji(string emoji) => With(e => Copy(e, emojiName: emoji, clearCustomId: true));
+
+    /// <summary>
+    /// A custom emoji, stored as its platform ID and name.
+    /// </summary>
+    public ReactionEventBuilder WithCustomEmoji(string customId, string name) => With(e => Copy(e, emojiName: name, emojiCustomId: customId));
+
     protected override ReactionEvent CreateDefault() => new()
     {
         OccurredAt = TestTime.Now,
@@ -41,15 +51,18 @@ public sealed class ReactionEventBuilder : TestDataBuilder<ReactionEventBuilder,
         Guid? messageAuthorId = null,
         bool clearAuthor = false,
         DateTimeOffset? occurredAt = null,
-        ReactionEventKind? kind = null) => new()
+        ReactionEventKind? kind = null,
+        string? emojiName = null,
+        string? emojiCustomId = null,
+        bool clearCustomId = false) => new()
         {
             GuildId = guildId ?? e.GuildId,
             UserId = userId ?? e.UserId,
             ChannelId = channelId ?? e.ChannelId,
             MessageExtId = e.MessageExtId,
             MessageAuthorId = clearAuthor ? null : messageAuthorId ?? e.MessageAuthorId,
-            EmojiName = e.EmojiName,
-            EmojiCustomId = e.EmojiCustomId,
+            EmojiName = emojiName ?? e.EmojiName,
+            EmojiCustomId = clearCustomId ? null : emojiCustomId ?? e.EmojiCustomId,
             OccurredAt = occurredAt ?? e.OccurredAt,
             Kind = kind ?? e.Kind,
         };
