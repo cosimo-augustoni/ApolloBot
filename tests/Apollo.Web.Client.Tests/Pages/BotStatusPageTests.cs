@@ -81,16 +81,6 @@ public sealed class BotStatusPageTests : ApolloTestContext
     }
 
     [Fact]
-    public void BotStatusPage_WhenNoEventSinceStart_ShouldSayNoneYet()
-    {
-        _client.Status = _client.Status with { LastEventAt = null };
-
-        var page = Render<BotStatus>();
-
-        page.WaitForAssertion(() => Tile(page, "Letztes Ereignis").ShouldContain("Seit dem Start des Bots noch keines"));
-    }
-
-    [Fact]
     public void BotStatusPage_WhenNoHeartbeat_ShouldShowEmptyState()
     {
         _client.Status = _client.Status with { LastHeartbeatAt = null, Connected = false, IsStale = false };
@@ -340,13 +330,43 @@ public sealed class BotStatusPageTests : ApolloTestContext
     }
 
     [Fact]
-    public void BotStatusPage_WhenNothingRecorded_ShouldShowWhenTheLastEventWasReceived()
+    public void BotStatusPage_WhenTheBotReceivedARecentEventButTheLastRecordedRowIsOld_ShouldShowTheRecordedRow()
+    {
+        _client.Status = _client.Status with
+        {
+            LastRecordedEvent = new LastRecordedEventDto(DataEventType.Message, TestTime.Now.AddHours(-3), "allgemein"),
+        };
+
+        var page = Render<BotStatus>();
+
+        page.WaitForAssertion(() => Tile(page, "Letztes Ereignis").ShouldContain("vor 3 h"));
+        Tile(page, "Letztes Ereignis").ShouldNotContain("vor 12 s");
+        TileSubtext(page, "Letztes Ereignis").ShouldBe("Nachricht in #allgemein");
+    }
+
+    [Fact]
+    public void BotStatusPage_WhenNothingRecorded_ShouldSayNothingRecordedEvenIfTheBotReceivedEvents()
     {
         _client.Status = _client.Status with { LastRecordedEvent = null };
 
         var page = Render<BotStatus>();
 
-        page.WaitForAssertion(() => TileSubtext(page, "Letztes Ereignis").ShouldBe("09:59"));
+        page.WaitForAssertion(() => Tile(page, "Letztes Ereignis").ShouldContain("Noch nichts erfasst"));
+        Tile(page, "Letztes Ereignis").ShouldNotContain("vor 12 s");
+    }
+
+    [Fact]
+    public void BotStatusPage_WhenRowsAreRecordedButTheBotReceivedNoEventSinceItsStart_ShouldShowTheRecordedRow()
+    {
+        _client.Status = _client.Status with
+        {
+            LastRecordedEvent = new LastRecordedEventDto(DataEventType.Reaction, TestTime.Now.AddMinutes(-2), "allgemein"),
+        };
+
+        var page = Render<BotStatus>();
+
+        page.WaitForAssertion(() => Tile(page, "Letztes Ereignis").ShouldContain("vor 2 min"));
+        TileSubtext(page, "Letztes Ereignis").ShouldBe("Reaktion in #allgemein");
     }
 
     [Fact]
@@ -356,7 +376,7 @@ public sealed class BotStatusPageTests : ApolloTestContext
 
         var page = Render<BotStatus>();
 
-        page.WaitForAssertion(() => page.Find(".apollo-bot-offline").TextContent.ShouldContain("Letzte Verbindung um 09:55."));
+        page.WaitForAssertion(() => page.Find(".apollo-bot-offline").TextContent.ShouldContain("Letzte Verbindung: 09:55."));
     }
 
     [Fact]

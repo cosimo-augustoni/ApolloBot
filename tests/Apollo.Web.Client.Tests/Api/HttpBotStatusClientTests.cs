@@ -18,7 +18,6 @@ public sealed class HttpBotStatusClientTests
             Connected: false,
             LastConnectedAt: now.AddMinutes(-5),
             GatewayLatencyMeanMs: 84,
-            now.AddSeconds(-12),
             new LastRecordedEventDto(DataEventType.VoiceSession, now.AddSeconds(-12), "Voice-Lounge"),
             voice,
             IsStale: false,

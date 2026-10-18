@@ -14,7 +14,6 @@ namespace Apollo.Web.Client.Contracts;
 /// The mean gateway latency of the heartbeats in the last 5 minutes, rounded to whole ms; heartbeats without a latency
 /// do not count, <see langword="null"/> when none is left.
 /// </param>
-/// <param name="LastEventAt">When the bot last received a guild event; <see langword="null"/> before the first since its start.</param>
 /// <param name="LastRecordedEvent">The newest recorded row; <see langword="null"/> when nothing is recorded.</param>
 /// <param name="OpenVoiceSessions">The voice sessions open now (tracked members only), oldest first.</param>
 /// <param name="IsStale">The latest heartbeat is older than the stale threshold (default 2 minutes).</param>
@@ -26,7 +25,6 @@ public sealed record BotStatusDto(
     bool Connected,
     DateTimeOffset? LastConnectedAt,
     int? GatewayLatencyMeanMs,
-    DateTimeOffset? LastEventAt,
     LastRecordedEventDto? LastRecordedEvent,
     IReadOnlyList<OpenVoiceSessionDto> OpenVoiceSessions,
     bool IsStale,

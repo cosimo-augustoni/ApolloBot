@@ -457,9 +457,9 @@
     <value>Letztes Ereignis</value>
     <comment>Bot status page: tile label</comment>
   </data>
-  <data name="BotStatus_NoEventYet" xml:space="preserve">
-    <value>Seit dem Start des Bots noch keines</value>
-    <comment>Bot status page: last event tile when the bot received none since it started</comment>
+  <data name="BotStatus_NothingRecorded" xml:space="preserve">
+    <value>Noch nichts erfasst</value>
+    <comment>Bot status page: last event tile while no row is recorded</comment>
   </data>
   <data name="BotStatus_OpenVoiceSessions" xml:space="preserve">
     <value>Offene Voice-Sessions</value>
@@ -486,7 +486,7 @@
     <comment>Bot status page: info banner link to the settings page</comment>
   </data>
   <data name="BotStatus_Offline_LastConnected" xml:space="preserve">
-    <value>Letzte Verbindung um {0}.</value>
+    <value>Letzte Verbindung: {0}.</value>
     <comment>Bot status page: disconnected alert; {0} is the time of the latest heartbeat that said connected (with the date if not today)</comment>
   </data>
   <data name="BotStatus_LatencyMean" xml:space="preserve">
