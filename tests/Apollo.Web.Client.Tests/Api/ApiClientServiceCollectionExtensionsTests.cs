@@ -1,4 +1,4 @@
-﻿using Apollo.Web.Client.Api;
+using Apollo.Web.Client.Api;
 using Apollo.Web.Client.Api.Mock;
 using Apollo.Web.Client.Contracts;
 using Microsoft.Extensions.Configuration;
