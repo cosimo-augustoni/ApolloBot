@@ -6,19 +6,20 @@
     key numbers and activity over time, then chapters (Kanäle, Voice, Zeiten, and Spiele as a bonus), each led by one
     key number. A chapter without data in the range is left out; the games chapter only shows with game data. It takes
     plain DTOs and injects nothing but the strings, so the admin member page (#38) and /me (#42) show the same view;
-    whose page it is (name, tracking status, never tracked) is the page's job. Text speaks to the member ("du").
+    whose page it is (name, tracking status, never tracked) is the page's job. Text speaks to the member ("du"). Voice
+    comes first (#111): the first tile and every toggle's default, unless the member has no voice time in the range.
 *@
 <div class="apollo-magazine">
     <MudGrid Spacing="3">
-        <MudItem xs="6" md="3">
-            <StatTile Label="@L["Stats_Messages"]" Icon="@Icons.Material.Outlined.Chat" Value="@Activity.Totals.Messages"
-                      SubText="@PerDay(Activity.Averages.Messages)" />
-        </MudItem>
         <MudItem xs="6" md="3">
             <StatTile Label="@L["Stats_VoiceHours"]" Icon="@Icons.Material.Outlined.Headset"
                       SubText="@L["Stats_PerDay", UiDuration.HoursAndMinutes((long)Activity.Averages.VoiceSeconds)]">
                 <ValueContent>@UiDuration.HoursAndMinutes(Activity.Totals.VoiceSeconds)</ValueContent>
             </StatTile>
+        </MudItem>
+        <MudItem xs="6" md="3">
+            <StatTile Label="@L["Stats_Messages"]" Icon="@Icons.Material.Outlined.Chat" Value="@Activity.Totals.Messages"
+                      SubText="@PerDay(Activity.Averages.Messages)" />
         </MudItem>
         <MudItem xs="6" md="3">
             <StatTile Label="@L["Stats_Reactions"]" Icon="@Icons.Material.Outlined.AddReaction" Value="@Activity.Totals.ReactionsGiven"
@@ -42,7 +43,7 @@
         {
             <MudItem xs="12">
                 <SectionCard Title="@L["Stats_Activity"]">
-                    <ActivityOverTimeChart Days="Activity.Daily" />
+                    <ActivityOverTimeChart Days="Activity.Daily" InitialMetric="TotalsMetric" />
                     <MudText Typo="Typo.caption" Class="mud-text-secondary">@L["Stats_VoiceNote"]</MudText>
                 </SectionCard>
             </MudItem>
@@ -56,7 +57,7 @@
             <MudGrid Spacing="3">
                 <MudItem xs="12" md="6">
                     <SectionCard Title="@L["Member_TopChannels"]">
-                        <ChannelRanking Channels="Activity.Channels" Top="5" />
+                        <ChannelRanking Channels="Activity.Channels" Top="5" InitialMetric="TotalsMetric" />
                     </SectionCard>
                 </MudItem>
                 <MudItem xs="12" md="6">
@@ -116,7 +117,7 @@
             <section id="zeiten" class="apollo-chapter">
                 @TimesHead(busiest)
                 <SectionCard Title="@L["Stats_Heatmap"]">
-                    <ActivityHeatmap Heatmap="Activity.Heatmap" VoiceHeatmap="Activity.VoiceHeatmap" />
+                    <ActivityHeatmap Heatmap="Activity.Heatmap" VoiceHeatmap="Activity.VoiceHeatmap" InitialMetric="busiest.Metric" />
                 </SectionCard>
             </section>
         }
@@ -166,10 +167,15 @@
     private RenderFragment VoiceHead =>
         ChapterHead(Chapter(2), L["Member_Voice_Title"], (UiDuration.HoursAndMinutes(Activity.Totals.VoiceSeconds), VoiceKeySub()));
 
-    private RenderFragment TimesHead((int Day, int Hour) busiest) => ChapterHead(
+    /// <summary>Voice first, unless the range has no voice time but has messages.</summary>
+    private StatsMetric TotalsMetric =>
+        Activity.Totals.VoiceSeconds == 0 && Activity.Totals.Messages > 0 ? StatsMetric.Messages : StatsMetric.VoiceHours;
+
+    private RenderFragment TimesHead((int Day, int Hour, StatsMetric Metric) busiest) => ChapterHead(
         Chapter(HasVoice ? 3 : 2),
         L["Member_Times_Title"],
-        (L["Member_Times_Key", L[_weekdayKeys[busiest.Day]], busiest.Hour.ToString("00", UiCulture.Culture)], L["Member_Times_KeySub"]));
+        (L["Member_Times_Key", L[_weekdayKeys[busiest.Day]], busiest.Hour.ToString("00", UiCulture.Culture)],
+            busiest.Metric == StatsMetric.VoiceHours ? L["Member_Times_KeySubVoice"] : L["Member_Times_KeySub"]));
 
     private RenderFragment GamesHead(GamePlaytimeDto top) =>
         ChapterHead(L["Member_Bonus"], L["Member_Games_Title"], (UiDuration.HoursAndMinutes(top.Seconds), top.Name));
@@ -208,18 +214,26 @@
         ? L["Member_Voice_KeySubWith", MemberName(buddy.User)]
         : L["Member_Voice_KeySub"];
 
-    /// <summary>The weekday (Monday = 0) and hour with the most messages, the earliest on a tie; none without messages.</summary>
-    private (int Day, int Hour)? MostActiveHour()
+    /// <summary>
+    /// The weekday (Monday = 0) and hour with the most voice time, or without any voice time the most messages, the
+    /// earliest on a tie, and which of the two it is; none without either.
+    /// </summary>
+    private (int Day, int Hour, StatsMetric Metric)? MostActiveHour() =>
+        MostActiveHour(Activity.VoiceHeatmap) is { } voice ? (voice.Day, voice.Hour, StatsMetric.VoiceHours)
+        : MostActiveHour(Activity.Heatmap) is { } messages ? (messages.Day, messages.Hour, StatsMetric.Messages)
+        : null;
+
+    private static (int Day, int Hour)? MostActiveHour(IReadOnlyList<IReadOnlyList<long>> heatmap)
     {
         (int Day, int Hour)? busiest = null;
         long most = 0;
-        for (var day = 0; day < Activity.Heatmap.Count; day++)
+        for (var day = 0; day < heatmap.Count; day++)
         {
-            for (var hour = 0; hour < Activity.Heatmap[day].Count; hour++)
+            for (var hour = 0; hour < heatmap[day].Count; hour++)
             {
-                if (Activity.Heatmap[day][hour] > most)
+                if (heatmap[day][hour] > most)
                 {
-                    most = Activity.Heatmap[day][hour];
+                    most = heatmap[day][hour];
                     busiest = (day, hour);
                 }
             }

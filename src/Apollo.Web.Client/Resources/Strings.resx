@@ -1266,6 +1266,9 @@
     <value>deine aktivste Stunde</value>
     <comment>Member stats: under the most active hour</comment>
   </data>
+  <data name="Member_Times_KeySubVoice" xml:space="preserve">
+    <value>deine aktivste Stunde im Voice</value>
+  </data>
   <data name="Member_Games_Title" xml:space="preserve">
     <value>Spiele</value>
     <comment>Member stats: chapter headline</comment>

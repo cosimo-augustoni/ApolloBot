@@ -40,8 +40,9 @@ public sealed class MemberMagazineViewTests : BunitContext
         view.FindComponent<ActivityOverTimeChart>().Instance.Days.ShouldBeSameAs(stats.Activity.Daily);
         view.FindComponent<ChannelRanking>().Instance.Channels.ShouldBeSameAs(stats.Activity.Channels);
         view.FindComponent<ActivityHeatmap>().Instance.Heatmap.ShouldBeSameAs(stats.Activity.Heatmap);
+        view.FindComponent<ActivityHeatmap>().Instance.VoiceHeatmap.ShouldBeSameAs(stats.Activity.VoiceHeatmap);
         view.FindAll(".apollo-stat-label").Select(l => l.TextContent.Trim())
-            .ShouldBe(["Nachrichten", "Voice-Stunden", "Reaktionen", "Aktive Tage", "Längste Voice-Session"]);
+            .ShouldBe(["Voice-Stunden", "Nachrichten", "Reaktionen", "Aktive Tage", "Längste Voice-Session"]);
         view.FindAll(".apollo-member-emojis li").ShouldNotBeEmpty();
         view.FindAll(".apollo-member-buddies li").ShouldNotBeEmpty();
         view.FindAll("a[href*='admin']").ShouldBeEmpty();
@@ -131,23 +132,65 @@ public sealed class MemberMagazineViewTests : BunitContext
     public void MemberMagazineView_ShouldLeadTheChaptersWithTheirKeyNumber()
     {
         var stats = MockMemberStatsClient.Sample(_anna, _from, _to);
-        IReadOnlyList<long>[] heatmap = [.. Enumerable.Range(0, 7).Select(_ => (IReadOnlyList<long>)new long[24])];
-        ((long[])heatmap[2])[21] = 9;
-        ((long[])heatmap[5])[14] = 3;
         stats = stats with
         {
             Activity = stats.Activity with
             {
                 Totals = stats.Activity.Totals with { Messages = 200 },
                 Channels = [new ChannelActivityDto(Guid.NewGuid(), "allgemein", false, 82, 0), new ChannelActivityDto(Guid.NewGuid(), "gaming", false, 18, 0)],
-                Heatmap = heatmap,
+                Heatmap = Heatmap((2, 21, 9), (5, 14, 3)),
+                VoiceHeatmap = Heatmap((4, 20, 3600), (6, 22, 1800)),
             },
         };
 
         var view = RenderView(stats);
 
         Key(view, "kanaele").ShouldBe(("#allgemein", "41 % deiner Nachrichten"));
-        Key(view, "zeiten").ShouldBe(("Mi, 21 Uhr", "deine aktivste Stunde"));
+        Key(view, "zeiten").ShouldBe(("Fr, 20 Uhr", "deine aktivste Stunde im Voice"));
+        HeatmapMetric(view).ShouldBe("Voice-Zeit");
+    }
+
+    [Fact]
+    public void MemberMagazineView_WhenOnlyVoiceTime_ShouldShowTheTimesWithTheVoiceHeatmap()
+    {
+        var empty = MockMemberStatsClient.NeverTracked(_anna, _from, _to);
+        var stats = empty with
+        {
+            Activity = empty.Activity with
+            {
+                Totals = empty.Activity.Totals with { VoiceSeconds = 5400 },
+                ActiveDays = 1,
+                VoiceHeatmap = Heatmap((0, 21, 1200), (0, 22, 3600), (0, 23, 600)),
+            },
+        };
+
+        var view = RenderView(stats);
+
+        Key(view, "zeiten").ShouldBe(("Mo, 22 Uhr", "deine aktivste Stunde im Voice"));
+        HeatmapMetric(view).ShouldBe("Voice-Zeit");
+        view.FindComponent<ActivityOverTimeChart>().FindComponent<ApexPointSeries<DailyActivityDto>>().Instance.Name.ShouldBe("Voice-Stunden");
+    }
+
+    [Fact]
+    public void MemberMagazineView_WhenOnlyMessages_ShouldShowTheTimesWithTheMessageHeatmap()
+    {
+        var empty = MockMemberStatsClient.NeverTracked(_anna, _from, _to);
+        var stats = empty with
+        {
+            Activity = empty.Activity with
+            {
+                Totals = empty.Activity.Totals with { Messages = 12 },
+                ActiveDays = 1,
+                Channels = [new ChannelActivityDto(Guid.NewGuid(), "allgemein", false, 12, 0)],
+                Heatmap = Heatmap((2, 9, 10), (3, 18, 2)),
+            },
+        };
+
+        var view = RenderView(stats);
+
+        Key(view, "zeiten").ShouldBe(("Mi, 09 Uhr", "deine aktivste Stunde"));
+        HeatmapMetric(view).ShouldBe("Nachrichten");
+        view.FindComponent<ActivityOverTimeChart>().FindComponent<ApexPointSeries<DailyActivityDto>>().Instance.Name.ShouldBe("Nachrichten");
     }
 
     [Fact]
@@ -213,6 +256,22 @@ public sealed class MemberMagazineViewTests : BunitContext
         Render<MemberMagazineView>(p => p
             .Add(v => v.Activity, stats.Activity)
             .Add(v => v.Highlights, stats.Highlights));
+
+    /// <summary>A 7 × 24 heatmap, zero but for the given (weekday, hour, value) cells.</summary>
+    private static IReadOnlyList<IReadOnlyList<long>> Heatmap(params (int Day, int Hour, long Value)[] cells)
+    {
+        var heatmap = Enumerable.Range(0, 7).Select(_ => new long[24]).ToArray();
+        foreach (var (day, hour, value) in cells)
+        {
+            heatmap[day][hour] = value;
+        }
+
+        return heatmap;
+    }
+
+    /// <summary>The metric the heatmap's caption names ("Voice-Zeit pro Stunde"); the bare context has no breakpoint.</summary>
+    private static string HeatmapMetric(IRenderedComponent<MemberMagazineView> view) =>
+        view.Find("#zeiten .apollo-heatmap-caption").TextContent.Trim().Split(" pro ")[0];
 
     private static (string Value, string SubText) Tile(IRenderedComponent<MemberMagazineView> view, string label)
     {
