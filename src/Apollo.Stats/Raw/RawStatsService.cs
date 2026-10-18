@@ -102,6 +102,7 @@ public sealed class RawStatsService(ApolloDbContext db) : IRawStatsService
         var longest = await sessions
             .OrderByDescending(s => s.EndedAt!.Value - s.OccurredAt)
             .ThenBy(s => s.OccurredAt)
+            .ThenBy(s => s.UserId)
             .Select(s => new { s.UserId, s.ChannelId, s.OccurredAt, EndedAt = s.EndedAt!.Value })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -136,7 +137,7 @@ public sealed class RawStatsService(ApolloDbContext db) : IRawStatsService
             .. names
                 .GroupBy(n => n.EmojiCustomId is null ? (Unicode: true, Key: n.EmojiName) : (Unicode: false, Key: n.EmojiCustomId))
                 .Select(g => new EmojiUsage(
-                    g.OrderByDescending(n => n.EmojiName.Length > 0).ThenByDescending(n => n.LastUsed).First().EmojiName,
+                    g.OrderByDescending(n => n.EmojiName.Length > 0).ThenByDescending(n => n.LastUsed).ThenBy(n => n.EmojiName, StringComparer.Ordinal).First().EmojiName,
                     g.Key.Unicode ? null : g.Key.Key,
                     g.Sum(n => n.Count)))
                 .OrderByDescending(e => e.Count)

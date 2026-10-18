@@ -5,7 +5,4 @@ namespace Apollo.Stats.Raw;
 /// for a user, <see cref="RepliesTo"/> are whom they reply to most and <see cref="RepliedBy"/> who replies to them
 /// most, both empty for the guild. Every list is ordered by count, most first.
 /// </summary>
-public sealed record ReplyGraph(IReadOnlyList<ReplyEdge> Edges, IReadOnlyList<ReplyEdge> RepliesTo, IReadOnlyList<ReplyEdge> RepliedBy)
-{
-    public static ReplyGraph Empty { get; } = new([], [], []);
-}
+public sealed record ReplyGraph(IReadOnlyList<ReplyEdge> Edges, IReadOnlyList<ReplyEdge> RepliesTo, IReadOnlyList<ReplyEdge> RepliedBy);
