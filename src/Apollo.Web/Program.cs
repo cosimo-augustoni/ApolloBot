@@ -38,6 +38,11 @@ builder.Services.AddScoped<RawEventQuery>();
 builder.Services.AddActivityStats();
 builder.Services.AddScoped<ServerStatsQuery>();
 
+// Admin member page (#38): a member's tracking status, activity (#35) and raw-data stats (#36).
+builder.Services.AddRawStats();
+builder.Services.AddTrackingStatus();
+builder.Services.AddScoped<MemberStatsQuery>();
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
@@ -97,6 +102,7 @@ app.MapAppInfoEndpoints();
 app.MapBotStatusEndpoints();
 app.MapDataEndpoints();
 app.MapStatsEndpoints();
+app.MapMemberEndpoints();
 app.MapRoleSettingsEndpoints();
 app.MapAuthEndpoints();
 app.MapDefaultEndpoints();
