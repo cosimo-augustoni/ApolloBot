@@ -19,6 +19,11 @@ internal sealed class DiscordChatPlatform(
 
     public PlatformCapabilities Capabilities { get; } = new(PresenceActivities: true);
 
+    /// <summary>
+    /// The guild is in the gateway cache: its GUILD_CREATE arrived, and no GUILD_DELETE (an outage) removed it since.
+    /// </summary>
+    public bool IsGuildAvailable(PlatformRef guild) => CachedGuild(guild) is not null;
+
     public Task<PlatformMember?> GetMemberAsync(PlatformRef guild, PlatformRef user, CancellationToken cancellationToken)
     {
         var (cached, guildUser) = CachedMember(guild, user);

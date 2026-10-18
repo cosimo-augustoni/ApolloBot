@@ -112,6 +112,7 @@ internal sealed partial class VoiceSessionRecorder(
                     if (store.DisconnectedAt is null)
                     {
                         store.DisconnectedAt = platformEvent.OccurredAt;
+                        store.SyncedSinceDisconnect = false;
                         store.ReconciledInBlindSpot.Clear();
                     }
 
@@ -170,8 +171,9 @@ internal sealed partial class VoiceSessionRecorder(
         ReconcileAsync(notification.GuildId, cancellationToken);
 
     /// <summary>
-    /// The periodic run: reconciles everyone in the guild of the latest full sync. While the gateway is down it waits for
-    /// the reconnect; members with a voice event on its way are left to that event.
+    /// The periodic run: reconciles everyone in the guild of the latest full sync. While the gateway is down, after a
+    /// reconnect until its sync, and while the guild is unavailable it waits (the cache may be empty); members with a
+    /// voice event on its way are left to that event.
     /// </summary>
     public Task ReconcileAsync(CancellationToken cancellationToken) => ReconcileAsync(guildId: null, cancellationToken);
 
@@ -200,6 +202,7 @@ internal sealed partial class VoiceSessionRecorder(
             {
                 // Remembered before the run, so the periodic run retries a reconciliation after a sync that failed.
                 store.GuildId = guildId;
+                store.SyncedSinceDisconnect = true;
             }
 
             // Before the gate's first rebuild everyone would look untracked; the gate's TrackingStartedAsync calls and
@@ -215,8 +218,21 @@ internal sealed partial class VoiceSessionRecorder(
                 return;
             }
 
+            if (periodic && store.DisconnectedAt is not null && !store.SyncedSinceDisconnect)
+            {
+                LogSkippedBeforeSync();
+                return;
+            }
+
             if (await GuildRefAsync(id, cancellationToken) is not { } guild)
             {
+                return;
+            }
+
+            // An empty cache would look like everyone left.
+            if (periodic && !platform.IsGuildAvailable(guild))
+            {
+                LogSkippedGuildUnavailable();
                 return;
             }
 
@@ -548,6 +564,12 @@ internal sealed partial class VoiceSessionRecorder(
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Skipped the periodic voice reconciliation: the gateway is disconnected, the reconnect reconciles")]
     private partial void LogSkippedWhileDisconnected();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Skipped the periodic voice reconciliation: connected again, the reconnect's sync reconciles")]
+    private partial void LogSkippedBeforeSync();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Skipped the periodic voice reconciliation: the guild is unavailable")]
+    private partial void LogSkippedGuildUnavailable();
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "No open voice session rows for {UserId}, probably after a failed save; skipping the change")]
     private partial void LogNoOpenRows(Guid userId);

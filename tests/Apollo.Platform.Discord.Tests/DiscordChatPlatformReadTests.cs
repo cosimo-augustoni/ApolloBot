@@ -90,6 +90,18 @@ public sealed class DiscordChatPlatformReadTests : IDisposable
     }
 
     [Fact]
+    public void IsGuildAvailable_WhenTheGuildIsCached_ShouldBeTrue()
+    {
+        Platform(new DiscordGuildBuilder()).IsGuildAvailable(_guild).ShouldBeTrue();
+    }
+
+    [Fact]
+    public void IsGuildAvailable_WhenTheGuildIsNotCachedYet_ShouldBeFalse()
+    {
+        Platform().IsGuildAvailable(_guild).ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task GetMemberAsync_WhenGuildIsNotTheConfiguredGuild_ShouldThrow()
     {
         var otherGuild = new DiscordGuildBuilder(222222222222222222).WithMember(42);

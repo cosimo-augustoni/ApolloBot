@@ -351,6 +351,40 @@ public sealed class VoiceReconciliationTests(TimescaleFixture fixture) : Timesca
     }
 
     [Fact]
+    public async Task PeriodicRun_AfterAReconnectBeforeItsSync_ShouldWriteNothing()
+    {
+        await using var host = Create(Fixture, _meters, Interval);
+        await StartAndSyncAsync(host);
+        await ChangeOnPlatformAsync(host, VoiceOf(Alice, Lounge));
+        host.Time.Advance(Interval - TimeSpan.FromSeconds(3));
+        await ConnectionAsync(host, PlatformConnectionState.Disconnected);
+        host.Time.Advance(TimeSpan.FromSeconds(2));
+        await ConnectionAsync(host, PlatformConnectionState.Connected);
+
+        // The new session's cache does not have the voice states yet; the tick is due a second later.
+        host.Platform.WithVoiceState(VoiceOf(Alice, channel: null).Build());
+        await SkippedPeriodicRunAsync(host, "the reconnect's sync reconciles", TimeSpan.FromSeconds(1));
+        host.Platform.WithVoiceState(VoiceOf(Alice, Lounge).Build());
+        await SyncAsync(host);
+
+        (await EndsAsync(host)).ShouldBe([(null, null)]);
+    }
+
+    [Fact]
+    public async Task PeriodicRun_WhileTheGuildIsUnavailable_ShouldWriteNothing()
+    {
+        await using var host = Create(Fixture, _meters, Interval);
+        await StartAndSyncAsync(host);
+        await ChangeOnPlatformAsync(host, VoiceOf(Alice, Lounge));
+        host.Platform.WithGuildAvailability(false);
+
+        await SkippedPeriodicRunAsync(host, "the guild is unavailable");
+
+        (await EndsAsync(host)).ShouldBe([(null, null)]);
+        (await SegmentsAsync(host)).ShouldHaveSingleItem().EndedAt.ShouldBeNull();
+    }
+
+    [Fact]
     public async Task Shutdown_ShouldLeaveTheOpenSessionsOpen()
     {
         await using var host = Create(Fixture, _meters);
@@ -413,6 +447,20 @@ public sealed class VoiceReconciliationTests(TimescaleFixture fixture) : Timesca
     }
 
     public void Dispose() => _meters.Dispose();
+
+    /// <summary>
+    /// Advances the clock by <paramref name="advance"/> (default: the interval) and waits until the periodic run either logged that it skipped for
+    /// <paramref name="reason"/> or ran, so the test's assertions decide which.
+    /// </summary>
+    private static async Task SkippedPeriodicRunAsync(TrackingHost host, string reason, TimeSpan? advance = null)
+    {
+        int Skips() => host.Logs.GetSnapshot().Count(log => log.Message.Contains(reason, StringComparison.Ordinal));
+        var (skips, reconciledAt) = (Skips(), Store(host).LastReconciledAt);
+        host.Time.Advance(advance ?? Interval);
+        await TrackingHost.WaitUntilAsync(
+            () => Skips() > skips || Store(host).LastReconciledAt != reconciledAt,
+            "the periodic run skipped or ran");
+    }
 
     private static async Task<List<string>> SessionRowsAsync(TrackingHost host) =>
         [.. (await SessionsAsync(host)).Select(s => $"{s.Id} {s.UserId} {s.ChannelId} {s.OccurredAt:O} {s.EndedAt:O} {s.EndReason}")];
