@@ -141,6 +141,8 @@ dark mode, `Surface` background, palette colours, `Divider` grid (dashed), `Line
 dark tooltip, no toolbar/zoom, no data labels, and `de-CH` number formatting on the value axis and tooltip.
 Horizontal bar charts swap the axes, so set `Xaxis.Labels.Formatter = ApexChartDefaults.SwissNumberFormatter` there
 and clear the y-axis formatter (see `StyleGuideCharts.razor`).
+Values in seconds (voice time) use `ApexChartDefaults.DurationFormatter` instead, which writes them as `UiDuration.HoursAndMinutes`
+does ("3 h 25 min"); the voice heatmap sets it on its tooltip (#111).
 
 ### Series palette
 
