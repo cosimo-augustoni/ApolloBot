@@ -75,7 +75,19 @@ internal sealed partial class VoiceSessionRecorder(
                 return;
             }
 
-            changes = await ApplyAsync(guildId, machine => machine.Update(userId, connection, platformEvent.OccurredAt), cancellationToken);
+            if (InBlindSpot && !store.ReconciledInBlindSpot.Contains(userId))
+            {
+                // The first event of a user the rule has not run for yet in this blind spot (the gate published its
+                // snapshot before the user's tracking start hook, or the reconnect's sync has not run yet): the event's
+                // state is their current state.
+                var blindSpot = await BlindSpotAsync(guildId, platformEvent.OccurredAt, cancellationToken);
+                changes = await ApplyAsync(guildId, machine => machine.Reconcile(userId, [connection], blindSpot), cancellationToken);
+                store.ReconciledInBlindSpot.Add(userId);
+            }
+            else
+            {
+                changes = await ApplyAsync(guildId, machine => machine.Update(userId, connection, platformEvent.OccurredAt), cancellationToken);
+            }
         }
 
         if (changes.Count > 0)
@@ -97,7 +109,12 @@ internal sealed partial class VoiceSessionRecorder(
             {
                 case PlatformConnectionState.Disconnected:
                     store.GatewayDown = true;
-                    store.DisconnectedAt ??= platformEvent.OccurredAt;
+                    if (store.DisconnectedAt is null)
+                    {
+                        store.DisconnectedAt = platformEvent.OccurredAt;
+                        store.ReconciledInBlindSpot.Clear();
+                    }
+
                     break;
                 case PlatformConnectionState.Resumed:
                     store.GatewayDown = false;
@@ -129,6 +146,10 @@ internal sealed partial class VoiceSessionRecorder(
             var states = await platform.ListVoiceStatesAsync(guild, cancellationToken);
             var connections = await ToConnectionsAsync(guild, states.Where(s => s.User == user.User), cancellationToken);
             await ApplyAsync(user.GuildId, machine => machine.Reconcile(user.UserId, connections, blindSpot), cancellationToken);
+            if (InBlindSpot)
+            {
+                store.ReconciledInBlindSpot.Add(user.UserId);
+            }
         }
     }
 
@@ -237,6 +258,7 @@ internal sealed partial class VoiceSessionRecorder(
 
             store.StartupReconciled = true;
             store.DisconnectedAt = null;
+            store.ReconciledInBlindSpot.Clear();
             store.LastReconciledAt = now;
             if (changes.Count > 0)
             {
@@ -244,6 +266,11 @@ internal sealed partial class VoiceSessionRecorder(
             }
         }
     }
+
+    /// <summary>
+    /// Whether a blind spot is open that a full reconciliation has not closed yet: the startup one, or a disconnect.
+    /// </summary>
+    private bool InBlindSpot => !store.StartupReconciled || store.DisconnectedAt is not null;
 
     /// <summary>
     /// The blind spot for a reconciliation at <paramref name="now"/>: on startup since the previous run's last connected

@@ -1,5 +1,6 @@
 using System.Diagnostics.Metrics;
 using Apollo.Bot.Tests.Tracking;
+using Apollo.Bot.Tracking;
 using Apollo.Bot.Voice;
 using Apollo.Data.Status;
 using Apollo.Data.Voice;
@@ -36,18 +37,26 @@ internal static class VoiceTestHost
 
     /// <summary>
     /// A host with the voice recorder. Without <paramref name="interval"/> the periodic run is due only after a day, so
-    /// tests of other behaviour can advance the fake clock freely.
+    /// tests of other behaviour can advance the fake clock freely. With
+    /// <paramref name="hold"/> the gate's tracking start hook for one user waits before it reaches the recorder.
     /// </summary>
     public static TrackingHost Create(
         TimescaleFixture fixture,
         IMeterFactory meters,
         TimeSpan? interval = null,
         IInterceptor? interceptor = null,
-        Action<IServiceCollection>? configure = null) => new(
+        Action<IServiceCollection>? configure = null,
+        HeldTrackingStart? hold = null) => new(
         fixture,
         services =>
         {
             services.AddSingleton(meters);
+            if (hold is not null)
+            {
+                services.AddSingleton(hold);
+                services.AddTrackingLifecycleHandler<HeldTrackingStart.Handler>();
+            }
+
             services.AddVoiceRecording();
             services.Configure<VoiceReconciliationOptions>(options => options.Interval = interval ?? TimeSpan.FromDays(1));
             configure?.Invoke(services);

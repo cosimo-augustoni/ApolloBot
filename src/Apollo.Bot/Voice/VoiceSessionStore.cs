@@ -69,6 +69,14 @@ internal sealed class VoiceSessionStore : IOpenVoiceSessionCounter, IDisposable
     /// </summary>
     public bool GatewayDown { get; set; }
 
+    /// <summary>
+    /// The users the rule already ran for in the current blind spot (startup, or the current disconnect), e.g. through
+    /// their tracking start hook or their first voice event. Until it has, a voice event of a user applies the rule
+    /// instead of a plain update, so a session the bot did not see end is never closed as a move at the event's time.
+    /// Emptied when a blind spot starts or ends.
+    /// </summary>
+    public HashSet<Guid> ReconciledInBlindSpot { get; } = [];
+
     public int CountOpenSessions() => _openSessions;
 
     /// <summary>
