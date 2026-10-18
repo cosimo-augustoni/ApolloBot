@@ -272,7 +272,13 @@ Layout (D16, chosen from the wireframe concepts in #27): the member area is a **
 
 **Admin area (`/admin`)**
 - Bot status: connected, gateway latency, last event received, events per hour, open voice sessions. This is the "data is being collected" proof for M2.
-  The page (#31, `/admin`) reads `GET /api/admin/bot-status`: the latest `bot_status` heartbeat of the configured guild (§4.3) and the rows of `message_events`, `reaction_events`, `membership_events`, `voice_sessions` and `presence_activity_sessions` (by `occurred_at`, the start for sessions) per `Europe/Zurich` hour over the last 24 hours, the current hour included and empty hours as 0. A heartbeat older than `Apollo:Web:BotStatus:StaleAfter` (default 2 minutes) shows a stale warning; no heartbeat at all shows "Noch kein Heartbeat empfangen". The page reloads every 30 s while it is open.
+  The page (#31, #91, `/admin`) reads `GET /api/admin/bot-status` for the configured guild (§4.3). Everything comes from the database; the bot only writes its heartbeat (#24).
+  - Heartbeats (`bot_status`): the latest one; the latest one that said connected (the "Getrennt" alert says "Letzte Verbindung um …", or leaves the time out when none ever did); the gateway latency as the mean of the heartbeats of the last 5 minutes, rounded to whole ms, heartbeats without a latency ignored ("Mittel der letzten 5 min"). A heartbeat older than `Apollo:Web:BotStatus:StaleAfter` (default 2 minutes) shows a stale warning; no heartbeat at all shows "Noch kein Heartbeat empfangen".
+  - "Letztes Ereignis": the value is when the bot last received a guild event (heartbeat), the subtext names the newest recorded row of the five tables below by `occurred_at` with its type and, if it has one, its channel ("Nachricht in #allgemein"; membership and presence rows have none).
+  - Open voice sessions: `voice_sessions` rows with `ended_at IS NULL` (only tracked members have rows, and losing tracking closes them), with member, channel and start (Zurich); the tile counts them and their channels ("In 2 Kanälen").
+  - Events per hour: the rows of `message_events`, `reaction_events`, `membership_events`, `voice_sessions` and `presence_activity_sessions` (by `occurred_at`, the start for sessions) per `Europe/Zurich` hour over the last 24 hours, the current hour included and empty hours as 0, split per table (stacked bars).
+  - While a synced platform has no tracking role (#62), an info banner "Keine Tracking-Rolle festgelegt: Es wird niemand erfasst." links to `/admin/settings`.
+  - The page reloads every 30 s while it is open.
 - Server dashboard: totals, growth, activity over time, channel ranking, heatmap
 - Members: list with search, opening a member's stats page (same view as `/me`)
 - Recaps: server recap per month/year, regenerate a snapshot
