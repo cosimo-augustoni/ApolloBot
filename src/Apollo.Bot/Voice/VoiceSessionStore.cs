@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+using Apollo.Bot.Reconciliation;
 using Apollo.Bot.Status;
 using Apollo.Domain.Voice;
 
@@ -13,7 +13,7 @@ namespace Apollo.Bot.Voice;
 internal sealed class VoiceSessionStore : IOpenVoiceSessionCounter, IDisposable
 {
     private readonly SemaphoreSlim _lock = new(1, 1);
-    private readonly ConcurrentDictionary<Guid, int> _pendingEvents = [];
+    private readonly PendingEvents _pendingEvents = new();
     private volatile int _openSessions;
 
     /// <summary>
@@ -100,26 +100,14 @@ internal sealed class VoiceSessionStore : IOpenVoiceSessionCounter, IDisposable
     /// so a periodic run does not mistake the change it carries for one the bot missed.
     /// </summary>
     /// <remarks>The seam for an event buffer (#99): buffered events of a user should count here too.</remarks>
-    public IDisposable BeginEvent(Guid userId)
-    {
-        _pendingEvents.AddOrUpdate(userId, 1, (_, count) => count + 1);
-        return new PendingEvent(this, userId);
-    }
+    public IDisposable BeginEvent(Guid userId) => _pendingEvents.Begin(userId);
 
     /// <summary>
     /// Whether a voice event of <paramref name="userId"/> is on its way (see <see cref="BeginEvent"/>).
     /// </summary>
-    public bool HasPendingEvents(Guid userId) => _pendingEvents.ContainsKey(userId);
+    public bool HasPendingEvents(Guid userId) => _pendingEvents.Contains(userId);
 
     public void Dispose() => _lock.Dispose();
-
-    private void EndEvent(Guid userId)
-    {
-        if (_pendingEvents.AddOrUpdate(userId, 0, (_, count) => count - 1) <= 0)
-        {
-            _pendingEvents.TryRemove(new KeyValuePair<Guid, int>(userId, 0));
-        }
-    }
 
     private sealed class Lease(VoiceSessionStore store) : IDisposable
     {
@@ -131,19 +119,6 @@ internal sealed class VoiceSessionStore : IOpenVoiceSessionCounter, IDisposable
             {
                 store._openSessions = store.Machine.OpenSessionCount;
                 store._lock.Release();
-            }
-        }
-    }
-
-    private sealed class PendingEvent(VoiceSessionStore store, Guid userId) : IDisposable
-    {
-        private int _ended;
-
-        public void Dispose()
-        {
-            if (Interlocked.Exchange(ref _ended, 1) == 0)
-            {
-                store.EndEvent(userId);
             }
         }
     }

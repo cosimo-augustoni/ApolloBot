@@ -28,7 +28,7 @@ namespace Apollo.Bot.Voice;
 /// <para>
 /// The reconciliation applies one rule (<see cref="VoiceSessionStateMachine.Reconcile"/>) to every tracked member after
 /// a time the bot could not see or store changes. It runs after every full guild sync (on startup and after a
-/// reconnect) and every <see cref="VoiceReconciliationOptions.Interval"/> (<see cref="VoiceSessionLifecycleService"/>),
+/// reconnect) and every <see cref="Reconciliation.ReconciliationOptions.Interval"/> (<see cref="VoiceSessionLifecycleService"/>),
 /// each with its own T, the last moment the bot knew the voice states: on startup the previous run's last connected
 /// heartbeat, after a reconnect the disconnect, periodically the previous full reconciliation.
 /// </para>

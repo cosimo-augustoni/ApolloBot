@@ -1,5 +1,6 @@
 using System.Diagnostics.Metrics;
 using Apollo.Bot.Presence;
+using Apollo.Bot.Reconciliation;
 using Apollo.Bot.Tests.Tracking;
 using Apollo.Data.Presence;
 using Apollo.Domain.Presence;
@@ -29,6 +30,7 @@ public sealed class PresenceSessionRecorderTests(TimescaleFixture fixture) : Tim
     private static readonly PlatformRef _carol = TestPlatform.User("carol");
 
     private static readonly TimeSpan _session = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan _interval = TimeSpan.FromMinutes(5);
 
     private readonly TestMeterFactory _meters = new();
 
@@ -328,7 +330,162 @@ public sealed class PresenceSessionRecorderTests(TimescaleFixture fixture) : Tim
         dropped.GetMeasurementSnapshot().Select(m => m.Tags["reason"]).ShouldBe(["untracked", "untracked"]);
     }
 
+    [Fact]
+    public async Task PeriodicRun_WhenStoringAClosedSessionFailedAndTheActivityIsGone_ShouldStoreItEndingAtThePreviousRun()
+    {
+        var interceptor = new FailingPresenceInsertInterceptor();
+        await using var host = await HostAsync(interceptor, _interval);
+        await UpdateOnPlatformAsync(host, Presence(_alice).Playing("X"));
+        await RunPeriodicallyAsync(host);
+        var previousRun = host.Time.GetUtcNow();
+        host.Time.Advance(TimeSpan.FromMinutes(2));
+        interceptor.Arm();
+        await UpdateOnPlatformAsync(host, Presence(_alice));
+        (await SessionsAsync(host)).ShouldBeEmpty();
+
+        await RunPeriodicallyAsync(host);
+
+        var session = (await SessionsAsync(host)).ShouldHaveSingleItem();
+        session.OccurredAt.ShouldBe(TestTime.Now);
+        session.EndedAt.ShouldBe(previousRun);
+        Store(host).Machine.OpenSessionCount.ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task PeriodicRun_WhenAnActivityHasNoSession_ShouldOpenOneFromNow()
+    {
+        await using var host = await HostAsync(interval: _interval);
+        host.Platform.WithPresence(Presence(_alice).Playing("X").Build());
+
+        await RunPeriodicallyAsync(host);
+        var openedAt = host.Time.GetUtcNow();
+        host.Time.Advance(TimeSpan.FromMinutes(2));
+        await UpdateOnPlatformAsync(host, Presence(_alice));
+
+        (await SessionsAsync(host)).ShouldHaveSingleItem().OccurredAt.ShouldBe(openedAt);
+    }
+
+    [Fact]
+    public async Task PeriodicRun_WhenEverySessionMatchesThePresences_ShouldWriteNothingAndKeepTheStarts()
+    {
+        var interceptor = new FailingPresenceInsertInterceptor();
+        await using var host = await HostAsync(interceptor, _interval);
+        await UpdateOnPlatformAsync(host, Presence(_alice).Playing("X"));
+        await UpdateOnPlatformAsync(host, Presence(_bob).ListeningTo("Spotify"));
+
+        await RunPeriodicallyAsync(host);
+
+        interceptor.Inserts.ShouldBe(0);
+        await UpdateOnPlatformAsync(host, Presence(_alice));
+        (await SessionsAsync(host)).ShouldHaveSingleItem().OccurredAt.ShouldBe(TestTime.Now);
+    }
+
+    [Fact]
+    public async Task PeriodicRun_WhenAPresenceUpdateIsOnItsWay_ShouldLeaveTheMemberToTheUpdate()
+    {
+        await using var host = await HostAsync(interval: _interval);
+        await UpdateOnPlatformAsync(host, Presence(_alice).Playing("X"));
+        var aliceId = await host.UserIdAsync(_alice);
+        host.Time.Advance(_interval - TimeSpan.FromSeconds(1));
+        host.Platform.HoldStateListings(snapshotOnRelease: true);
+        host.Time.Advance(TimeSpan.FromSeconds(1));
+        await host.Platform.StateListingHeld.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        var stoppedAt = host.Time.GetUtcNow();
+
+        var update = UpdateOnPlatformAsync(host, Presence(_alice));
+        await TrackingHost.WaitUntilAsync(() => Store(host).HasPendingEvents(aliceId), "the update is on its way");
+        host.Platform.ReleaseStateListings();
+        await update;
+        await TrackingHost.WaitUntilAsync(() => Store(host).LastReconciledAt == stoppedAt, "the periodic run finished");
+
+        (await SessionsAsync(host)).ShouldHaveSingleItem().EndedAt.ShouldBe(stoppedAt);
+    }
+
+    [Fact]
+    public async Task PeriodicRun_WhileTheGuildIsUnavailable_ShouldCloseNothing()
+    {
+        await using var host = await HostAsync(interval: _interval);
+        await UpdateOnPlatformAsync(host, Presence(_alice).Playing("X"));
+        host.Platform.WithGuildAvailability(false);
+
+        await SkippedOrRanAsync(host);
+
+        Store(host).Machine.OpenSessionCount.ShouldBe(1);
+        (await SessionsAsync(host)).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task PeriodicRun_AfterAReconnectBeforeItsSync_ShouldCloseNothing()
+    {
+        await using var host = await HostAsync(interval: _interval);
+        await UpdateOnPlatformAsync(host, Presence(_alice).Playing("X"));
+        await ConnectionAsync(host, PlatformConnectionState.Disconnected);
+        await ConnectionAsync(host, PlatformConnectionState.Connected);
+        host.Platform.WithPresence(Presence(_alice).Build());
+
+        await SkippedOrRanAsync(host);
+
+        Store(host).Machine.OpenSessionCount.ShouldBe(1);
+        (await SessionsAsync(host)).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task PeriodicRun_WhenTheDatabaseFailsAtATick_ShouldLogAndRetryOnTheNextTick()
+    {
+        var interceptor = new FailingPresenceInsertInterceptor();
+        await using var host = await HostAsync(interceptor, _interval);
+        await UpdateOnPlatformAsync(host, Presence(_alice).Playing("X"));
+        await RunPeriodicallyAsync(host);
+        var lastSuccessfulRun = host.Time.GetUtcNow();
+        host.Time.Advance(TimeSpan.FromMinutes(2));
+        interceptor.Arm();
+        await UpdateOnPlatformAsync(host, Presence(_alice));
+        interceptor.Arm();
+
+        host.Time.Advance(TimeSpan.FromMinutes(3));
+        await TrackingHost.WaitUntilAsync(
+            () => host.Logs.GetSnapshot().Any(log => log.Message.Contains("periodic presence reconciliation failed", StringComparison.Ordinal)),
+            "the failed periodic run was logged");
+        await RunPeriodicallyAsync(host);
+
+        (await SessionsAsync(host)).ShouldHaveSingleItem().EndedAt.ShouldBe(lastSuccessfulRun);
+    }
+
     public void Dispose() => _meters.Dispose();
+
+    /// <summary>
+    /// Advances the fake clock by the interval and waits until that periodic run finished.
+    /// </summary>
+    private static async Task RunPeriodicallyAsync(TrackingHost host)
+    {
+        var before = Store(host).LastReconciledAt;
+        host.Time.Advance(_interval);
+        await TrackingHost.WaitUntilAsync(() => Store(host).LastReconciledAt != before, "the periodic presence reconciliation ran");
+    }
+
+    /// <summary>
+    /// Advances the fake clock by the interval and waits until the periodic run either logged a skip or ran, so the
+    /// test's assertions decide which.
+    /// </summary>
+    private static async Task SkippedOrRanAsync(TrackingHost host)
+    {
+        int Skips() => host.Logs.GetSnapshot().Count(log => log.Message.Contains("Skipped the periodic presence reconciliation", StringComparison.Ordinal));
+        var (skips, before) = (Skips(), Store(host).LastReconciledAt);
+        host.Time.Advance(_interval);
+        await TrackingHost.WaitUntilAsync(() => Skips() > skips || Store(host).LastReconciledAt != before, "the periodic run skipped or ran");
+    }
+
+    /// <summary>
+    /// The presence changes on the platform (its cache, which the reconciliation reads) and the update is raised.
+    /// </summary>
+    private static Task UpdateOnPlatformAsync(TrackingHost host, PlatformPresenceBuilder presence)
+    {
+        host.Platform.WithPresence(presence.Build());
+        return UpdateAsync(host, presence);
+    }
+
+    private static Task ConnectionAsync(TrackingHost host, PlatformConnectionState state) =>
+        host.RaiseAsync(new PlatformConnectionStateChangedBuilder().WithState(state).At(host.Time.GetUtcNow()).Build());
 
     private static PlatformPresenceBuilder Presence(PlatformRef user) => new PlatformPresenceBuilder().ForUser(user);
 
@@ -341,21 +498,25 @@ public sealed class PresenceSessionRecorderTests(TimescaleFixture fixture) : Tim
     private static PlatformMember Member(PlatformRef user, params PlatformRef[] roles) =>
         new PlatformMemberBuilder().ForUser(user).WithRoles(roles).Build();
 
-    private TrackingHost Host(IInterceptor? interceptor = null) => new(
+    /// <summary>
+    /// A host with the presence recorder. Without <paramref name="interval"/> the periodic run is due only after a day.
+    /// </summary>
+    private TrackingHost Host(IInterceptor? interceptor = null, TimeSpan? interval = null) => new(
         Fixture,
         services =>
         {
             services.AddSingleton<IMeterFactory>(_meters);
             services.AddPresenceRecording();
+            services.Configure<ReconciliationOptions>(options => options.Interval = interval ?? TimeSpan.FromDays(1));
         },
         interceptor);
 
     /// <summary>
     /// The bot after startup: the presence lifecycle service started, then the first full guild sync.
     /// </summary>
-    private async Task<TrackingHost> HostAsync(IInterceptor? interceptor = null)
+    private async Task<TrackingHost> HostAsync(IInterceptor? interceptor = null, TimeSpan? interval = null)
     {
-        var host = Host(interceptor);
+        var host = Host(interceptor, interval);
         await StartAsync(host);
         await SeedAndSyncAsync(host);
         return host;

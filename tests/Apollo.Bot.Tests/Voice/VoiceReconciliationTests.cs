@@ -431,14 +431,14 @@ public sealed class VoiceReconciliationTests(TimescaleFixture fixture) : Timesca
         await StartAndSyncAsync(host);
         await ChangeOnPlatformAsync(host, VoiceOf(Alice, Lounge));
         var aliceId = await host.UserIdAsync(Alice);
-        host.Platform.HoldVoiceStateListings();
+        host.Platform.HoldStateListings();
         host.Time.Advance(Interval);
-        await host.Platform.VoiceStateListingHeld.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        await host.Platform.StateListingHeld.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
         var leftAt = host.Time.GetUtcNow();
 
         var leave = ChangeOnPlatformAsync(host, VoiceOf(Alice, channel: null));
         await TrackingHost.WaitUntilAsync(() => Store(host).HasPendingEvents(aliceId), "the leave is on its way");
-        host.Platform.ReleaseVoiceStateListings();
+        host.Platform.ReleaseStateListings();
         await leave;
         await TrackingHost.WaitUntilAsync(() => Store(host).LastReconciledAt == leftAt, "the periodic run finished");
 
@@ -457,14 +457,14 @@ public sealed class VoiceReconciliationTests(TimescaleFixture fixture) : Timesca
         await ConnectionAsync(host, PlatformConnectionState.Disconnected);
         host.Time.Advance(TimeSpan.FromMinutes(1));
         await ConnectionAsync(host, PlatformConnectionState.Connected);
-        host.Platform.HoldVoiceStateListings();
+        host.Platform.HoldStateListings();
         var sync = SyncAsync(host);
-        await host.Platform.VoiceStateListingHeld.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        await host.Platform.StateListingHeld.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
         var leftAt = host.Time.GetUtcNow();
 
         var leave = ChangeOnPlatformAsync(host, VoiceOf(Alice, channel: null));
         await TrackingHost.WaitUntilAsync(() => Store(host).HasPendingEvents(aliceId), "the leave is on its way");
-        host.Platform.ReleaseVoiceStateListings();
+        host.Platform.ReleaseStateListings();
         await sync;
         await leave;
 

@@ -20,9 +20,17 @@ namespace Apollo.Bot.Presence;
 /// <remarks>
 /// <para>
 /// Inputs: presence updates of tracked users; the tracking hooks (gaining tracking opens sessions for the current
-/// activities, also for everyone tracked after the first sync on startup; losing it closes them); every full guild sync
-/// (also after a reconnect), which reconciles everyone with the current presences; and
-/// <see cref="PresenceSessionLifecycleService"/> on shutdown.
+/// activities, also for everyone tracked after the first sync on startup; losing it closes them); every full guild
+/// sync (also after a reconnect), which reconciles everyone with the current presences and closes a mismatch now; the
+/// gateway's connection state; and <see cref="PresenceSessionLifecycleService"/>: the periodic run and the shutdown
+/// close.
+/// </para>
+/// <para>
+/// The periodic run (#98, every <see cref="Reconciliation.ReconciliationOptions.Interval"/>) corrects a failed save: a
+/// session whose activity is gone closes at the previous full reconciliation (never before its start), so an activity
+/// never runs on until the member's next presence update; a current activity without a session opens one from now;
+/// matching sessions stay untouched. It waits while the gateway is down, after a reconnect until its sync, and while the
+/// guild is unavailable, and leaves members whose update is on its way to that update.
 /// </para>
 /// <para>
 /// A no-op on platforms without <see cref="PlatformCapabilities.PresenceActivities"/> (Fluxer). After a crash the open
@@ -38,7 +46,10 @@ internal sealed partial class PresenceSessionRecorder(
     RecordedEventMetrics metrics,
     TimeProvider timeProvider,
     ILogger<PresenceSessionRecorder> logger)
-    : IPlatformEventHandler<PlatformPresenceUpdated>, ITrackingLifecycleHandler, IGuildStateNotificationHandler<GuildStateSynchronized>
+    : IPlatformEventHandler<PlatformPresenceUpdated>,
+        IPlatformEventHandler<PlatformConnectionStateChanged>,
+        ITrackingLifecycleHandler,
+        IGuildStateNotificationHandler<GuildStateSynchronized>
 {
     public async Task HandleAsync(PlatformPresenceUpdated platformEvent, CancellationToken cancellationToken)
     {
@@ -54,6 +65,7 @@ internal sealed partial class PresenceSessionRecorder(
             return;
         }
 
+        using var pending = store.BeginEvent(userId);
         var guildId = await ids.ResolveGuildAsync(platformEvent.Guild, cancellationToken);
         var activities = PresenceActivities.From(platformEvent.Presence);
 
@@ -75,6 +87,31 @@ internal sealed partial class PresenceSessionRecorder(
         {
             metrics.Recorded(platformEvent);
             LogRecorded(stored, userId);
+        }
+    }
+
+    /// <summary>
+    /// Remembers whether the gateway is down and whether a reconnect still waits for its sync, for the periodic run.
+    /// </summary>
+    public async Task HandleAsync(PlatformConnectionStateChanged platformEvent, CancellationToken cancellationToken)
+    {
+        using (await store.EnterAsync(cancellationToken))
+        {
+            switch (platformEvent.State)
+            {
+                case PlatformConnectionState.Disconnected:
+                    store.GatewayDown = true;
+                    store.AwaitingSync = true;
+                    break;
+                case PlatformConnectionState.Resumed:
+                    // Missed updates are replayed, so no sync is needed.
+                    store.GatewayDown = false;
+                    store.AwaitingSync = false;
+                    break;
+                default:
+                    store.GatewayDown = false;
+                    break;
+            }
         }
     }
 
@@ -119,6 +156,8 @@ internal sealed partial class PresenceSessionRecorder(
 
         using (await store.EnterAsync(cancellationToken))
         {
+            store.GuildId = notification.GuildId;
+            store.AwaitingSync = false;
             var current = new Dictionary<Guid, IReadOnlyList<PresenceActivity>>();
             foreach (var presence in await platform.ListPresencesAsync(guild, cancellationToken))
             {
@@ -141,6 +180,90 @@ internal sealed partial class PresenceSessionRecorder(
 
                 return changes;
             }, cancellationToken);
+            store.LastReconciledAt = now;
+        }
+    }
+
+    /// <summary>
+    /// Records the start of this run: T for the first periodic run.
+    /// </summary>
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+        using (await store.EnterAsync(cancellationToken))
+        {
+            store.StartedAt ??= timeProvider.GetUtcNow();
+        }
+    }
+
+    /// <summary>
+    /// The periodic run (#98): compares every tracked member's open sessions with their current presence, while the
+    /// gateway stayed connected, so only a failed save can have been missed.
+    /// </summary>
+    public async Task ReconcileAsync(CancellationToken cancellationToken)
+    {
+        if (!platform.Capabilities.PresenceActivities)
+        {
+            return;
+        }
+
+        using (await store.EnterAsync(cancellationToken))
+        {
+            if (store.Stopped || store.GuildId is not { } guildId || gate.Mode is null)
+            {
+                return;
+            }
+
+            if (store.GatewayDown || store.AwaitingSync)
+            {
+                LogSkippedWhileReconnecting();
+                return;
+            }
+
+            if (await GuildRefAsync(guildId, cancellationToken) is not { } guild)
+            {
+                return;
+            }
+
+            // An empty cache would look like every activity ended.
+            if (!platform.IsGuildAvailable(guild))
+            {
+                LogSkippedGuildUnavailable();
+                return;
+            }
+
+            var now = timeProvider.GetUtcNow();
+            var lastKnownAt = store.LastReconciledAt ?? store.StartedAt ?? now;
+            var current = new Dictionary<Guid, IReadOnlyList<PresenceActivity>>();
+            foreach (var presence in await platform.ListPresencesAsync(guild, cancellationToken))
+            {
+                if (gate.TryGetTrackedUserId(presence.User) is { } userId)
+                {
+                    current[userId] = PresenceActivities.From(presence);
+                }
+            }
+
+            var stored = await ApplyAsync(guildId, machine =>
+            {
+                var changes = new List<PresenceChange>();
+                foreach (var userId in machine.Users.Union(current.Keys).ToList())
+                {
+                    if (store.HasPendingEvents(userId))
+                    {
+                        continue;
+                    }
+
+                    changes.AddRange(gate.IsTracked(userId)
+                        ? machine.Reconcile(userId, current.GetValueOrDefault(userId, []), lastKnownAt, now)
+                        : machine.Stop(userId, now));
+                }
+
+                return changes;
+            }, cancellationToken);
+            store.LastReconciledAt = now;
+            if (stored > 0)
+            {
+                LogReconciled(stored, lastKnownAt);
+            }
         }
     }
 
@@ -242,4 +365,13 @@ internal sealed partial class PresenceSessionRecorder(
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Dropped presence update of {User}: untracked")]
     private partial void LogDropped(PlatformRef user);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Periodic presence reconciliation stored {SessionCount} sessions ending at {LastKnownAt}")]
+    private partial void LogReconciled(int sessionCount, DateTimeOffset lastKnownAt);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Skipped the periodic presence reconciliation: the gateway is disconnected or its reconnect's sync has not run yet")]
+    private partial void LogSkippedWhileReconnecting();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Skipped the periodic presence reconciliation: the guild is unavailable")]
+    private partial void LogSkippedGuildUnavailable();
 }

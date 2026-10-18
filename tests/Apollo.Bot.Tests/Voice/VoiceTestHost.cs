@@ -1,4 +1,5 @@
 using System.Diagnostics.Metrics;
+using Apollo.Bot.Reconciliation;
 using Apollo.Bot.Tests.Tracking;
 using Apollo.Bot.Tracking;
 using Apollo.Bot.Voice;
@@ -30,7 +31,7 @@ internal static class VoiceTestHost
     public static readonly PlatformRef Gaming = TestPlatform.Channel("gaming");
 
     /// <summary>
-    /// The default reconciliation interval and blind spot (<see cref="VoiceReconciliationOptions"/>).
+    /// The default reconciliation interval and blind spot (<see cref="ReconciliationOptions"/>, <see cref="VoiceReconciliationOptions"/>).
     /// </summary>
     public static readonly TimeSpan Interval = TimeSpan.FromMinutes(5);
     public static readonly TimeSpan MaxGap = TimeSpan.FromMinutes(2);
@@ -58,7 +59,7 @@ internal static class VoiceTestHost
             }
 
             services.AddVoiceRecording();
-            services.Configure<VoiceReconciliationOptions>(options => options.Interval = interval ?? TimeSpan.FromDays(1));
+            services.Configure<ReconciliationOptions>(options => options.Interval = interval ?? TimeSpan.FromDays(1));
             configure?.Invoke(services);
         },
         interceptor);

@@ -57,6 +57,33 @@ public sealed class PresenceSessionStateMachine
     }
 
     /// <summary>
+    /// The periodic reconciliation (#98): the user's current activities are <paramref name="activities"/>, read from the
+    /// platform while the gateway stayed connected, so only a failed save can have been missed. A session whose
+    /// activity is gone closes at <paramref name="lastKnownAt"/> (the previous run), never before its own start; an
+    /// activity without a session opens one at <paramref name="now"/>; matching sessions stay as they are.
+    /// </summary>
+    public IReadOnlyList<PresenceChange> Reconcile(
+        Guid userId,
+        IEnumerable<PresenceActivity> activities,
+        DateTimeOffset lastKnownAt,
+        DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(activities);
+        var open = _sessions.TryGetValue(userId, out var existing) ? existing : [];
+        var current = activities.Distinct().ToList();
+        var changes = new List<PresenceChange>();
+        foreach (var (activity, startedAt) in open.Where(session => !current.Contains(session.Key)).ToList())
+        {
+            open.Remove(activity);
+            changes.Add(new PresenceSessionClosed(userId, activity, startedAt, lastKnownAt > startedAt ? lastKnownAt : startedAt));
+        }
+
+        changes.AddRange(Update(userId, [.. open.Keys, .. current.Where(activity => !open.ContainsKey(activity))], now));
+        return changes;
+    }
+
+
+    /// <summary>
     /// Closes every open session of the user and forgets them (tracking stopped).
     /// </summary>
     public IReadOnlyList<PresenceChange> Stop(Guid userId, DateTimeOffset at) =>
