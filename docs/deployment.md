@@ -23,7 +23,9 @@ Later deploys need only [Steps](#steps) and the checks in [Verify the deployment
 - **Docker**, logged in to the registry: `docker login registry.kallisto.li`.
 - **Aspire CLI with the same version as the AppHost SDK** (`src/Apollo.AppHost/Apollo.AppHost.csproj`, currently 13.6.1). Check it with `aspire --version` and run `aspire update --self` if it is older. An older CLI can't talk to a newer AppHost: it writes the files and then hangs with `Run completed without returning a backchannel`.
 - **PowerShell 7** (`pwsh`) for the render script.
-- **The reverse-proxy network** exists in the Swarm as an attachable overlay network. Its name is the value of `Apollo:Deploy:ReverseProxyNetwork` (see below).
+- **The reverse-proxy network** exists in the Swarm as an attachable overlay network, and the reverse proxy service is
+  attached to it (listed under the proxy's own `networks:`). Its name is the value of `Apollo:Deploy:ReverseProxyNetwork`
+  (see below). Without the attachment the site is unreachable, although `apollo-web` runs and listens on port 80.
 - **The bind-mount directories** (`PostgresDataPath`, `PgAdminDataPath`) exist on every Swarm node that may run `db`
   and `pgadmin`, with the right owners (see [Prepare the storage](#prepare-the-storage)).
 
@@ -84,7 +86,7 @@ All values are read by the AppHost. Secrets are listed by name only and are neve
 | `REGISTRY_ENDPOINT` | config | Registry host, `registry.kallisto.li` | env var or AppHost user-secret |
 | `REGISTRY_REPOSITORY` | config | Repository below the registry, e.g. `apollo` | env var or AppHost user-secret |
 | `Apollo:Deploy:ReverseProxyNetwork` | config | Name of the external reverse-proxy overlay network | `src/Apollo.AppHost/appsettings.json` sets `apollo_bot` (the reverse proxy has one attachable network per service). Override it with an AppHost user-secret or the env var `Apollo__Deploy__ReverseProxyNetwork` |
-| `db-password` | **secret** parameter | Postgres password | AppHost user-secret `Parameters:db-password`, env var `Parameters__db-password`, or the CLI prompt. If none is set, Aspire generates one |
+| `db-password` | **secret** parameter | Postgres password | AppHost user-secret `Parameters:db-password`, env var `Parameters__db-password`, or the CLI prompt. **Set it before the first deploy.** If none is set, Aspire generates one and keeps it only in its deployment state; deleting that state file (see *Changing a secret*) makes it generate a new one that the database doesn't know. A deployment that already runs with a generated one: copy `DB_PASSWORD` from `src/Apollo.AppHost/aspire-output/.env.Production` into the user-secret `Parameters:db-password` |
 | `PostgresDataPath` | parameter | Host directory for the database (mounted at `/var/lib/postgresql`) | AppHost user-secret `Parameters:PostgresDataPath`, env var, or prompt |
 | `PgAdminEmail` | parameter | pgAdmin login e-mail | as above |
 | `PgAdminPassword` | **secret** parameter | pgAdmin login password | as above |
@@ -235,8 +237,9 @@ keys): everyone is logged out and new keys are created.
 
 **Changing a secret.** Aspire reuses the values cached in its deployment state
 (`~/.aspire/deployments/<hash>/production.json`, see [Values to provide](#values-to-provide)), so for every secret:
-set the new value (user-secret or env var), delete that state file, then run the [Steps](#steps) again. Two secrets
-are only read when their service first creates its data, so a new parameter value alone changes nothing:
+set the new value (user-secret or env var), delete that state file, then run the [Steps](#steps) again. Deleting it
+also drops every generated value, so first make sure `db-password` is set (see [Values to provide](#values-to-provide)).
+Two secrets are only read when their service first creates its data, so a new parameter value alone changes nothing:
 
 - **`db-password`:** Postgres reads `POSTGRES_PASSWORD` only during initdb. First change the password in the running
   database (in pgAdmin: `ALTER USER postgres PASSWORD '<new password>';`), then set the new `db-password` value,
@@ -318,8 +321,11 @@ and `bot` and `apollo-web` wait for the migrations ([below](#what-the-stack-look
 ## Verify the deployment
 
 Run all checks after the first deploy, and the first four after every redeploy. SQL runs in pgAdmin
-(`http://<node>:<PgAdminPort>`, log in with `PgAdminEmail`/`PgAdminPassword`). The first time, register the database
-there: host `db`, port `5432`, user `postgres`, password `db-password`, database `apollo`.
+(`http://<node>:<PgAdminPort>`, log in with `PgAdminEmail`/`PgAdminPassword`).
+
+**pgAdmin starts empty:** nothing registers the database for you. The first time, use *Register → Server…* with host
+`db`, port `5432`, user `postgres`, database `apollo` and the `db-password` value as password (`DB_PASSWORD` in
+`src/Apollo.AppHost/aspire-output/.env.Production`).
 
 1. **Services are up.**
 
