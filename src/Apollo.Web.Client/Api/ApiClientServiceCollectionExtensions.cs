@@ -21,6 +21,7 @@ public static class ApiClientServiceCollectionExtensions
             services.AddScoped<IAuthClient, MockAuthClient>();
             services.AddScoped<IRoleSettingsClient, MockRoleSettingsClient>();
             services.AddScoped<IBotStatusClient, MockBotStatusClient>();
+            services.AddScoped<IDataOverviewClient, MockDataOverviewClient>();
         }
         else
         {
@@ -28,6 +29,7 @@ public static class ApiClientServiceCollectionExtensions
             services.AddScoped<IAuthClient, HttpAuthClient>();
             services.AddScoped<IRoleSettingsClient, HttpRoleSettingsClient>();
             services.AddScoped<IBotStatusClient, HttpBotStatusClient>();
+            services.AddScoped<IDataOverviewClient, HttpDataOverviewClient>();
         }
 
         return services;

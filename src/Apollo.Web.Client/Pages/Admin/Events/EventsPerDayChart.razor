@@ -1,0 +1,33 @@
+@using ApexCharts
+@using Apollo.Web.Client.Contracts
+@inject IStringLocalizer<Strings> L
+
+@* Kept apart from Data.razor: ApexCharts and MudBlazor both define Color and Size. One stacked bar per Zurich day. *@
+<ApexChart TItem="DailyEventCountDto" Options="_options" Height="@ChartHeight">
+    @foreach (var table in Counts.Tables)
+    {
+        <ApexPointSeries TItem="DailyEventCountDto" Items="table.Days" Name="@DataEventText.TableLabel(L, table.Type)" SeriesType="SeriesType.Bar"
+                         XValue="d => DayLabel(d.Day)" YValue="d => d.Count" />
+    }
+</ApexChart>
+
+@code {
+    private const int ChartHeight = 280;
+
+    private readonly ApexChartOptions<DailyEventCountDto> _options = ApexChartDefaults.Create<DailyEventCountDto>();
+
+    /// <summary>The counts to show (<see cref="EventCountsDto"/>); the page loads them once.</summary>
+    [Parameter, EditorRequired]
+    public EventCountsDto Counts { get; set; } = null!;
+
+    protected override void OnInitialized()
+    {
+        _options.Chart.Stacked = true;
+        _options.PlotOptions = new PlotOptions { Bar = new PlotOptionsBar { BorderRadius = 2 } };
+        _options.Xaxis.Labels.HideOverlappingLabels = true;
+        _options.Xaxis.Labels.Rotate = 0;
+    }
+
+    /// <summary>The day as <c>dd.MM</c>, e.g. <c>15.01</c>.</summary>
+    private static string DayLabel(DateOnly day) => day.ToString("dd.MM", UiCulture.Culture);
+}

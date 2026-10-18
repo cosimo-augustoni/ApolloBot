@@ -28,5 +28,25 @@ public sealed class UiTimeTests
     public void FormatSince_ShouldShowOnlyTheTimeOnTheSameZurichDay(string utc, string nowUtc, string expected) =>
         UiTime.FormatSince(Parse(utc), Parse(nowUtc)).ShouldBe(expected);
 
+    [Theory]
+    [InlineData("2026-01-15T09:02:11Z", "15.01.2026 10:02:11")]
+    [InlineData("2026-07-15T22:02:11Z", "16.07.2026 00:02:11")]
+    public void FormatDateTimeWithSeconds_ShouldShowTheZurichDateAndTime(string utc, string expected) =>
+        UiTime.FormatDateTimeWithSeconds(Parse(utc)).ShouldBe(expected);
+
+    [Theory]
+    [InlineData("2026-01-15T22:59:59Z", "2026-01-15")]
+    [InlineData("2026-01-15T23:00:00Z", "2026-01-16")]
+    [InlineData("2026-07-15T22:00:00Z", "2026-07-16")]
+    public void DayOf_ShouldBeTheZurichCalendarDay(string utc, string expected) =>
+        UiTime.DayOf(Parse(utc)).ShouldBe(DateOnly.Parse(expected, System.Globalization.CultureInfo.InvariantCulture));
+
+    [Theory]
+    [InlineData("2026-01-15", "2026-01-14T23:00:00Z")]
+    [InlineData("2026-03-29", "2026-03-28T23:00:00Z")]
+    [InlineData("2026-03-30", "2026-03-29T22:00:00Z")]
+    public void StartOf_ShouldBeZurichMidnight(string day, string expectedUtc) =>
+        UiTime.StartOf(DateOnly.Parse(day, System.Globalization.CultureInfo.InvariantCulture)).ShouldBe(Parse(expectedUtc));
+
     private static DateTimeOffset Parse(string utc) => DateTimeOffset.Parse(utc, System.Globalization.CultureInfo.InvariantCulture);
 }
