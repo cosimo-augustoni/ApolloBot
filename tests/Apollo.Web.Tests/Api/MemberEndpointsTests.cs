@@ -182,6 +182,8 @@ public sealed class MemberEndpointsTests(TimescaleFixture fixture) : TimescaleTe
 
         stats.Activity.Totals.ShouldBe(new ActivityCountsDto(Messages: 1, Characters: stats.Activity.Totals.Characters, ReactionsGiven: 2, ReactionsReceived: 0, VoiceSeconds: 7200));
         stats.Activity.Channels.Select(c => c.Name).ShouldBe(["Voice-Lounge", "allgemein"], ignoreOrder: true);
+        // Tuesday 13 Jan 19:00 to 21:00 CET.
+        (stats.Activity.VoiceHeatmap[1][19], stats.Activity.VoiceHeatmap[1][20]).ShouldBe((3600L, 3600L));
         var highlights = stats.Highlights;
         highlights.TopEmojis.ShouldBe([new EmojiUsageDto("apollo", IsCustom: true, 1), new EmojiUsageDto("👍", IsCustom: false, 1)], ignoreOrder: true);
         highlights.VoiceBuddies.ShouldBe([new VoiceBuddyDto(new EventUserDto(ben, "Ben"), 3600)]);

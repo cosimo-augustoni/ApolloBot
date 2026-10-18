@@ -29,7 +29,8 @@ public static class ActivityStatsContract
             stats.TrackedSince,
             [.. stats.Daily.Select(d => new Contracts.DailyActivityDto(d.Date, d.Counts.ToContract()))],
             [.. stats.Channels.Select(c => new Contracts.ChannelActivityDto(c.ChannelId, c.Name, c.IsDeleted, c.Messages, c.VoiceSeconds))],
-            stats.Heatmap);
+            stats.Heatmap,
+            stats.VoiceHeatmap);
     }
 
     private static Contracts.ActivityCountsDto ToContract(this ActivityCounts counts) =>

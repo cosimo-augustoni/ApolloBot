@@ -16,6 +16,10 @@ namespace Apollo.Web.Client.Contracts;
 /// <param name="Daily">One entry per day of the range, oldest first, zero-filled.</param>
 /// <param name="Channels">Channels with messages or voice time, threads rolled up, most messages first.</param>
 /// <param name="Heatmap">Messages per Zurich weekday and hour: 7 rows (Monday first) of 24 hours (0 to 23).</param>
+/// <param name="VoiceHeatmap">
+/// Voice seconds per Zurich weekday and hour, shaped as <paramref name="Heatmap"/>: closed sessions split at the hours
+/// they overlap and clipped to the range (#111).
+/// </param>
 public sealed record ActivityStatsDto(
     DateOnly From,
     DateOnly To,
@@ -27,4 +31,5 @@ public sealed record ActivityStatsDto(
     DateOnly? TrackedSince,
     IReadOnlyList<DailyActivityDto> Daily,
     IReadOnlyList<ChannelActivityDto> Channels,
-    IReadOnlyList<IReadOnlyList<long>> Heatmap);
+    IReadOnlyList<IReadOnlyList<long>> Heatmap,
+    IReadOnlyList<IReadOnlyList<long>> VoiceHeatmap);

@@ -78,6 +78,8 @@ public sealed class StatsEndpointsTests(TimescaleFixture fixture) : TimescaleTes
         stats.Channels.ShouldHaveSingleItem().ShouldBe(new ChannelActivityDto(general, "allgemein", IsDeleted: false, Messages: 2, VoiceSeconds: 0));
         stats.Heatmap.Count.ShouldBe(7);
         stats.Heatmap.Sum(day => day.Sum()).ShouldBe(2);
+        stats.VoiceHeatmap.Count.ShouldBe(7);
+        stats.VoiceHeatmap.ShouldAllBe(day => day.Count == 24);
     }
 
     [Theory]
