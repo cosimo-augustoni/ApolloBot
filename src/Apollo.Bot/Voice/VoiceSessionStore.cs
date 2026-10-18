@@ -70,6 +70,13 @@ internal sealed class VoiceSessionStore : IOpenVoiceSessionCounter, IDisposable
     public bool GatewayDown { get; set; }
 
     /// <summary>
+    /// Whether a full guild sync arrived since <see cref="DisconnectedAt"/>. Until then the reconnect's sync owns the blind
+    /// spot and the periodic run waits (the new session's cache may still be empty); if that sync's reconciliation
+    /// failed, the periodic run retries it.
+    /// </summary>
+    public bool SyncedSinceDisconnect { get; set; }
+
+    /// <summary>
     /// The users the rule already ran for in the current blind spot (startup, or the current disconnect), e.g. through
     /// their tracking start hook or their first voice event. Until it has, a voice event of a user applies the rule
     /// instead of a plain update, so a session the bot did not see end is never closed as a move at the event's time.

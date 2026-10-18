@@ -17,6 +17,13 @@ public interface IChatPlatform
     PlatformCapabilities Capabilities { get; }
 
     /// <summary>
+    /// Whether the adapter has the guild's state right now: after the snapshot of the current gateway session arrived,
+    /// and not while the platform reports the guild unavailable. Until then the reads served from the gateway cache
+    /// (e.g. <see cref="ListVoiceStatesAsync"/>) may be empty, which callers must not take as "nobody is there".
+    /// </summary>
+    bool IsGuildAvailable(PlatformRef guild);
+
+    /// <summary>
     /// The member, or <see langword="null"/> when the user is not (or no longer) in the guild.
     /// </summary>
     Task<PlatformMember?> GetMemberAsync(PlatformRef guild, PlatformRef user, CancellationToken cancellationToken);

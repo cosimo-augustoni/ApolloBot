@@ -40,6 +40,7 @@ public sealed class FakeChatPlatform(
     private List<PlatformMemberUpdated>? _heldUpdates;
     private int _memberListingFailures;
     private int _memberListings;
+    private bool _guildUnavailable;
     private TaskCompletionSource? _heldVoiceListings;
     private TaskCompletionSource _voiceListingHeld = NewSignal();
 
@@ -142,6 +143,23 @@ public sealed class FakeChatPlatform(
         {
             await RaiseAsync(update, cancellationToken);
         }
+    }
+
+    /// <summary>
+    /// Whether the guild is available (<see cref="IsGuildAvailable"/>, the default) or not, as between a gateway connect
+    /// and its snapshot or during a platform outage. While it is not, <see cref="ListVoiceStatesAsync"/> returns nothing,
+    /// as an adapter reading an empty cache would.
+    /// </summary>
+    public FakeChatPlatform WithGuildAvailability(bool available)
+    {
+        Volatile.Write(ref _guildUnavailable, !available);
+        return this;
+    }
+
+    public bool IsGuildAvailable(PlatformRef guild)
+    {
+        EnsureGuild(guild);
+        return !Volatile.Read(ref _guildUnavailable);
     }
 
     /// <summary>
@@ -292,7 +310,7 @@ public sealed class FakeChatPlatform(
 
     public async Task<IReadOnlyList<PlatformVoiceState>> ListVoiceStatesAsync(PlatformRef guild, CancellationToken cancellationToken)
     {
-        var states = await List(guild, _voiceStates);
+        var states = IsGuildAvailable(guild) ? await List(guild, _voiceStates) : [];
         TaskCompletionSource? held;
         lock (_lock)
         {
