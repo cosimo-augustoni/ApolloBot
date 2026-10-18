@@ -11,10 +11,27 @@ namespace Apollo.Bot.Privacy;
 /// </summary>
 /// <remarks>
 /// A recorder issue that adds an event table adds it here too, like in <c>UserDataSummary</c>. The tables are
-/// hypertables; a plain <c>DELETE</c> works on uncompressed chunks (no compression in M1).
+/// hypertables; a plain <c>DELETE</c> works on uncompressed chunks (no compression in M1). Its range
+/// (<see cref="FindRangeAsync"/>) covers every event table it changes, also those no continuous aggregate reads yet.
 /// </remarks>
 internal sealed class RecordedDataEraserStep(ApolloDbContext db) : IUserDataEraserStep
 {
+    public async Task<ErasedRange?> FindRangeAsync(Guid guildId, Guid userId, CancellationToken cancellationToken)
+    {
+        ErasedRange?[] ranges =
+        [
+            await RangeAsync(db.MessageEvents.Where(e => e.GuildId == guildId && (e.UserId == userId || e.ReplyToUserId == userId)).Select(e => e.OccurredAt), cancellationToken),
+            await RangeAsync(db.MessageMentions.Where(e => e.GuildId == guildId && (e.UserId == userId || e.MentionedUserId == userId)).Select(e => e.OccurredAt), cancellationToken),
+            await RangeAsync(db.VoiceSessions.Where(e => e.GuildId == guildId && e.UserId == userId).Select(e => e.OccurredAt), cancellationToken),
+            await RangeAsync(db.VoiceStateSegments.Where(e => e.GuildId == guildId && e.UserId == userId).Select(e => e.OccurredAt), cancellationToken),
+            await RangeAsync(db.ReactionEvents.Where(e => e.GuildId == guildId && (e.UserId == userId || e.MessageAuthorId == userId)).Select(e => e.OccurredAt), cancellationToken),
+            await RangeAsync(db.MembershipEvents.Where(e => e.GuildId == guildId && e.UserId == userId).Select(e => e.OccurredAt), cancellationToken),
+            await RangeAsync(db.PresenceActivitySessions.Where(e => e.GuildId == guildId && e.UserId == userId).Select(e => e.OccurredAt), cancellationToken),
+        ];
+
+        return ranges.OfType<ErasedRange>().Aggregate((ErasedRange?)null, (union, range) => union?.Union(range) ?? range);
+    }
+
     public async Task<IReadOnlyList<ErasedRows>> EraseAsync(Guid guildId, Guid userId, CancellationToken cancellationToken) =>
     [
         new(
@@ -51,4 +68,12 @@ internal sealed class RecordedDataEraserStep(ApolloDbContext db) : IUserDataEras
             "tracking_periods",
             await db.TrackingPeriods.Where(p => p.GuildId == guildId && p.UserId == userId).ExecuteDeleteAsync(cancellationToken)),
     ];
+
+    private static async Task<ErasedRange?> RangeAsync(IQueryable<DateTimeOffset> occurredAt, CancellationToken cancellationToken)
+    {
+        var nullable = occurredAt.Select(at => (DateTimeOffset?)at);
+        return await nullable.MinAsync(cancellationToken) is { } from && await nullable.MaxAsync(cancellationToken) is { } to
+            ? new ErasedRange(from, to)
+            : null;
+    }
 }

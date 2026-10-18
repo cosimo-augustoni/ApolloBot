@@ -1,5 +1,6 @@
 using Apollo.Bot.Commands;
 using Apollo.Bot.Tracking;
+using Apollo.Data.Activity;
 using Apollo.Platform.Abstractions.Commands;
 
 namespace Apollo.Bot.Privacy;
@@ -31,6 +32,7 @@ public static class PrivacyCommandsServiceCollectionExtensions
         services.AddCommandHandler<PrivacyDeleteCommandHandler>();
         services.AddButtonHandler<PrivacyDeleteButtonHandler>();
         services.AddScoped<IUserDataEraser, UserDataEraser>();
+        services.AddScoped<IAggregateRefresher, ContinuousAggregateRefresher>();
         services.AddUserDataEraserStep<RecordedDataEraserStep>();
 
         return services;

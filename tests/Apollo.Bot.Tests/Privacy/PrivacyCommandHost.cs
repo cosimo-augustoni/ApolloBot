@@ -17,23 +17,28 @@ namespace Apollo.Bot.Tests.Privacy;
 /// <summary>
 /// A <see cref="TrackingHost"/> with the real command routing, the tracking and privacy commands and the voice and
 /// presence recorders, on the guild of <see cref="TrackingCommandHost"/>: alice holds the tracking role
-/// <see cref="TrackingCommandHost.Statistik"/>, bob is an Administrator without it and carol has neither.
+/// <see cref="TrackingCommandHost.Statistik"/>, bob is an Administrator without it and carol has neither. A test's own
+/// <c>configure</c> runs after these registrations, to replace one of them.
 /// </summary>
 internal static class PrivacyCommandHost
 {
     public const string DeletePath = "apollo privacy delete";
 
-    public static TrackingHost CreatePrivacyHost(TimescaleFixture fixture, IInterceptor? interceptor = null)
+    public static TrackingHost CreatePrivacyHost(TimescaleFixture fixture, IInterceptor? interceptor = null, Action<IServiceCollection>? configure = null)
     {
         var host = new TrackingHost(
             fixture,
-            services => services
-                .AddCommandRouting()
-                .Configure<LinksOptions>(links => links.PublicWebUrl = PublicWebUrl)
-                .AddTrackingCommands()
-                .AddPrivacyCommands()
-                .AddVoiceRecording()
-                .AddPresenceRecording(),
+            services =>
+            {
+                services
+                    .AddCommandRouting()
+                    .Configure<LinksOptions>(links => links.PublicWebUrl = PublicWebUrl)
+                    .AddTrackingCommands()
+                    .AddPrivacyCommands()
+                    .AddVoiceRecording()
+                    .AddPresenceRecording();
+                configure?.Invoke(services);
+            },
             interceptor);
         host.Platform.WithCommandRouter(host.Services.GetRequiredService<ICommandRouter>());
         return host;
@@ -42,9 +47,12 @@ internal static class PrivacyCommandHost
     /// <summary>
     /// A host whose tracking role is <see cref="TrackingCommandHost.Statistik"/>, after the first full guild sync.
     /// </summary>
-    public static async Task<TrackingHost> CreatePrivacyHostInTrackingRoleModeAsync(TimescaleFixture fixture, IInterceptor? interceptor = null)
+    public static async Task<TrackingHost> CreatePrivacyHostInTrackingRoleModeAsync(
+        TimescaleFixture fixture,
+        IInterceptor? interceptor = null,
+        Action<IServiceCollection>? configure = null)
     {
-        var host = CreatePrivacyHost(fixture, interceptor);
+        var host = CreatePrivacyHost(fixture, interceptor, configure);
         await host.SeedRoleSettingAsync(new RoleSettingBuilder().ForRole(Statistik));
         await host.SyncAsync(Snapshot());
         return host;
