@@ -6,7 +6,7 @@ namespace Apollo.Web.Client.Pages.Admin.Events;
 
 /// <summary>
 /// The German text of the admin data page (#32) for tables and raw event rows. Stored values (<c>Create</c>,
-/// <c>BotRestart</c>, …) map to resource keys; a value this client does not know yet is shown as stored.
+/// <c>Unobserved</c>, …) map to resource keys; a value this client does not know yet is shown as stored.
 /// </summary>
 public static class DataEventText
 {
@@ -209,7 +209,7 @@ public static class DataEventText
         "Left" => localizer["Data_EndReason_Left"],
         "Moved" => localizer["Data_EndReason_Moved"],
         "TrackingStopped" => localizer["Data_EndReason_TrackingStopped"],
-        "BotRestart" => localizer["Data_EndReason_BotRestart"],
+        "Unobserved" => localizer["Data_EndReason_Unobserved"],
         _ => endReason ?? string.Empty,
     };
 

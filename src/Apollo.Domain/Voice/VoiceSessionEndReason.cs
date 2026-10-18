@@ -15,8 +15,9 @@ public enum VoiceSessionEndReason
     TrackingStopped,
 
     /// <summary>
-    /// The bot did not see how the session ended: it stopped or crashed, or missed the change while disconnected. The
-    /// end time is when the bot noticed, so stats can filter or clip these sessions.
+    /// The bot did not see how the session ended: it was restarted or disconnected for longer than the reconciliation
+    /// allows, or failed to store the change (#98). The end time is the last moment the bot knew the session was going
+    /// on, so stats can filter or clip these sessions. Stored as <c>BotRestart</c> before #98.
     /// </summary>
-    BotRestart,
+    Unobserved,
 }

@@ -104,8 +104,8 @@ public sealed class DataEventTextTests : ApolloTestContext
     public void Details_WhenSessions_ShouldShowEndOrOpen()
     {
         DataEventText.Details(L, Row(DataEventType.VoiceSession) with { VoiceSession = new(null, null) }).ShouldBe("offen");
-        DataEventText.Details(L, Row(DataEventType.VoiceSession) with { VoiceSession = new(_at.AddMinutes(95), "BotRestart") })
-            .ShouldBe("bis 11:35 · Bot-Neustart");
+        DataEventText.Details(L, Row(DataEventType.VoiceSession) with { VoiceSession = new(_at.AddMinutes(95), "Unobserved") })
+            .ShouldBe("bis 11:35 · Ende nicht beobachtet");
         DataEventText.Details(L, Row(DataEventType.VoiceStateSegment) with { VoiceSegment = new(12, null, true, true, true, true) })
             .ShouldBe("Session 12 · stumm · taub · Stream · Kamera · offen");
         DataEventText.Details(L, Row(DataEventType.VoiceStateSegment) with { VoiceSegment = new(12, _at.AddMinutes(5), false, false, false, false) })
