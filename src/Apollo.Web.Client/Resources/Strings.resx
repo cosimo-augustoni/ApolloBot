@@ -1109,6 +1109,9 @@
     <value>Kanal</value>
     <comment>Stats: channel ranking column</comment>
   </data>
+  <data name="Stats_Channel_Sort" xml:space="preserve">
+    <value>Sortieren nach</value>
+  </data>
   <data name="Stats_Channel_Deleted" xml:space="preserve">
     <value>{0} (gelöscht)</value>
     <comment>Stats: channel that no longer exists</comment>

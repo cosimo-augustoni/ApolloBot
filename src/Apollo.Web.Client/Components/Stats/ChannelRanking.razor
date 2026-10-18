@@ -2,10 +2,20 @@
 @inject IStringLocalizer<Strings> L
 
 @*
-    The channels of a range (#37), in the order the stats layer ranks them (most messages, then most voice time), threads
-    rolled up into their channel (D2). A list rather than a bar chart: it carries both numbers, and below 600px its rows
-    stack into labelled lines, so nothing scrolls sideways at 360px.
+    The channels of a range (#37), threads rolled up into their channel (D2), sorted by voice time or by messages (the
+    wireframe), voice first (#111); the other number breaks ties. A list rather than a bar chart: it carries both numbers,
+    and below 600px its rows stack into labelled lines, so nothing scrolls sideways at 360px.
 *@
+@if (Channels.Count > 0)
+{
+    <div class="d-flex justify-end mb-2">
+        <MudToggleGroup T="StatsMetric" Value="_sort" ValueChanged="Sort" SelectionMode="SelectionMode.SingleSelection" Size="Size.Small"
+                        Color="Color.Primary" Class="apollo-channel-sort" aria-label="@L["Stats_Channel_Sort"]">
+            <MudToggleItem Value="StatsMetric.VoiceHours" Text="@L["Stats_VoiceHours"]" />
+            <MudToggleItem Value="StatsMetric.Messages" Text="@L["Stats_Messages"]" />
+        </MudToggleGroup>
+    </div>
+}
 <MudTable T="IndexedChannel" Items="Shown" Class="apollo-channel-ranking" Dense="true" Elevation="0" Breakpoint="Breakpoint.Xs"
           RowClass="apollo-channel-row">
     <HeaderContent>
@@ -36,6 +46,9 @@
 
 @code {
     private bool _showAll;
+    private StatsMetric _sort;
+    private IReadOnlyList<ChannelActivityDto>? _sortedFrom;
+    private IReadOnlyList<ChannelActivityDto> _sorted = [];
 
     /// <summary>The ranked channels (<see cref="ActivityStatsDto.Channels"/>), first place first.</summary>
     [Parameter, EditorRequired]
@@ -45,10 +58,36 @@
     [Parameter]
     public int Top { get; set; } = 10;
 
+    /// <summary>The metric the channels are sorted by first; the toggle switches to the other one.</summary>
+    [Parameter]
+    public StatsMetric InitialMetric { get; set; }
+
     private sealed record IndexedChannel(int Rank, ChannelActivityDto Channel);
 
     private IEnumerable<IndexedChannel> Shown =>
-        Channels.Take(_showAll ? Channels.Count : Top).Select((channel, i) => new IndexedChannel(i + 1, channel));
+        _sorted.Take(_showAll ? _sorted.Count : Top).Select((channel, i) => new IndexedChannel(i + 1, channel));
+
+    protected override void OnInitialized() => _sort = InitialMetric;
+
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(_sortedFrom, Channels))
+        {
+            _sortedFrom = Channels;
+            _sorted = Sorted();
+        }
+    }
+
+    private void Sort(StatsMetric sort)
+    {
+        _sort = sort;
+        _sorted = Sorted();
+    }
+
+    // OrderBy is stable, so equal channels keep the stats layer's order (by name).
+    private IReadOnlyList<ChannelActivityDto> Sorted() => _sort == StatsMetric.VoiceHours
+        ? [.. Channels.OrderByDescending(c => c.VoiceSeconds).ThenByDescending(c => c.Messages)]
+        : [.. Channels.OrderByDescending(c => c.Messages).ThenByDescending(c => c.VoiceSeconds)];
 
     private string ChannelName(ChannelActivityDto channel) => (channel.Name, channel.IsDeleted) switch
     {
