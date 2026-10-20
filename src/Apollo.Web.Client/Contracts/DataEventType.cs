@@ -36,4 +36,8 @@ public enum DataEventType
     /// <summary><c>presence_activity_segments</c>, by their start.</summary>
     [JsonStringEnumMemberName("presenceActivitySegment")]
     PresenceActivitySegment,
+
+    /// <summary><c>member_name_changes</c>.</summary>
+    [JsonStringEnumMemberName("memberName")]
+    MemberName,
 }

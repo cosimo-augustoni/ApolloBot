@@ -1,8 +1,10 @@
 using Apollo.Data.Membership;
 using Apollo.Data.Messages;
+using Apollo.Data.Names;
 using Apollo.Data.Presence;
 using Apollo.Data.Reactions;
 using Apollo.Data.Voice;
+using Apollo.Domain.Names;
 using Apollo.Domain.Presence;
 using Apollo.Domain.Voice;
 using Apollo.Platform.Abstractions;
@@ -23,8 +25,8 @@ public sealed class TrackingStatusCommandHandlerTests(TimescaleFixture fixture) 
         // 23:30 UTC on 15 January is already 16 January in Zurich.
         host.Time.Advance(TimeSpan.FromHours(14.5));
         await host.SyncAsync(Snapshot());
-        await SeedEventsAsync(host, Alice, messages: 2, reactions: 1, voiceSessions: 3, presenceSessions: 1, membershipEvents: 0);
-        await SeedEventsAsync(host, Carol, messages: 5, reactions: 5, voiceSessions: 5, presenceSessions: 5, membershipEvents: 5);
+        await SeedEventsAsync(host, Alice, messages: 2, reactions: 1, voiceSessions: 3, presenceSessions: 1, membershipEvents: 0, names: 2);
+        await SeedEventsAsync(host, Carol, messages: 5, reactions: 5, voiceSessions: 5, presenceSessions: 5, membershipEvents: 5, names: 5);
 
         var reply = await host.RunAsync(Alice, "apollo tracking status");
 
@@ -38,6 +40,7 @@ public sealed class TrackingStatusCommandHandlerTests(TimescaleFixture fixture) 
             - Voice-Sitzungen: 3
             - Aktivitäten (z. B. Spiele): 1
             - Beitritte, Austritte und Banns: 0
+            - Namen: 2
             """.ReplaceLineEndings("\n"));
         reply.Text.ShouldEndWith($"{PublicWebUrl}/datenschutz");
     }
@@ -46,7 +49,7 @@ public sealed class TrackingStatusCommandHandlerTests(TimescaleFixture fixture) 
     public async Task Status_WhenMemberIsNotTracked_ShouldSayNoDataIsRecordedAndStillShowEarlierCounts()
     {
         await using var host = await CreateInTrackingRoleModeAsync(Fixture);
-        await SeedEventsAsync(host, Alice, messages: 1234, reactions: 0, voiceSessions: 0, presenceSessions: 0, membershipEvents: 2);
+        await SeedEventsAsync(host, Alice, messages: 1234, reactions: 0, voiceSessions: 0, presenceSessions: 0, membershipEvents: 2, names: 0);
         await host.RunAsync(Alice, "apollo tracking off");
 
         var reply = await host.RunAsync(Alice, "apollo tracking status");
@@ -61,6 +64,7 @@ public sealed class TrackingStatusCommandHandlerTests(TimescaleFixture fixture) 
             - Voice-Sitzungen: 0
             - Aktivitäten (z. B. Spiele): 0
             - Beitritte, Austritte und Banns: 2
+            - Namen: 0
             """.ReplaceLineEndings("\n"));
     }
 
@@ -139,7 +143,8 @@ public sealed class TrackingStatusCommandHandlerTests(TimescaleFixture fixture) 
         int reactions,
         int voiceSessions,
         int presenceSessions,
-        int membershipEvents) =>
+        int membershipEvents,
+        int names) =>
         host.InScopeAsync(async (db, ids) =>
         {
             var cancellationToken = TestContext.Current.CancellationToken;
@@ -191,6 +196,14 @@ public sealed class TrackingStatusCommandHandlerTests(TimescaleFixture fixture) 
                 UserId = userId,
                 OccurredAt = at.AddSeconds(i),
                 Kind = MembershipEventKind.Join,
+            }));
+            db.MemberNameChanges.AddRange(Enumerable.Range(0, names).Select(i => new MemberNameChange
+            {
+                GuildId = guildId,
+                UserId = userId,
+                OccurredAt = at.AddSeconds(i),
+                Username = $"name{i}",
+                Kind = i == 0 ? MemberNameChangeKind.Baseline : MemberNameChangeKind.Changed,
             }));
             return await db.SaveChangesAsync(cancellationToken);
         });

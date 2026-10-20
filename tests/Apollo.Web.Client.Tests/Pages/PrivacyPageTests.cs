@@ -54,12 +54,25 @@ public sealed class PrivacyPageTests : ApolloTestContext
 
         var recorded = page.FindAll(".apollo-privacy-recorded li").Select(li => li.TextContent).ToList();
 
-        recorded.Count.ShouldBe(5);
+        recorded.Count.ShouldBe(6);
         recorded[0].ShouldStartWith("Nachrichten:");
         recorded[1].ShouldStartWith("Voice:");
         recorded[2].ShouldStartWith("Reaktionen:");
         recorded[3].ShouldStartWith("Beitritte");
         recorded[4].ShouldStartWith("Aktivitäten (nur Discord):");
+        recorded[5].ShouldStartWith("Namen:");
+    }
+
+    [Fact]
+    public void Render_ShouldListTheThreeNamesAndWhenTheyAreRecorded()
+    {
+        var page = Render<Privacy>();
+
+        var names = page.FindAll(".apollo-privacy-recorded li")[5].TextContent;
+
+        names.ShouldBe(
+            "Namen: dein Server-Spitzname, dein Anzeigename und dein Benutzername, jedes Mal, wenn sich einer davon ändert, "
+            + "und zu Beginn der Erfassung.");
     }
 
     [Fact]

@@ -1,10 +1,12 @@
 using Apollo.Bot.Tests.Tracking;
 using Apollo.Data.Membership;
 using Apollo.Data.Messages;
+using Apollo.Data.Names;
 using Apollo.Data.Presence;
 using Apollo.Data.Reactions;
 using Apollo.Data.Tracking;
 using Apollo.Data.Voice;
+using Apollo.Domain.Names;
 using Apollo.Domain.Presence;
 using Apollo.Domain.Voice;
 using Apollo.Platform.Abstractions;
@@ -84,6 +86,15 @@ internal static class RecordedData
             };
             db.PresenceActivitySessions.Add(presence);
             db.PresenceActivitySegments.Add(PresenceActivitySessionBuilder.CoveringSegment(presence));
+            db.MemberNameChanges.Add(new MemberNameChange
+            {
+                GuildId = guildId,
+                UserId = userId,
+                OccurredAt = occurredAt,
+                GlobalName = user.ExternalId,
+                Username = user.ExternalId,
+                Kind = MemberNameChangeKind.Baseline,
+            });
             db.TrackingPeriods.Add(new TrackingPeriod { GuildId = guildId, UserId = userId, From = occurredAt.AddDays(-1), To = occurredAt.AddDays(1) });
             var session = new VoiceSession
             {
@@ -126,6 +137,7 @@ internal static class RecordedData
                 ["membership_events"] = await db.MembershipEvents.CountAsync(e => e.UserId == id, cancellationToken),
                 ["presence_activity_sessions"] = await db.PresenceActivitySessions.CountAsync(e => e.UserId == id, cancellationToken),
                 ["presence_activity_segments"] = await db.PresenceActivitySegments.CountAsync(e => e.UserId == id, cancellationToken),
+                ["member_name_changes"] = await db.MemberNameChanges.CountAsync(e => e.UserId == id, cancellationToken),
                 ["tracking_periods"] = await db.TrackingPeriods.CountAsync(e => e.UserId == id, cancellationToken),
                 [ReplyReferences] = await db.MessageEvents.CountAsync(e => e.ReplyToUserId == id, cancellationToken),
                 [MentionReferences] = await db.MessageMentions.CountAsync(e => e.MentionedUserId == id, cancellationToken),

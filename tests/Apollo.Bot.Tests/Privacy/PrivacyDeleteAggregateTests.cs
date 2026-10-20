@@ -1,6 +1,8 @@
 using Apollo.Bot.Privacy;
 using Apollo.Bot.Tests.Tracking;
+using Apollo.Data.Names;
 using Apollo.Data.Presence;
+using Apollo.Domain.Names;
 using Apollo.Platform.Abstractions;
 using Apollo.Testing;
 using Apollo.Testing.Data;
@@ -144,6 +146,28 @@ public sealed class PrivacyDeleteAggregateTests(TimescaleFixture fixture) : Time
 
         refreshes.Calls.ShouldBe([new AggregateRefreshLog.Call(start, nextSong, InTransaction: false)]);
         (await RowsAboutAsync(host, Alice))["presence_activity_segments"].ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task Confirm_WhenTheMembersOnlyRowsAreNames_ShouldRefreshOverThem()
+    {
+        var refreshes = new AggregateRefreshLog();
+        await using var host = await CreatePrivacyHostInTrackingRoleModeAsync(Fixture, configure: RecordingAggregateRefresher.Replace(refreshes));
+        var baseline = TestTime.Now - TimeSpan.FromDays(10);
+        var renamed = baseline + TimeSpan.FromDays(2);
+        await host.InScopeAsync(async (db, ids) =>
+        {
+            var (guildId, userId) = (await ids.ResolveGuildAsync(TestPlatform.Guild, Ct), await ids.ResolveUserAsync(Alice, Ct));
+            db.MemberNameChanges.AddRange(
+                new MemberNameChange { GuildId = guildId, UserId = userId, OccurredAt = baseline, Username = "alice", Kind = MemberNameChangeKind.Baseline },
+                new MemberNameChange { GuildId = guildId, UserId = userId, OccurredAt = renamed, Username = "alice", Nickname = "Ali", Kind = MemberNameChangeKind.Changed });
+            return await db.SaveChangesAsync(Ct);
+        });
+
+        await host.ConfirmDeleteAsync(Alice);
+
+        refreshes.Calls.ShouldBe([new AggregateRefreshLog.Call(baseline, renamed, InTransaction: false)]);
+        (await RowsAboutAsync(host, Alice))["member_name_changes"].ShouldBe(0);
     }
 
     [Fact]

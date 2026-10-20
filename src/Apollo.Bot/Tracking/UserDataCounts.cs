@@ -10,9 +10,10 @@ namespace Apollo.Bot.Tracking;
 /// <param name="VoiceSessions"><c>voice_sessions</c>.</param>
 /// <param name="PresenceSessions"><c>presence_activity_sessions</c>.</param>
 /// <param name="MembershipEvents"><c>membership_events</c>: joins, leaves, bans and unbans.</param>
-public sealed record UserDataCounts(long Messages, long Reactions, long VoiceSessions, long PresenceSessions, long MembershipEvents)
+/// <param name="Names"><c>member_name_changes</c>: the names at every tracking start and after every change.</param>
+public sealed record UserDataCounts(long Messages, long Reactions, long VoiceSessions, long PresenceSessions, long MembershipEvents, long Names)
 {
-    public static UserDataCounts None { get; } = new(0, 0, 0, 0, 0);
+    public static UserDataCounts None { get; } = new(0, 0, 0, 0, 0, 0);
 
-    public long Total => Messages + Reactions + VoiceSessions + PresenceSessions + MembershipEvents;
+    public long Total => Messages + Reactions + VoiceSessions + PresenceSessions + MembershipEvents + Names;
 }

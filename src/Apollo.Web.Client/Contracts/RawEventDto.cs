@@ -24,4 +24,6 @@ public sealed record RawEventDto(long Id, DataEventType Type, DateTimeOffset Occ
     public PresenceActivityDetailsDto? PresenceActivity { get; init; }
 
     public PresenceSegmentDetailsDto? PresenceSegment { get; init; }
+
+    public MemberNameDetailsDto? MemberName { get; init; }
 }

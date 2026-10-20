@@ -136,7 +136,10 @@ public sealed class DataSanityService(ApolloDbContext db, TimeProvider time) : I
                 .Select(e => new Row { Table = "presence_activity_sessions", Column = "user_id", Id = e.Id, UserId = e.UserId, OccurredAt = e.OccurredAt, EndedAt = null, EndIncluded = false }))
             .Concat(db.PresenceActivitySegments
                 .Where(e => e.GuildId == guildId && e.OccurredAt >= range.Start && e.OccurredAt < range.End)
-                .Select(e => new Row { Table = "presence_activity_segments", Column = "user_id", Id = e.Id, UserId = e.UserId, OccurredAt = e.OccurredAt, EndedAt = null, EndIncluded = false }));
+                .Select(e => new Row { Table = "presence_activity_segments", Column = "user_id", Id = e.Id, UserId = e.UserId, OccurredAt = e.OccurredAt, EndedAt = null, EndIncluded = false }))
+            .Concat(db.MemberNameChanges
+                .Where(e => e.GuildId == guildId && e.OccurredAt >= range.Start && e.OccurredAt < range.End)
+                .Select(e => new Row { Table = "member_name_changes", Column = "user_id", Id = e.Id, UserId = e.UserId, OccurredAt = e.OccurredAt, EndedAt = null, EndIncluded = false }));
 
     /// <summary>Every non-NULL reference to another user in the range (scope §5.1.1: untracked ones are stored as NULL).</summary>
     private IQueryable<Row> References(Guid guildId, StatsRange range) =>

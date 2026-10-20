@@ -2,9 +2,11 @@ using System.Globalization;
 using Apollo.Data;
 using Apollo.Data.Membership;
 using Apollo.Data.Messages;
+using Apollo.Data.Names;
 using Apollo.Data.Status;
 using Apollo.Data.Tracking;
 using Apollo.Data.Voice;
+using Apollo.Domain.Names;
 using Apollo.Stats.Sanity;
 using Apollo.Stats.Tests.Raw;
 using Apollo.Testing;
@@ -90,4 +92,7 @@ internal sealed record SanitySeed(RawStatsSeed Raw)
 
     public MembershipEvent Membership(Guid userId, MembershipEventKind kind, string atUtc) =>
         new() { GuildId = GuildId, UserId = userId, OccurredAt = Utc(atUtc), Kind = kind };
+
+    public MemberNameChange Names(Guid userId, string atUtc) =>
+        new() { GuildId = GuildId, UserId = userId, OccurredAt = Utc(atUtc), Username = "member", Kind = MemberNameChangeKind.Baseline };
 }
