@@ -9,6 +9,12 @@ public sealed class PlatformMemberBuilder : TestDataBuilder<PlatformMemberBuilde
 
     public PlatformMemberBuilder Named(string displayName) => With(m => m with { DisplayName = displayName });
 
+    public PlatformMemberBuilder WithNickname(string? nickname) => With(m => m with { Nickname = nickname });
+
+    public PlatformMemberBuilder WithGlobalName(string? globalName) => With(m => m with { GlobalName = globalName });
+
+    public PlatformMemberBuilder WithUsername(string username) => With(m => m with { Username = username });
+
     public PlatformMemberBuilder WithAvatar(string? avatarUrl) => With(m => m with { AvatarUrl = avatarUrl });
 
     public PlatformMemberBuilder JoinedAt(DateTimeOffset? joinedAt) => With(m => m with { JoinedAt = joinedAt });
@@ -22,6 +28,9 @@ public sealed class PlatformMemberBuilder : TestDataBuilder<PlatformMemberBuilde
     protected override PlatformMember CreateDefault() => new(
         User: TestPlatform.User("alice"),
         DisplayName: "Alice",
+        Nickname: null,
+        GlobalName: "Alice",
+        Username: "alice",
         AvatarUrl: null,
         IsBot: false,
         IsAdministrator: false,
