@@ -34,6 +34,7 @@ public sealed class UserDataEraserTests(TimescaleFixture fixture) : TimescaleTes
         "reaction_events",
         "membership_events",
         "presence_activity_sessions",
+        "presence_activity_segments",
         "tracking_periods",
     ];
 
@@ -97,6 +98,7 @@ public sealed class UserDataEraserTests(TimescaleFixture fixture) : TimescaleTes
         rows["voice_sessions"].ShouldBe(0);
         rows["voice_state_segments"].ShouldBe(0);
         rows["presence_activity_sessions"].ShouldBe(0);
+        rows["presence_activity_segments"].ShouldBe(0);
         host.Services.GetRequiredService<IOpenVoiceSessionCounter>().CountOpenSessions().ShouldBe(0);
     }
 
@@ -294,12 +296,12 @@ public sealed class UserDataEraserTests(TimescaleFixture fixture) : TimescaleTes
         record.Level.ShouldBe(LogLevel.Information);
         var state = record.StructuredState!.ToDictionary(kv => kv.Key, kv => kv.Value);
         state["UserId"].ShouldBe(alice.ToString());
-        state["DeletedRows"].ShouldBe("9", "one row per event table plus the seeded and the open tracking period");
+        state["DeletedRows"].ShouldBe("10", "one row per event table plus the seeded and the open tracking period");
         state["ClearedReferences"].ShouldBe("3");
         state["Tables"].ShouldBe(
             "message_events: 1 deleted, 1 cleared; message_mentions: 1 deleted, 1 cleared; voice_sessions: 1 deleted; "
             + "voice_state_segments: 1 deleted; reaction_events: 1 deleted, 1 cleared; membership_events: 1 deleted; "
-            + "presence_activity_sessions: 1 deleted; tracking_periods: 2 deleted");
+            + "presence_activity_sessions: 1 deleted; presence_activity_segments: 1 deleted; tracking_periods: 2 deleted");
         record.Message.ShouldNotContain(Alice.ExternalId);
     }
 

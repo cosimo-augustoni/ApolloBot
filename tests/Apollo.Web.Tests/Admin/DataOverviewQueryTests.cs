@@ -42,6 +42,8 @@ public sealed class DataOverviewQueryTests(TimescaleFixture fixture) : Timescale
         await Events.AddAsync(DataEventType.Reaction, Utc(2026, 1, 15, 7));
         await Events.AddAsync(DataEventType.Membership, Utc(2026, 1, 13, 20));
         await Events.AddAsync(DataEventType.PresenceActivity, Utc(2026, 1, 15, 6));
+        await Events.AddAsync(DataEventType.PresenceActivitySegment, Utc(2026, 1, 14, 6));
+        await Events.AddAsync(DataEventType.PresenceActivitySegment, Utc(2026, 1, 15, 6));
         await Events.AddAsync(DataEventType.Message, Utc(2026, 1, 12, 22));
         await Events.AddAsync(DataEventType.Reaction, Utc(2026, 1, 15, 23));
         await Events.AddAsync(DataEventType.Message, Utc(2026, 1, 14, 8), guild: new PlatformRef(PlatformKind.Discord, "333333333333333333"));
@@ -57,7 +59,8 @@ public sealed class DataOverviewQueryTests(TimescaleFixture fixture) : Timescale
         Days(counts, DataEventType.Reaction).ShouldBe([(_jan13, 0), (_jan14, 0), (_jan15, 1)]);
         Days(counts, DataEventType.Membership).ShouldBe([(_jan13, 1), (_jan14, 0), (_jan15, 0)]);
         Days(counts, DataEventType.PresenceActivity).ShouldBe([(_jan13, 0), (_jan14, 0), (_jan15, 1)]);
-        counts.Tables.Select(t => t.Total).ShouldBe([3, 1, 2, 1, 1, 1]);
+        Days(counts, DataEventType.PresenceActivitySegment).ShouldBe([(_jan13, 0), (_jan14, 1), (_jan15, 1)]);
+        counts.Tables.Select(t => t.Total).ShouldBe([3, 1, 2, 1, 1, 1, 2]);
     }
 
     [Fact]

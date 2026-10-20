@@ -22,6 +22,7 @@ public sealed class DataEventTextTests : ApolloTestContext
     [InlineData(DataEventType.Reaction, "Reaktionen", "reaction_events")]
     [InlineData(DataEventType.Membership, "Mitgliedschaft", "membership_events")]
     [InlineData(DataEventType.PresenceActivity, "Aktivitäten", "presence_activity_sessions")]
+    [InlineData(DataEventType.PresenceActivitySegment, "Aktivitäts-Abschnitte", "presence_activity_segments")]
     public void TableLabel_ShouldNameTheTableInGermanAndSql(DataEventType type, string label, string table)
     {
         DataEventText.TableLabel(L, type).ShouldBe(label);
@@ -35,6 +36,7 @@ public sealed class DataEventTextTests : ApolloTestContext
     [InlineData(DataEventType.Reaction, "Reaktion")]
     [InlineData(DataEventType.Membership, "Mitgliedschaft")]
     [InlineData(DataEventType.PresenceActivity, "Aktivität")]
+    [InlineData(DataEventType.PresenceActivitySegment, "Aktivitäts-Abschnitt")]
     public void TypeName_ShouldNameOneRowInGerman(DataEventType type, string name)
     {
         DataEventText.TypeName(L, type).ShouldBe(name);
@@ -113,6 +115,44 @@ public sealed class DataEventTextTests : ApolloTestContext
         DataEventText.Details(L, Row(DataEventType.PresenceActivity) with { PresenceActivity = new("Playing", "Factorio", _at.AddHours(2)) })
             .ShouldBe("Factorio · bis 12:00");
         DataEventText.Details(L, Row(DataEventType.Membership) with { Membership = new("Join") }).ShouldBe("–");
+    }
+
+    [Fact]
+    public void TypeLabel_WhenPresenceSegment_ShouldNameTheTypeAndActivity()
+    {
+        DataEventText.TypeLabel(L, Row(DataEventType.PresenceActivitySegment) with { PresenceSegment = new("Listening", "Spotify", _at) })
+            .ShouldBe("Aktivitäts-Abschnitt · hört");
+    }
+
+    [Fact]
+    public void Details_WhenPresenceSegment_ShouldShowItsRichFields()
+    {
+        var segment = new PresenceSegmentDetailsDto(
+            "Listening",
+            "Spotify",
+            _at.AddMinutes(3),
+            Details: "Song 1",
+            State: "Artist A; Artist B",
+            LargeText: "Album X",
+            SmallText: "Small",
+            PartyId: "spotify:1",
+            PartySize: 2,
+            PartyMax: 5,
+            ApplicationId: "1234",
+            ReportedStart: _at,
+            ReportedEnd: _at.AddMinutes(3));
+
+        DataEventText.Details(L, Row(DataEventType.PresenceActivitySegment) with { PresenceSegment = segment })
+            .ShouldBe("Spotify · Song 1 · Artist A; Artist B · Album X · Small · Gruppe 2/5 · gemeldet 10:00–10:03 · bis 10:03");
+    }
+
+    [Fact]
+    public void Details_WhenPresenceSegmentHasNoRichFields_ShouldShowNameAndEnd()
+    {
+        DataEventText.Details(L, Row(DataEventType.PresenceActivitySegment) with { PresenceSegment = new("Playing", "Factorio", _at.AddHours(2)) })
+            .ShouldBe("Factorio · bis 12:00");
+        DataEventText.Details(L, Row(DataEventType.PresenceActivitySegment) with { PresenceSegment = new("Playing", "X", _at.AddHours(2), PartySize: 3) })
+            .ShouldBe("X · Gruppe 3 · bis 12:00");
     }
 
     [Fact]

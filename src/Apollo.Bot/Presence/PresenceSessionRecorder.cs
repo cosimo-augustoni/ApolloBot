@@ -15,7 +15,8 @@ namespace Apollo.Bot.Presence;
 /// <summary>
 /// Records the activities of tracked users (playing, listening, ...) as <c>presence_activity_sessions</c> (#19, scope
 /// §5.1). The <see cref="PresenceSessionStateMachine"/> in the shared <see cref="PresenceSessionStore"/> keeps the open
-/// sessions in memory; a session is stored once it closes, and only if it lasted at least a minute.
+/// sessions in memory; a session is stored once it closes, and only if it lasted at least a minute, together with all of
+/// its <c>presence_activity_segments</c> (#115, rich presence) in the same save.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -158,7 +159,7 @@ internal sealed partial class PresenceSessionRecorder(
         {
             store.GuildId = notification.GuildId;
             store.AwaitingSync = false;
-            var current = new Dictionary<Guid, IReadOnlyList<PresenceActivity>>();
+            var current = new Dictionary<Guid, IReadOnlyList<ObservedActivity>>();
             foreach (var presence in await platform.ListPresencesAsync(guild, cancellationToken))
             {
                 if (gate.TryGetTrackedUserId(presence.User) is { } userId)
@@ -233,7 +234,7 @@ internal sealed partial class PresenceSessionRecorder(
 
             var now = timeProvider.GetUtcNow();
             var lastKnownAt = store.LastReconciledAt ?? store.StartedAt ?? now;
-            var current = new Dictionary<Guid, IReadOnlyList<PresenceActivity>>();
+            var current = new Dictionary<Guid, IReadOnlyList<ObservedActivity>>();
             foreach (var presence in await platform.ListPresencesAsync(guild, cancellationToken))
             {
                 if (gate.TryGetTrackedUserId(presence.User) is { } userId)
@@ -307,24 +308,27 @@ internal sealed partial class PresenceSessionRecorder(
 
         var machine = store.Machine.Clone();
         var changes = decide(machine);
-        var rows = changes
-            .OfType<PresenceSessionClosed>()
-            .Where(closed => closed.IsLongEnough)
-            .Select(closed => new PresenceActivitySession
+        var closedSessions = changes.OfType<PresenceSessionClosed>().Where(closed => closed.IsLongEnough).ToList();
+        foreach (var closed in closedSessions)
+        {
+            var sessionGuildId = store.Guilds.TryGetValue(closed.UserId, out var openedIn)
+                ? openedIn
+                : guildId ?? throw new InvalidOperationException("Storing a session needs its guild.");
+            db.PresenceActivitySessions.Add(new PresenceActivitySession
             {
-                GuildId = store.Guilds.TryGetValue(closed.UserId, out var sessionGuildId)
-                    ? sessionGuildId
-                    : guildId ?? throw new InvalidOperationException("Storing a session needs its guild."),
+                GuildId = sessionGuildId,
                 OccurredAt = closed.StartedAt,
                 UserId = closed.UserId,
                 ActivityType = closed.Activity.Type,
                 ActivityName = closed.Activity.Name,
                 EndedAt = closed.At,
-            })
-            .ToList();
-        if (rows.Count > 0)
+            });
+            db.PresenceActivitySegments.AddRange(closed.Segments.Select(segment => ToRow(sessionGuildId, closed, segment)));
+        }
+
+        // One save, so a session and its segments are stored together or not at all.
+        if (closedSessions.Count > 0)
         {
-            db.PresenceActivitySessions.AddRange(rows);
             await db.SaveChangesAsync(cancellationToken);
         }
 
@@ -339,8 +343,28 @@ internal sealed partial class PresenceSessionRecorder(
             store.Guilds.Remove(userId);
         }
 
-        return rows.Count;
+        return closedSessions.Count;
     }
+
+    private static PresenceActivitySegment ToRow(Guid guildId, PresenceSessionClosed closed, PresenceSegment segment) => new()
+    {
+        GuildId = guildId,
+        OccurredAt = segment.From,
+        UserId = closed.UserId,
+        ActivityType = closed.Activity.Type,
+        ActivityName = closed.Activity.Name,
+        EndedAt = segment.To,
+        Details = segment.Details.Details,
+        State = segment.Details.State,
+        LargeText = segment.Details.LargeText,
+        SmallText = segment.Details.SmallText,
+        PartyExtId = segment.Details.PartyId,
+        PartySize = segment.Details.PartySize,
+        PartyMax = segment.Details.PartyMax,
+        ApplicationExtId = segment.Details.ApplicationId,
+        ReportedStart = segment.Details.ReportedStart,
+        ReportedEnd = segment.Details.ReportedEnd,
+    };
 
     /// <summary>
     /// The guild on the bot's platform, to read its presences; <see langword="null"/> if it has no mapping there.

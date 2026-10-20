@@ -76,6 +76,7 @@ public sealed class MockDataOverviewClient : IDataOverviewClient
         DataEventType.VoiceStateSegment => 100 + (day % 5 * 9),
         DataEventType.Reaction => 450 + (day * 5),
         DataEventType.Membership => day % 9 == 0 ? 1 : 0,
+        DataEventType.PresenceActivitySegment => 60 + (day % 4 * 8),
         _ => 30 + (day % 3 * 5),
     };
 
@@ -116,6 +117,17 @@ public sealed class MockDataOverviewClient : IDataOverviewClient
             DataEventType.Membership =>
             [
                 new(1, DataEventType.Membership, now.AddHours(-5), Chris, null) { Membership = new("Join") },
+            ],
+            DataEventType.PresenceActivitySegment =>
+            [
+                new(7, DataEventType.PresenceActivitySegment, now.AddMinutes(-13), Ben, null)
+                {
+                    PresenceSegment = new("Listening", "Spotify", now.AddMinutes(-10), "Song 2", "Artist A; Artist B", "Album X", ReportedStart: now.AddMinutes(-13), ReportedEnd: now.AddMinutes(-10)),
+                },
+                new(6, DataEventType.PresenceActivitySegment, now.AddHours(-1), Anna, null)
+                {
+                    PresenceSegment = new("Playing", "Factorio", now.AddMinutes(-10), "Multiplayer", "In Match", PartySize: 3, PartyMax: 8),
+                },
             ],
             _ =>
             [

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Apollo.Platform.Abstractions.Snapshots;
 using NetCord;
 using NetCord.Gateway;
@@ -78,7 +79,19 @@ internal static class DiscordSnapshots
             _ => PlatformActivityType.Playing,
         },
         Name: activity.Name,
-        StartedAt: activity.Timestamps?.StartTime);
+        ReportedStart: activity.Timestamps?.StartTime)
+    {
+        // NetCord 1.0.0-beta.28 does not expose sync_id (Spotify's track ID), so it is not mapped (#115).
+        ReportedEnd = activity.Timestamps?.EndTime,
+        Details = activity.Details,
+        State = activity.State,
+        LargeText = activity.Assets?.LargeText,
+        SmallText = activity.Assets?.SmallText,
+        PartyId = activity.Party?.Id,
+        PartySize = activity.Party?.Size?.CurrentSize,
+        PartyMax = activity.Party?.Size?.MaxSize,
+        ApplicationId = activity.ApplicationId?.ToString(CultureInfo.InvariantCulture),
+    };
 
     // In NetCord threads, announcement, voice and stage channels all derive from TextGuildChannel: most specific first.
     private static PlatformChannelType ChannelType(IGuildChannel channel) => channel switch

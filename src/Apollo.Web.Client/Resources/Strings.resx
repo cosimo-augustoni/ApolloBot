@@ -545,6 +545,10 @@
     <value>Aktivitäten</value>
     <comment>Data page: table label</comment>
   </data>
+  <data name="Data_Table_PresenceActivitySegment" xml:space="preserve">
+    <value>Aktivitäts-Abschnitte</value>
+    <comment>Data page: table label</comment>
+  </data>
   <data name="Data_Type_Message" xml:space="preserve">
     <value>Nachricht</value>
     <comment>Data page: event type of one row</comment>
@@ -568,6 +572,22 @@
   <data name="Data_Type_PresenceActivity" xml:space="preserve">
     <value>Aktivität</value>
     <comment>Data page: event type of one row</comment>
+  </data>
+  <data name="Data_Type_PresenceActivitySegment" xml:space="preserve">
+    <value>Aktivitäts-Abschnitt</value>
+    <comment>Data page: event type of one row</comment>
+  </data>
+  <data name="Data_Party" xml:space="preserve">
+    <value>Gruppe {0}</value>
+    <comment>Data page: party size of a presence segment, without a maximum</comment>
+  </data>
+  <data name="Data_PartyOf" xml:space="preserve">
+    <value>Gruppe {0}/{1}</value>
+    <comment>Data page: party size and maximum of a presence segment</comment>
+  </data>
+  <data name="Data_Reported" xml:space="preserve">
+    <value>gemeldet {0}–{1}</value>
+    <comment>Data page: the start and end an activity reported itself, e.g. of a song</comment>
   </data>
   <data name="Data_Kind_Create" xml:space="preserve">
     <value>erstellt</value>
@@ -938,8 +958,8 @@
     <comment>Public privacy page /datenschutz (#96)</comment>
   </data>
   <data name="Privacy_Recorded_Activities" xml:space="preserve">
-    <value>Aktivitäten (nur Discord): welche Aktivität du zeigst (Art und Name, z. B. das Spiel oder «Spotify»), von wann bis wann, sofern du deine Aktivität auf Discord teilst. Gespeichert wird erst ab einer Minute, dein eigener Status-Text nie. Diese Daten sind unvollständig, etwa wenn du deine Aktivität verbirgst.</value>
-    <comment>Public privacy page /datenschutz (#96)</comment>
+    <value>Aktivitäten (nur Discord): welche Aktivität du zeigst (Art und Name, z. B. das Spiel oder «Spotify»), von wann bis wann, und die Zusatzangaben, die die App dazu mitschickt, z. B. bei Spotify Titel, Interpret und Album, bei Spielen Modus, Karte oder Gruppengrösse. Das gilt nur, sofern du deine Aktivität auf Discord teilst. Gespeichert wird erst ab einer Minute, dein eigener Status-Text nie. Diese Daten sind unvollständig, etwa wenn du deine Aktivität verbirgst.</value>
+    <comment>Public privacy page /datenschutz (#96, #115)</comment>
   </data>
   <data name="Privacy_ContentNeverStored" xml:space="preserve">
     <value>Der Inhalt deiner Nachrichten wird nie gespeichert.</value>

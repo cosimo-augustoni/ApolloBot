@@ -9,6 +9,7 @@ using Apollo.Domain.Presence;
 using Apollo.Domain.Voice;
 using Apollo.Platform.Abstractions;
 using Apollo.Testing;
+using Apollo.Testing.Data;
 using Apollo.Testing.Platform;
 using Microsoft.EntityFrameworkCore;
 
@@ -72,7 +73,7 @@ internal static class RecordedData
                 Kind = ReactionEventKind.Add,
             });
             db.MembershipEvents.Add(new MembershipEvent { GuildId = guildId, UserId = userId, OccurredAt = occurredAt, Kind = MembershipEventKind.Join });
-            db.PresenceActivitySessions.Add(new PresenceActivitySession
+            var presence = new PresenceActivitySession
             {
                 GuildId = guildId,
                 UserId = userId,
@@ -80,7 +81,9 @@ internal static class RecordedData
                 EndedAt = occurredAt.AddHours(1),
                 ActivityType = PresenceActivityType.Playing,
                 ActivityName = "Factorio",
-            });
+            };
+            db.PresenceActivitySessions.Add(presence);
+            db.PresenceActivitySegments.Add(PresenceActivitySessionBuilder.CoveringSegment(presence));
             db.TrackingPeriods.Add(new TrackingPeriod { GuildId = guildId, UserId = userId, From = occurredAt.AddDays(-1), To = occurredAt.AddDays(1) });
             var session = new VoiceSession
             {
@@ -122,6 +125,7 @@ internal static class RecordedData
                 ["reaction_events"] = await db.ReactionEvents.CountAsync(e => e.UserId == id, cancellationToken),
                 ["membership_events"] = await db.MembershipEvents.CountAsync(e => e.UserId == id, cancellationToken),
                 ["presence_activity_sessions"] = await db.PresenceActivitySessions.CountAsync(e => e.UserId == id, cancellationToken),
+                ["presence_activity_segments"] = await db.PresenceActivitySegments.CountAsync(e => e.UserId == id, cancellationToken),
                 ["tracking_periods"] = await db.TrackingPeriods.CountAsync(e => e.UserId == id, cancellationToken),
                 [ReplyReferences] = await db.MessageEvents.CountAsync(e => e.ReplyToUserId == id, cancellationToken),
                 [MentionReferences] = await db.MessageMentions.CountAsync(e => e.MentionedUserId == id, cancellationToken),

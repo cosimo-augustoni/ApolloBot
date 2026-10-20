@@ -1,5 +1,6 @@
 using Apollo.Bot.Privacy;
 using Apollo.Bot.Tests.Tracking;
+using Apollo.Data.Presence;
 using Apollo.Platform.Abstractions;
 using Apollo.Testing;
 using Apollo.Testing.Data;
@@ -96,6 +97,53 @@ public sealed class PrivacyDeleteAggregateTests(TimescaleFixture fixture) : Time
         await host.ConfirmDeleteAsync(Alice);
 
         refreshes.Calls.ShouldBe([new AggregateRefreshLog.Call(first, last, InTransaction: false)]);
+    }
+
+    [Fact]
+    public async Task Confirm_WhenTheMembersOnlyRowsArePresence_ShouldRefreshOverItsSegmentsToo()
+    {
+        var refreshes = new AggregateRefreshLog();
+        await using var host = await CreatePrivacyHostInTrackingRoleModeAsync(Fixture, configure: RecordingAggregateRefresher.Replace(refreshes));
+        var start = TestTime.Now - TimeSpan.FromDays(10);
+        var nextSong = start + TimeSpan.FromHours(3);
+        await host.InScopeAsync(async (db, ids) =>
+        {
+            var session = new PresenceActivitySessionBuilder()
+                .In(await ids.ResolveGuildAsync(TestPlatform.Guild, Ct))
+                .By(await ids.ResolveUserAsync(Alice, Ct))
+                .From(start)
+                .Until(start + TimeSpan.FromHours(4))
+                .Build();
+            var covering = PresenceActivitySessionBuilder.CoveringSegment(session);
+            db.AddRange(
+                session,
+                new PresenceActivitySegment
+                {
+                    GuildId = covering.GuildId,
+                    UserId = covering.UserId,
+                    ActivityType = covering.ActivityType,
+                    ActivityName = covering.ActivityName,
+                    OccurredAt = start,
+                    EndedAt = nextSong,
+                    Details = "Song 1",
+                },
+                new PresenceActivitySegment
+                {
+                    GuildId = covering.GuildId,
+                    UserId = covering.UserId,
+                    ActivityType = covering.ActivityType,
+                    ActivityName = covering.ActivityName,
+                    OccurredAt = nextSong,
+                    EndedAt = session.EndedAt,
+                    Details = "Song 2",
+                });
+            return await db.SaveChangesAsync(Ct);
+        });
+
+        await host.ConfirmDeleteAsync(Alice);
+
+        refreshes.Calls.ShouldBe([new AggregateRefreshLog.Call(start, nextSong, InTransaction: false)]);
+        (await RowsAboutAsync(host, Alice))["presence_activity_segments"].ShouldBe(0);
     }
 
     [Fact]

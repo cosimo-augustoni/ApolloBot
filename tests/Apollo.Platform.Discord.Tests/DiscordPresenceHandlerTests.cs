@@ -39,6 +39,50 @@ public sealed class DiscordPresenceHandlerTests
     }
 
     [Fact]
+    public async Task PresenceUpdate_WhenAnActivityHasRichPresence_ShouldMapEveryRichField()
+    {
+        var start = new DateTimeOffset(2026, 1, 15, 8, 0, 0, TimeSpan.Zero);
+        var end = start.AddMinutes(3);
+
+        await HandleAsync(NetCordPayloads.Presence(DiscordHost.GuildId, AliceId, UserStatusType.Online,
+            new JsonUserActivity
+            {
+                Type = UserActivityType.Listening,
+                Name = "Spotify",
+                Details = "Song 1",
+                State = "Artist A; Artist B",
+                ApplicationId = 1234,
+                Timestamps = new() { StartTime = start, EndTime = end },
+                Assets = new() { LargeText = "Album X", SmallText = "Small" },
+                Party = new() { Id = "spotify:42", Size = [2, 5] },
+            }));
+
+        var activity = _harness.Dispatcher.Events.ShouldHaveSingleItem().ShouldBeOfType<PlatformPresenceUpdated>().Presence.Activities.ShouldHaveSingleItem();
+        activity.ShouldBe(new PlatformActivity(PlatformActivityType.Listening, "Spotify", start)
+        {
+            ReportedEnd = end,
+            Details = "Song 1",
+            State = "Artist A; Artist B",
+            LargeText = "Album X",
+            SmallText = "Small",
+            PartyId = "spotify:42",
+            PartySize = 2,
+            PartyMax = 5,
+            ApplicationId = "1234",
+        });
+    }
+
+    [Fact]
+    public async Task PresenceUpdate_WhenAnActivityHasNoRichPresence_ShouldLeaveEveryRichFieldNull()
+    {
+        await HandleAsync(NetCordPayloads.Presence(DiscordHost.GuildId, AliceId, UserStatusType.Online,
+            new JsonUserActivity { Type = UserActivityType.Playing, Name = "Factorio", Party = new() { Id = "p" }, Assets = new() }));
+
+        var activity = _harness.Dispatcher.Events.ShouldHaveSingleItem().ShouldBeOfType<PlatformPresenceUpdated>().Presence.Activities.ShouldHaveSingleItem();
+        activity.ShouldBe(new PlatformActivity(PlatformActivityType.Playing, "Factorio", null) { PartyId = "p" });
+    }
+
+    [Fact]
     public async Task PresenceUpdate_WhenUserWentOffline_ShouldDispatchAnOfflinePresenceWithoutActivities()
     {
         await HandleAsync(NetCordPayloads.Presence(DiscordHost.GuildId, AliceId, UserStatusType.Offline));

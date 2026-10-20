@@ -61,7 +61,9 @@ public sealed class PlatformEventContractTests
     {
         var rawIds = ReachableProperties(eventType)
             .Where(property => property.Name.EndsWith("Id", StringComparison.Ordinal)
-                && property.Name != nameof(PlatformVoiceState.ConnectionId))
+                && property.Name != nameof(PlatformVoiceState.ConnectionId)
+                // Opaque values of the app, stored as text and never resolved (#115).
+                && property.Name is not nameof(PlatformActivity.PartyId) and not nameof(PlatformActivity.ApplicationId))
             .Select(property => $"{property.DeclaringType!.Name}.{property.Name}");
 
         rawIds.ShouldBeEmpty();
@@ -90,6 +92,16 @@ public sealed class PlatformEventContractTests
     [InlineData(typeof(PlatformReactionRemoved), nameof(PlatformReactionRemoved.MessageAuthor))]
     [InlineData(typeof(PlatformVoiceState), nameof(PlatformVoiceState.ConnectionId))]
     [InlineData(typeof(PlatformVoiceState), nameof(PlatformVoiceState.Channel))]
+    [InlineData(typeof(PlatformActivity), nameof(PlatformActivity.ReportedStart))]
+    [InlineData(typeof(PlatformActivity), nameof(PlatformActivity.ReportedEnd))]
+    [InlineData(typeof(PlatformActivity), nameof(PlatformActivity.Details))]
+    [InlineData(typeof(PlatformActivity), nameof(PlatformActivity.State))]
+    [InlineData(typeof(PlatformActivity), nameof(PlatformActivity.LargeText))]
+    [InlineData(typeof(PlatformActivity), nameof(PlatformActivity.SmallText))]
+    [InlineData(typeof(PlatformActivity), nameof(PlatformActivity.PartyId))]
+    [InlineData(typeof(PlatformActivity), nameof(PlatformActivity.PartySize))]
+    [InlineData(typeof(PlatformActivity), nameof(PlatformActivity.PartyMax))]
+    [InlineData(typeof(PlatformActivity), nameof(PlatformActivity.ApplicationId))]
     public void OptionalReference_ShouldBeNullable(Type type, string propertyName)
     {
         var property = type.GetProperty(propertyName).ShouldNotBeNull();

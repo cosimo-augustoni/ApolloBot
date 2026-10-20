@@ -152,6 +152,38 @@ public sealed class RawEventQuery(ApolloDbContext db, IEnumerable<IPlatformIdent
                 _ => [],
                 (row, e, _) => row with { PresenceActivity = new PresenceActivityDetailsDto(e.ActivityType.ToString(), e.ActivityName, e.EndedAt) },
                 cancellationToken),
+            DataEventType.PresenceActivitySegment => await PageAsync(
+                db.PresenceActivitySegments.Select(e => new Row<Data.Presence.PresenceActivitySegment>
+                {
+                    Id = e.Id,
+                    GuildId = e.GuildId,
+                    OccurredAt = e.OccurredAt,
+                    UserId = e.UserId,
+                    ChannelId = null,
+                    Event = e,
+                }),
+                search,
+                guilds,
+                _ => [],
+                _ => [],
+                (row, e, _) => row with
+                {
+                    PresenceSegment = new PresenceSegmentDetailsDto(
+                        e.ActivityType.ToString(),
+                        e.ActivityName,
+                        e.EndedAt,
+                        e.Details,
+                        e.State,
+                        e.LargeText,
+                        e.SmallText,
+                        e.PartyExtId,
+                        e.PartySize,
+                        e.PartyMax,
+                        e.ApplicationExtId,
+                        e.ReportedStart,
+                        e.ReportedEnd),
+                },
+                cancellationToken),
             _ => throw new ArgumentOutOfRangeException(nameof(search), search.Type, "Unknown event type."),
         };
     }

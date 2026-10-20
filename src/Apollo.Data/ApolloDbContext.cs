@@ -69,6 +69,8 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
 
     public DbSet<PresenceActivitySession> PresenceActivitySessions => Set<PresenceActivitySession>();
 
+    public DbSet<PresenceActivitySegment> PresenceActivitySegments => Set<PresenceActivitySegment>();
+
     public DbSet<UserSignOut> UserSignOuts => Set<UserSignOut>();
 
     /// <summary>Per Zurich day, user and channel (#34); read-only.</summary>

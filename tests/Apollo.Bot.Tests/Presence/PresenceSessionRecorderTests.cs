@@ -453,6 +453,258 @@ public sealed class PresenceSessionRecorderTests(TimescaleFixture fixture) : Tim
 
     public void Dispose() => _meters.Dispose();
 
+    [Fact]
+    public async Task Update_WhenTheSongChangesTwice_ShouldStoreOneSessionAndThreeSegmentsWithoutGaps()
+    {
+        await using var host = await HostAsync();
+        await UpdateAsync(host, Presence(_alice).WithActivity(Song("Song 1", "Artist A", "Album X")));
+        host.Time.Advance(TimeSpan.FromMinutes(3));
+        await UpdateAsync(host, Presence(_alice).WithActivity(Song("Song 2", "Artist A; Artist B", "Album X")));
+        host.Time.Advance(TimeSpan.FromMinutes(3));
+        await UpdateAsync(host, Presence(_alice).WithActivity(Song("Song 3", "Artist C", "Album Y")));
+        host.Time.Advance(TimeSpan.FromMinutes(3));
+
+        await UpdateAsync(host, Presence(_alice));
+
+        var (guildId, aliceId) = (await GuildIdAsync(host), await host.UserIdAsync(_alice));
+        var session = (await SessionsAsync(host)).ShouldHaveSingleItem();
+        session.ActivityName.ShouldBe("Spotify");
+        var segments = await SegmentsAsync(host);
+        segments.Select(s => (s.Details, s.State, s.LargeText, s.OccurredAt, s.EndedAt)).ShouldBe([
+            ("Song 1", "Artist A", "Album X", TestTime.Now, TestTime.Now.AddMinutes(3)),
+            ("Song 2", "Artist A; Artist B", "Album X", TestTime.Now.AddMinutes(3), TestTime.Now.AddMinutes(6)),
+            ("Song 3", "Artist C", "Album Y", TestTime.Now.AddMinutes(6), TestTime.Now.AddMinutes(9)),
+        ]);
+        segments.ShouldAllBe(s => s.GuildId == guildId && s.UserId == aliceId
+            && s.ActivityType == PresenceActivityType.Listening && s.ActivityName == "Spotify");
+    }
+
+    [Fact]
+    public async Task Update_WhenTheSegmentHasEveryRichField_ShouldStoreThemAll()
+    {
+        await using var host = await HostAsync();
+        var start = TestTime.Now.AddSeconds(-10);
+        await UpdateAsync(host, Presence(_alice).WithActivity(new PlatformActivity(PlatformActivityType.Playing, "X", start)
+        {
+            ReportedEnd = start.AddHours(1),
+            Details = "Ranked",
+            State = "In Queue",
+            LargeText = "Map",
+            SmallText = "Gold",
+            PartyId = "party-1",
+            PartySize = 2,
+            PartyMax = 5,
+            ApplicationId = "1234",
+        }));
+        host.Time.Advance(_session);
+
+        await UpdateAsync(host, Presence(_alice));
+
+        var segment = (await SegmentsAsync(host)).ShouldHaveSingleItem();
+        segment.ShouldSatisfyAllConditions(
+            () => segment.Details.ShouldBe("Ranked"),
+            () => segment.State.ShouldBe("In Queue"),
+            () => segment.LargeText.ShouldBe("Map"),
+            () => segment.SmallText.ShouldBe("Gold"),
+            () => segment.PartyExtId.ShouldBe("party-1"),
+            () => segment.PartySize.ShouldBe(2),
+            () => segment.PartyMax.ShouldBe(5),
+            () => segment.ApplicationExtId.ShouldBe("1234"),
+            () => segment.ReportedStart.ShouldBe(start),
+            () => segment.ReportedEnd.ShouldBe(start.AddHours(1)));
+    }
+
+    [Fact]
+    public async Task Update_WhenTheActivityHasNoRichFields_ShouldStoreOneSegmentCoveringTheSessionWithoutDetails()
+    {
+        await using var host = await HostAsync();
+        await UpdateAsync(host, Presence(_alice).Playing("X"));
+        host.Time.Advance(_session);
+
+        await UpdateAsync(host, Presence(_alice));
+
+        var session = (await SessionsAsync(host)).ShouldHaveSingleItem();
+        var segment = (await SegmentsAsync(host)).ShouldHaveSingleItem();
+        (segment.OccurredAt, segment.EndedAt).ShouldBe((session.OccurredAt, session.EndedAt));
+        segment.ShouldSatisfyAllConditions(
+            () => segment.Details.ShouldBeNull(),
+            () => segment.State.ShouldBeNull(),
+            () => segment.LargeText.ShouldBeNull(),
+            () => segment.SmallText.ShouldBeNull(),
+            () => segment.PartyExtId.ShouldBeNull(),
+            () => segment.PartySize.ShouldBeNull(),
+            () => segment.PartyMax.ShouldBeNull(),
+            () => segment.ApplicationExtId.ShouldBeNull(),
+            () => segment.ReportedStart.ShouldBeNull(),
+            () => segment.ReportedEnd.ShouldBeNull());
+    }
+
+    [Fact]
+    public async Task Update_WhenTheSessionWasShorterThanAMinute_ShouldStoreNeitherItNorItsSegments()
+    {
+        await using var host = await HostAsync();
+        await UpdateAsync(host, Presence(_alice).WithActivity(Song("Song 1", "A", "X")));
+        host.Time.Advance(TimeSpan.FromSeconds(20));
+        await UpdateAsync(host, Presence(_alice).WithActivity(Song("Song 2", "A", "X")));
+        host.Time.Advance(TimeSpan.FromSeconds(20));
+
+        await UpdateAsync(host, Presence(_alice));
+
+        (await SessionsAsync(host)).ShouldBeEmpty();
+        (await SegmentsAsync(host)).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Update_WhenASongWasSkippedAfterTenSeconds_ShouldKeepItsShortSegment()
+    {
+        await using var host = await HostAsync();
+        await UpdateAsync(host, Presence(_alice).WithActivity(Song("Skipped", "A", "X")));
+        host.Time.Advance(TimeSpan.FromSeconds(10));
+        await UpdateAsync(host, Presence(_alice).WithActivity(Song("Song 2", "A", "X")));
+        host.Time.Advance(_session);
+
+        await UpdateAsync(host, Presence(_alice));
+
+        (await SegmentsAsync(host)).Select(s => s.Details).ShouldBe(["Skipped", "Song 2"]);
+    }
+
+    [Fact]
+    public async Task Update_WhenTwoActivitiesRunAtOnce_ShouldGiveEachSessionItsOwnSegments()
+    {
+        await using var host = await HostAsync();
+        var game = new PlatformActivity(PlatformActivityType.Playing, "X", null) { State = "In Match" };
+        await UpdateAsync(host, Presence(_alice).WithActivity(game).WithActivity(Song("Song 1", "A", "X")));
+        host.Time.Advance(TimeSpan.FromMinutes(3));
+        await UpdateAsync(host, Presence(_alice).WithActivity(game).WithActivity(Song("Song 2", "A", "X")));
+        host.Time.Advance(TimeSpan.FromMinutes(3));
+
+        await UpdateAsync(host, Presence(_alice));
+
+        (await SessionsAsync(host)).Count.ShouldBe(2);
+        (await SegmentsAsync(host)).Select(s => (s.ActivityName, s.Details ?? s.State, s.OccurredAt, s.EndedAt)).ShouldBe(
+            [
+                ("X", "In Match", TestTime.Now, TestTime.Now.AddMinutes(6)),
+                ("Spotify", "Song 1", TestTime.Now, TestTime.Now.AddMinutes(3)),
+                ("Spotify", "Song 2", TestTime.Now.AddMinutes(3), TestTime.Now.AddMinutes(6)),
+            ],
+            ignoreOrder: true);
+    }
+
+    [Fact]
+    public async Task Update_WhenARichFieldIsLongerThan128Characters_ShouldStoreItCutTo128()
+    {
+        await using var host = await HostAsync();
+        await UpdateAsync(host, Presence(_alice).WithActivity(new PlatformActivity(PlatformActivityType.Playing, "X", null)
+        {
+            Details = new string('d', 300),
+            State = new string('s', 129),
+        }));
+        host.Time.Advance(_session);
+
+        await UpdateAsync(host, Presence(_alice));
+
+        var segment = (await SegmentsAsync(host)).ShouldHaveSingleItem();
+        segment.Details.ShouldBe(new string('d', 128));
+        segment.State.ShouldBe(new string('s', 128));
+    }
+
+    [Fact]
+    public async Task TrackingStopped_ShouldStoreTheOpenSegmentWithItsSession()
+    {
+        await using var host = await HostAsync();
+        await UpdateAsync(host, Presence(_alice).WithActivity(Song("Song 1", "A", "X")));
+        host.Time.Advance(TimeSpan.FromMinutes(2));
+        await UpdateAsync(host, Presence(_alice).WithActivity(Song("Song 2", "A", "X")));
+        host.Time.Advance(TimeSpan.FromMinutes(2));
+
+        await host.RaiseAsync(new PlatformMemberUpdatedBuilder().WithMember(Member(_alice)).Build());
+
+        (await SegmentsAsync(host)).Select(s => (s.Details, s.EndedAt)).ShouldBe([
+            ("Song 1", TestTime.Now.AddMinutes(2)),
+            ("Song 2", TestTime.Now.AddMinutes(4)),
+        ]);
+    }
+
+    [Fact]
+    public async Task Shutdown_ShouldStoreTheOpenSegmentWithItsSession()
+    {
+        await using var host = await HostAsync();
+        await UpdateAsync(host, Presence(_alice).WithActivity(Song("Song 1", "A", "X")));
+        host.Time.Advance(_session);
+
+        await Lifecycle(host).StopAsync(TestContext.Current.CancellationToken);
+
+        var segment = (await SegmentsAsync(host)).ShouldHaveSingleItem();
+        (segment.Details, segment.EndedAt).ShouldBe(("Song 1", TestTime.Now + _session));
+    }
+
+    [Fact]
+    public async Task Update_WhenStoringFails_ShouldStoreNoSegmentsEither()
+    {
+        var interceptor = new FailingPresenceInsertInterceptor();
+        await using var host = await HostAsync(interceptor);
+        await UpdateAsync(host, Presence(_alice).WithActivity(Song("Song 1", "A", "X")));
+        host.Time.Advance(_session);
+        interceptor.Arm();
+
+        await UpdateAsync(host, Presence(_alice));
+
+        (await SegmentsAsync(host)).ShouldBeEmpty();
+        Store(host).Machine.OpenSessionCount.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task PeriodicRun_WhenTheRichFieldsDiffer_ShouldEndTheSegmentAndStartANewOneAtTheRun()
+    {
+        await using var host = await HostAsync(interval: _interval);
+        await UpdateOnPlatformAsync(host, Presence(_alice).WithActivity(Song("Song 1", "A", "X")));
+        // The update that changed the song was missed; only the platform's cache has it.
+        host.Platform.WithPresence(Presence(_alice).WithActivity(Song("Song 2", "A", "X")).Build());
+
+        await RunPeriodicallyAsync(host);
+        var reconciledAt = host.Time.GetUtcNow();
+        host.Time.Advance(TimeSpan.FromMinutes(1));
+        await UpdateOnPlatformAsync(host, Presence(_alice));
+
+        (await SegmentsAsync(host)).Select(s => (s.Details, s.OccurredAt, s.EndedAt)).ShouldBe([
+            ("Song 1", TestTime.Now, reconciledAt),
+            ("Song 2", reconciledAt, reconciledAt.AddMinutes(1)),
+        ]);
+    }
+
+    [Fact]
+    public async Task Recording_WhenBackfilledSessionsExist_ShouldCoverEverySessionByItsSegmentsWithoutGapsOrOverlaps()
+    {
+        await using var host = await HostAsync();
+        var (guildId, aliceId) = (await GuildIdAsync(host), await host.UserIdAsync(_alice));
+        // A session from before #115, as the migration's backfill leaves it: one segment without rich fields.
+        var backfilled = new PresenceActivitySessionBuilder().In(guildId).By(aliceId).Playing("X")
+            .From(TestTime.Now.AddDays(-1)).Until(TestTime.Now.AddDays(-1).AddHours(2)).BuildRows();
+        await host.InScopeAsync((db, _) =>
+        {
+            db.AddRange(backfilled.All);
+            return db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        });
+        await UpdateAsync(host, Presence(_alice).Playing("X").WithActivity(Song("Song 1", "A", "X")));
+        host.Time.Advance(TimeSpan.FromMinutes(2));
+        await UpdateAsync(host, Presence(_alice).WithActivity(new PlatformActivity(PlatformActivityType.Playing, "X", null) { State = "In Match" })
+            .WithActivity(Song("Song 2", "A", "X")));
+        host.Time.Advance(TimeSpan.FromMinutes(2));
+        await UpdateAsync(host, Presence(_alice).WithActivity(Song("Song 3", "B", "Y")));
+        host.Time.Advance(TimeSpan.FromMinutes(2));
+
+        await UpdateAsync(host, Presence(_alice));
+
+        (await SessionsAsync(host)).Count.ShouldBe(3);
+        (await host.InScopeAsync((db, _) => PresenceCoverage.FindUncoveredAsync(db, TestContext.Current.CancellationToken))).ShouldBeEmpty();
+    }
+
+    private static PlatformActivity Song(string title, string artists, string album) =>
+        new(PlatformActivityType.Listening, "Spotify", null) { Details = title, State = artists, LargeText = album };
+
+    private static Task<List<PresenceActivitySegment>> SegmentsAsync(TrackingHost host) =>
+        host.InScopeAsync((db, _) => db.PresenceActivitySegments.AsNoTracking().OrderBy(s => s.ActivityName).ThenBy(s => s.OccurredAt).ToListAsync(TestContext.Current.CancellationToken));
+
     /// <summary>
     /// Advances the fake clock by the interval and waits until that periodic run finished.
     /// </summary>

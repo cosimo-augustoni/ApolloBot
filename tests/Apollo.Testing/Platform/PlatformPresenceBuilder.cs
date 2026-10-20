@@ -17,6 +17,8 @@ public sealed class PlatformPresenceBuilder : TestDataBuilder<PlatformPresenceBu
     public PlatformPresenceBuilder WithActivity(PlatformActivityType type, string name, DateTimeOffset? startedAt = null) =>
         With(p => p with { Activities = [.. p.Activities, new PlatformActivity(type, name, startedAt)] });
 
+    public PlatformPresenceBuilder WithActivity(PlatformActivity activity) => With(p => p with { Activities = [.. p.Activities, activity] });
+
     protected override PlatformPresence CreateDefault() => new(
         User: TestPlatform.User("alice"),
         Status: PlatformPresenceStatus.Online,
