@@ -177,7 +177,7 @@ public sealed class RawEventQueryTests(TimescaleFixture fixture) : TimescaleTest
             Details: "Song 1",
             State: "Artist A; Artist B",
             LargeText: "Album X",
-            PartyId: "spotify:1",
+            PartyId: "party-1",
             PartySize: 1,
             PartyMax: 2,
             ApplicationId: "1234",

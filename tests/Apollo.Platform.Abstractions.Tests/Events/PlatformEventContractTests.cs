@@ -21,6 +21,13 @@ public sealed class PlatformEventContractTests
 
     private static readonly NullabilityInfoContext _nullability = new();
 
+    // Opaque values of the app, stored as text and never resolved (#115): exempt on PlatformActivity only.
+    private static readonly string[] _opaqueIds =
+    [
+        $"{nameof(PlatformActivity)}.{nameof(PlatformActivity.PartyId)}",
+        $"{nameof(PlatformActivity)}.{nameof(PlatformActivity.ApplicationId)}",
+    ];
+
     public static TheoryData<Type> EventTypes => [.. _eventTypes];
 
     [Fact]
@@ -61,10 +68,9 @@ public sealed class PlatformEventContractTests
     {
         var rawIds = ReachableProperties(eventType)
             .Where(property => property.Name.EndsWith("Id", StringComparison.Ordinal)
-                && property.Name != nameof(PlatformVoiceState.ConnectionId)
-                // Opaque values of the app, stored as text and never resolved (#115).
-                && property.Name is not nameof(PlatformActivity.PartyId) and not nameof(PlatformActivity.ApplicationId))
-            .Select(property => $"{property.DeclaringType!.Name}.{property.Name}");
+                && property.Name != nameof(PlatformVoiceState.ConnectionId))
+            .Select(property => $"{property.DeclaringType!.Name}.{property.Name}")
+            .Except(_opaqueIds);
 
         rawIds.ShouldBeEmpty();
     }
