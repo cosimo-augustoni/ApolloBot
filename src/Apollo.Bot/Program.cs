@@ -2,6 +2,7 @@ using Apollo.Bot.Commands;
 using Apollo.Bot.GuildState;
 using Apollo.Bot.Membership;
 using Apollo.Bot.Messages;
+using Apollo.Bot.Names;
 using Apollo.Bot.Presence;
 using Apollo.Bot.Privacy;
 using Apollo.Bot.Reactions;
@@ -28,6 +29,7 @@ builder.Services.AddVoiceRecording();
 builder.Services.AddPresenceRecording();
 builder.Services.AddReactionRecording();
 builder.Services.AddMembershipRecording();
+builder.Services.AddNameRecording();
 builder.Services.AddBotStatus();
 
 var host = builder.Build();
