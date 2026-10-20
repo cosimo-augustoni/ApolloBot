@@ -89,12 +89,15 @@ internal sealed partial class MemberNameRecorder(
 
         using (await nameLock.EnterAsync(cancellationToken))
         {
+            // Stamped before the read: an update whose cache write lands during the read is stamped later, so it is
+            // compared with the baseline instead of being dropped as stale.
+            var now = timeProvider.GetUtcNow();
             if (await platform.GetMemberAsync(guild, user.User, cancellationToken) is not { } member)
             {
                 return;
             }
 
-            if (await RecordAsync(user.GuildId, user.UserId, Names(member), timeProvider.GetUtcNow(), cancellationToken) is { } stored)
+            if (await RecordAsync(user.GuildId, user.UserId, Names(member), now, cancellationToken) is { } stored)
             {
                 await db.SaveChangesAsync(cancellationToken);
                 LogRecorded(stored.Kind, user.UserId);
@@ -103,9 +106,16 @@ internal sealed partial class MemberNameRecorder(
     }
 
     /// <summary>
-    /// Nothing to close: a name row is a moment, not a span.
+    /// Nothing to close, a name row is a moment; but waits for a write in progress (e.g. the comparison after a sync,
+    /// which saves all its rows at the end), so a privacy delete that follows the stop finds every row of the member.
+    /// The gate changed before this runs, so later writes see the member untracked.
     /// </summary>
-    public Task TrackingStoppedAsync(TrackedUser user, CancellationToken cancellationToken) => Task.CompletedTask;
+    public async Task TrackingStoppedAsync(TrackedUser user, CancellationToken cancellationToken)
+    {
+        using (await nameLock.EnterAsync(cancellationToken))
+        {
+        }
+    }
 
     /// <summary>
     /// Compares every tracked member's current names with their latest row after a full guild sync (startup,

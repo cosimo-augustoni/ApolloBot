@@ -44,6 +44,9 @@ public sealed class FakeChatPlatform(
     private TaskCompletionSource? _heldListings;
     private bool _snapshotOnRelease;
     private TaskCompletionSource _listingHeld = NewSignal();
+    private TaskCompletionSource? _heldMemberReads;
+    private int _memberReadsBeforeHold;
+    private TaskCompletionSource<PlatformRef> _memberReadHeld = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public PlatformRef Guild { get; } = guild ?? TestPlatform.Guild;
 
@@ -210,6 +213,52 @@ public sealed class FakeChatPlatform(
         held?.TrySetResult();
     }
 
+    /// <summary>
+    /// Holds the <see cref="GetMemberAsync"/> calls after the first <paramref name="after"/> until
+    /// <see cref="ReleaseMemberReads"/>, as a slow cache read would. The member is read before waiting (a stale read);
+    /// <see cref="MemberReadHeld"/> completes with the user of the first held read.
+    /// </summary>
+    public FakeChatPlatform HoldMemberReads(int after = 0)
+    {
+        lock (_lock)
+        {
+            _heldMemberReads = NewSignal();
+            _memberReadsBeforeHold = after;
+            _memberReadHeld = new TaskCompletionSource<PlatformRef>(TaskCreationOptions.RunContinuationsAsynchronously);
+        }
+
+        return this;
+    }
+
+    /// <summary>
+    /// Completes with the user whose read waits first after <see cref="HoldMemberReads"/>.
+    /// </summary>
+    public Task<PlatformRef> MemberReadHeld
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _memberReadHeld.Task;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Lets the held member reads return, and the following ones at once.
+    /// </summary>
+    public void ReleaseMemberReads()
+    {
+        TaskCompletionSource? held;
+        lock (_lock)
+        {
+            held = _heldMemberReads;
+            _heldMemberReads = null;
+        }
+
+        held?.TrySetResult();
+    }
+
     public FakeChatPlatform WithCapabilities(PlatformCapabilities capabilities)
     {
         Capabilities = capabilities;
@@ -285,8 +334,26 @@ public sealed class FakeChatPlatform(
             member,
             router => router.HandleButtonAsync(new ButtonInvocation(Guild, member, buttonId, timeProvider.GetUtcNow()), cancellationToken));
 
-    public Task<PlatformMember?> GetMemberAsync(PlatformRef guild, PlatformRef user, CancellationToken cancellationToken) =>
-        Task.FromResult(FindMember(guild, user));
+    public async Task<PlatformMember?> GetMemberAsync(PlatformRef guild, PlatformRef user, CancellationToken cancellationToken)
+    {
+        var member = FindMember(guild, user);
+        TaskCompletionSource? held = null;
+        lock (_lock)
+        {
+            if (_heldMemberReads is not null && _memberReadsBeforeHold-- <= 0)
+            {
+                held = _heldMemberReads;
+                _memberReadHeld.TrySetResult(user);
+            }
+        }
+
+        if (held is not null)
+        {
+            await held.Task.WaitAsync(cancellationToken);
+        }
+
+        return member;
+    }
 
     public Task<IReadOnlyList<PlatformRef>> GetMemberRolesAsync(PlatformRef guild, PlatformRef user, CancellationToken cancellationToken) =>
         Task.FromResult(FindMember(guild, user)?.Roles ?? []);

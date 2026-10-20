@@ -1,9 +1,15 @@
 using System.Diagnostics.Metrics;
+using Apollo.Bot.Commands;
+using Apollo.Bot.Links;
 using Apollo.Bot.Names;
+using Apollo.Bot.Privacy;
+using Apollo.Bot.Tests.Privacy;
 using Apollo.Bot.Tests.Tracking;
+using Apollo.Bot.Tracking;
 using Apollo.Data.Names;
 using Apollo.Domain.Names;
 using Apollo.Platform.Abstractions;
+using Apollo.Platform.Abstractions.Commands;
 using Apollo.Platform.Abstractions.Diagnostics;
 using Apollo.Platform.Abstractions.Dispatch;
 using Apollo.Platform.Abstractions.Events;
@@ -28,6 +34,10 @@ public sealed class MemberNameRecorderTests(TimescaleFixture fixture) : Timescal
     private static readonly PlatformRef _carol = TestPlatform.User("carol");
 
     private static readonly TimeSpan _later = TimeSpan.FromHours(1);
+
+    // Wall-clock waits for the race tests: until a held read is reached, and for a deletion to finish if nothing stops it.
+    private static readonly TimeSpan _wait = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan _settle = TimeSpan.FromMilliseconds(500);
 
     private readonly TestMeterFactory _meters = new();
 
@@ -246,7 +256,62 @@ public sealed class MemberNameRecorderTests(TimescaleFixture fixture) : Timescal
         ]);
     }
 
+    [Fact]
+    public async Task TrackingStopped_WhenAPrivacyDeleteIsConfirmedDuringTheSyncComparison_ShouldLeaveNoneOfTheMembersNameRows()
+    {
+        await using var host = await HostAsync(configure: AddPrivacyCommands);
+        host.Platform.WithCommandRouter(host.Services.GetRequiredService<ICommandRouter>());
+        host.Time.Advance(_later);
+
+        // Both renamed while the gateway was disconnected. The comparison has stored the first member's row in its
+        // context and waits on the second member's read when the first confirms the deletion.
+        host.Platform.HoldMemberReads(after: 1);
+        var sync = SyncAsync(host, Alice().WithNickname("Ali"), Bob().WithNickname("Bobby"));
+        var held = await host.Platform.MemberReadHeld.WaitAsync(_wait, Ct);
+        held.ShouldBeOneOf(_alice, _bob);
+        var compared = held == _alice ? _bob : _alice;
+        var confirm = host.ConfirmDeleteAsync(compared);
+        await Task.WhenAny(confirm, Task.Delay(_settle, Ct));
+        host.Platform.ReleaseMemberReads();
+        await sync;
+        await confirm;
+
+        (await RowsAsync(host, compared)).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task TrackingStarted_WhenAnUpdateLandsWhileTheBaselineReadsTheCache_ShouldKeepTheUpdate()
+    {
+        await using var host = await HostAsync();
+        var startedAt = host.Time.GetUtcNow() + _later;
+        host.Time.Advance(_later);
+        host.Platform.HoldMemberReads();
+
+        // Carol gains tracking; the baseline's cache read returns her names before the rename.
+        var gain = UpdateAsync(host, Carol().WithRoles(_statistik));
+        (await host.Platform.MemberReadHeld.WaitAsync(_wait, Ct)).ShouldBe(_carol);
+        host.Time.Advance(_later);
+        var renamed = UpdateAsync(host, Carol().WithNickname("Caro").WithRoles(_statistik));
+        host.Time.Advance(_later);
+        host.Platform.ReleaseMemberReads();
+        await gain;
+        await renamed;
+
+        (await RowsAsync(host, _carol)).Select(Row).ShouldBe([
+            (MemberNameChangeKind.Baseline, null, "Carol", "carol", startedAt),
+            (MemberNameChangeKind.Changed, "Caro", "Carol", "carol", startedAt + _later),
+        ]);
+    }
+
     public void Dispose() => _meters.Dispose();
+
+    private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    private static void AddPrivacyCommands(IServiceCollection services) => services
+        .AddCommandRouting()
+        .Configure<LinksOptions>(links => links.PublicWebUrl = TrackingCommandHost.PublicWebUrl)
+        .AddTrackingCommands()
+        .AddPrivacyCommands();
 
     private static (MemberNameChangeKind Kind, string? Nickname, string? GlobalName, string Username, DateTimeOffset OccurredAt) Row(MemberNameChange row) =>
         (row.Kind, row.Nickname, row.GlobalName, row.Username, row.OccurredAt);
@@ -274,14 +339,14 @@ public sealed class MemberNameRecorderTests(TimescaleFixture fixture) : Timescal
     }
 
     /// <summary>
-    /// A full guild sync, as on startup and after every reconnect, with alice as given.
+    /// A full guild sync, as on startup and after every reconnect, with alice and bob as given.
     /// </summary>
-    private static Task SyncAsync(TrackingHost host, PlatformMemberBuilder? alice = null) =>
+    private static Task SyncAsync(TrackingHost host, PlatformMemberBuilder? alice = null, PlatformMemberBuilder? bob = null) =>
         host.SyncAsync(new PlatformGuildAvailableBuilder()
             .WithRoles(
                 new PlatformRoleBuilder().WithRef(_statistik).Named("Statistik").Build(),
                 new PlatformRoleBuilder().WithRef(_gamer).Named("Gamer").Build())
-            .WithMembers((alice ?? Alice()).Build(), Bob().Build(), Carol().Build())
+            .WithMembers((alice ?? Alice()).Build(), (bob ?? Bob()).Build(), Carol().Build())
             .At(host.Time.GetUtcNow())
             .Build());
 
@@ -318,7 +383,8 @@ public sealed class MemberNameRecorderTests(TimescaleFixture fixture) : Timescal
         PlatformMemberBuilder? alice = null,
         HandlerOrder order = HandlerOrder.AfterGuildStateSync,
         TimeSpan? startAfter = null,
-        bool recordNames = true)
+        bool recordNames = true,
+        Action<IServiceCollection>? configure = null)
     {
         var host = new TrackingHost(Fixture, services =>
         {
@@ -332,6 +398,8 @@ public sealed class MemberNameRecorderTests(TimescaleFixture fixture) : Timescal
             {
                 MoveRecorderFirst(services);
             }
+
+            configure?.Invoke(services);
         });
         host.Time.Advance(startAfter ?? TimeSpan.Zero);
         if (!await host.InScopeAsync((db, _) => db.RoleSettings.AnyAsync(TestContext.Current.CancellationToken)))
