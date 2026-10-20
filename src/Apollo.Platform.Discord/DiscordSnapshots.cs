@@ -16,6 +16,9 @@ internal static class DiscordSnapshots
     public static PlatformMember ToMember(GuildUser user, Guild? guild) => new(
         User: DiscordIds.ToRef(user.Id),
         DisplayName: user.Nickname ?? user.GlobalName ?? user.Username,
+        Nickname: user.Nickname,
+        GlobalName: user.GlobalName,
+        Username: user.Username,
         AvatarUrl: AvatarUrl(user),
         IsBot: user.IsBot,
         IsAdministrator: guild is not null && user.GetPermissions(guild).HasFlag(Permissions.Administrator),

@@ -108,11 +108,21 @@ public sealed class PlatformEventContractTests
     [InlineData(typeof(PlatformActivity), nameof(PlatformActivity.PartySize))]
     [InlineData(typeof(PlatformActivity), nameof(PlatformActivity.PartyMax))]
     [InlineData(typeof(PlatformActivity), nameof(PlatformActivity.ApplicationId))]
+    [InlineData(typeof(PlatformMember), nameof(PlatformMember.Nickname))]
+    [InlineData(typeof(PlatformMember), nameof(PlatformMember.GlobalName))]
     public void OptionalReference_ShouldBeNullable(Type type, string propertyName)
     {
         var property = type.GetProperty(propertyName).ShouldNotBeNull();
 
         _nullability.Create(property).ReadState.ShouldBe(NullabilityState.Nullable);
+    }
+
+    [Fact]
+    public void PlatformMember_ShouldAlwaysCarryAUsername()
+    {
+        var property = typeof(PlatformMember).GetProperty(nameof(PlatformMember.Username)).ShouldNotBeNull();
+
+        _nullability.Create(property).ReadState.ShouldBe(NullabilityState.NotNull);
     }
 
     [Theory]

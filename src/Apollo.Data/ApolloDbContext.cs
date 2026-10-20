@@ -4,6 +4,7 @@ using Apollo.Data.Guilds;
 using Apollo.Data.Identity;
 using Apollo.Data.Membership;
 using Apollo.Data.Messages;
+using Apollo.Data.Names;
 using Apollo.Data.Presence;
 using Apollo.Data.Reactions;
 using Apollo.Data.Sessions;
@@ -71,6 +72,8 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
 
     public DbSet<PresenceActivitySegment> PresenceActivitySegments => Set<PresenceActivitySegment>();
 
+    public DbSet<MemberNameChange> MemberNameChanges => Set<MemberNameChange>();
+
     public DbSet<UserSignOut> UserSignOuts => Set<UserSignOut>();
 
     /// <summary>Per Zurich day, user and channel (#34); read-only.</summary>
@@ -108,6 +111,7 @@ public sealed class ApolloDbContext(DbContextOptions<ApolloDbContext> options) :
         ReactionModel.Configure(modelBuilder);
         MembershipModel.Configure(modelBuilder);
         PresenceModel.Configure(modelBuilder);
+        NameModel.Configure(modelBuilder);
         DataProtectionModel.Configure(modelBuilder);
         SessionModel.Configure(modelBuilder);
         ActivityModel.Configure(modelBuilder);

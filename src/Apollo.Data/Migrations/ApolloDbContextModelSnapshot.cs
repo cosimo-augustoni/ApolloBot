@@ -607,6 +607,58 @@ namespace Apollo.Data.Migrations
                         .HasAnnotation("TimescaleDB:TimeColumnName", "OccurredAt");
                 });
 
+            modelBuilder.Entity("Apollo.Data.Names.MemberNameChange", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<string>("GlobalName")
+                        .HasColumnType("text")
+                        .HasColumnName("global_name");
+
+                    b.Property<Guid>("GuildId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("guild_id");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Nickname")
+                        .HasColumnType("text")
+                        .HasColumnName("nickname");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("username");
+
+                    b.HasKey("Id", "OccurredAt");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("GuildId", "UserId", "OccurredAt");
+
+                    b.ToTable("member_name_changes", (string)null);
+
+                    b
+                        .HasAnnotation("TimescaleDB:IsHypertable", true)
+                        .HasAnnotation("TimescaleDB:TimeColumnName", "OccurredAt");
+                });
+
             modelBuilder.Entity("Apollo.Data.Presence.PresenceActivitySegment", b =>
                 {
                     b.Property<long>("Id")
@@ -1300,6 +1352,21 @@ namespace Apollo.Data.Migrations
                         .WithMany()
                         .HasForeignKey("MentionedUserId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Apollo.Data.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Apollo.Data.Names.MemberNameChange", b =>
+                {
+                    b.HasOne("Apollo.Data.Identity.Guild", null)
+                        .WithMany()
+                        .HasForeignKey("GuildId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("Apollo.Data.Identity.User", null)
                         .WithMany()

@@ -29,6 +29,9 @@ public sealed class DiscordChatPlatformReadTests : IDisposable
         member.ShouldNotBeNull();
         member.User.ShouldBe(Ref(42));
         member.DisplayName.ShouldBe("Ali");
+        member.Nickname.ShouldBe("Ali");
+        member.GlobalName.ShouldBe("Alice");
+        member.Username.ShouldBe("alice");
         member.AvatarUrl.ShouldNotBeNull().ShouldContain("/avatars/42/abc");
         member.IsBot.ShouldBeFalse();
         member.IsAdministrator.ShouldBeFalse();
@@ -47,6 +50,19 @@ public sealed class DiscordChatPlatformReadTests : IDisposable
         var member = await platform.GetMemberAsync(_guild, Ref(42), TestContext.Current.CancellationToken);
 
         member.ShouldNotBeNull().DisplayName.ShouldBe(expected);
+    }
+
+    [Fact]
+    public async Task GetMemberAsync_WhenMemberHasNoNicknameAndNoGlobalName_ShouldReportBothAsNull()
+    {
+        var platform = Platform(new DiscordGuildBuilder().WithMember(42, username: "alice"));
+
+        var member = await platform.GetMemberAsync(_guild, Ref(42), TestContext.Current.CancellationToken);
+
+        member.ShouldNotBeNull().ShouldSatisfyAllConditions(
+            m => m.Nickname.ShouldBeNull(),
+            m => m.GlobalName.ShouldBeNull(),
+            m => m.Username.ShouldBe("alice"));
     }
 
     [Fact]
