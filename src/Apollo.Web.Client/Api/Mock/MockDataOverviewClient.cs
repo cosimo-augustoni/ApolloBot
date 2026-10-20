@@ -77,6 +77,7 @@ public sealed class MockDataOverviewClient : IDataOverviewClient
         DataEventType.Reaction => 450 + (day * 5),
         DataEventType.Membership => day % 9 == 0 ? 1 : 0,
         DataEventType.PresenceActivitySegment => 60 + (day % 4 * 8),
+        DataEventType.MemberName => day % 6 == 0 ? 1 : 0,
         _ => 30 + (day % 3 * 5),
     };
 
@@ -128,6 +129,11 @@ public sealed class MockDataOverviewClient : IDataOverviewClient
                 {
                     PresenceSegment = new("Playing", "Factorio", now.AddMinutes(-10), "Multiplayer", "In Match", PartySize: 3, PartyMax: 8),
                 },
+            ],
+            DataEventType.MemberName =>
+            [
+                new(2, DataEventType.MemberName, now.AddHours(-4), Anna, null) { MemberName = new("Changed", "Annanas", "Anna", "anna") },
+                new(1, DataEventType.MemberName, now.AddDays(-20), Anna, null) { MemberName = new("Baseline", null, "Anna", "anna") },
             ],
             _ =>
             [

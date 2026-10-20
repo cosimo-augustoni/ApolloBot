@@ -23,6 +23,7 @@ public sealed class DataEventTextTests : ApolloTestContext
     [InlineData(DataEventType.Membership, "Mitgliedschaft", "membership_events")]
     [InlineData(DataEventType.PresenceActivity, "Aktivitäten", "presence_activity_sessions")]
     [InlineData(DataEventType.PresenceActivitySegment, "Aktivitäts-Abschnitte", "presence_activity_segments")]
+    [InlineData(DataEventType.MemberName, "Namen", "member_name_changes")]
     public void TableLabel_ShouldNameTheTableInGermanAndSql(DataEventType type, string label, string table)
     {
         DataEventText.TableLabel(L, type).ShouldBe(label);
@@ -37,6 +38,7 @@ public sealed class DataEventTextTests : ApolloTestContext
     [InlineData(DataEventType.Membership, "Mitgliedschaft")]
     [InlineData(DataEventType.PresenceActivity, "Aktivität")]
     [InlineData(DataEventType.PresenceActivitySegment, "Aktivitäts-Abschnitt")]
+    [InlineData(DataEventType.MemberName, "Name")]
     public void TypeName_ShouldNameOneRowInGerman(DataEventType type, string name)
     {
         DataEventText.TypeName(L, type).ShouldBe(name);
@@ -51,6 +53,24 @@ public sealed class DataEventTextTests : ApolloTestContext
         DataEventText.TypeLabel(L, Row(DataEventType.VoiceStateSegment) with { VoiceSegment = new(1, null, false, false, false, false) }).ShouldBe("Voice-Abschnitt");
         DataEventText.TypeLabel(L, Row(DataEventType.Membership) with { Membership = new("Ban") }).ShouldBe("Mitgliedschaft · gebannt");
         DataEventText.TypeLabel(L, Row(DataEventType.PresenceActivity) with { PresenceActivity = new("Listening", "Spotify", _at) }).ShouldBe("Aktivität · hört");
+    }
+
+    [Fact]
+    public void TypeLabel_WhenMemberName_ShouldNameTheTypeAndKind()
+    {
+        DataEventText.TypeLabel(L, Row(DataEventType.MemberName) with { MemberName = new("Baseline", null, "Anna", "anna") })
+            .ShouldBe("Name · Erfassungsbeginn");
+        DataEventText.TypeLabel(L, Row(DataEventType.MemberName) with { MemberName = new("Changed", "Annanas", "Anna", "anna") })
+            .ShouldBe("Name · geändert");
+    }
+
+    [Fact]
+    public void Details_WhenMemberName_ShouldShowTheThreeNames()
+    {
+        DataEventText.Details(L, Row(DataEventType.MemberName) with { MemberName = new("Changed", "Annanas", "Anna", "anna") })
+            .ShouldBe("Spitzname: Annanas · Anzeigename: Anna · Benutzername: anna");
+        DataEventText.Details(L, Row(DataEventType.MemberName) with { MemberName = new("Changed", null, null, "anna") })
+            .ShouldBe("Spitzname: – · Anzeigename: – · Benutzername: anna");
     }
 
     [Fact]

@@ -2,10 +2,12 @@ using Apollo.Data;
 using Apollo.Data.Identity;
 using Apollo.Data.Membership;
 using Apollo.Data.Messages;
+using Apollo.Data.Names;
 using Apollo.Data.Presence;
 using Apollo.Data.Reactions;
 using Apollo.Data.Voice;
 using Apollo.Domain.Messages;
+using Apollo.Domain.Names;
 using Apollo.Domain.Presence;
 using Apollo.Platform.Abstractions;
 using Apollo.Testing.Data;
@@ -122,6 +124,20 @@ internal sealed class EventSeeder(TimescaleFixture fixture, CancellationToken ca
                 db.PresenceActivitySessions.Add(presence);
                 await db.SaveChangesAsync(cancellationToken);
                 return presence.Id;
+            case DataEventType.MemberName:
+                var names = new MemberNameChange
+                {
+                    GuildId = guildId,
+                    UserId = user,
+                    OccurredAt = at,
+                    Nickname = "Ali",
+                    GlobalName = null,
+                    Username = "alice",
+                    Kind = MemberNameChangeKind.Changed,
+                };
+                db.MemberNameChanges.Add(names);
+                await db.SaveChangesAsync(cancellationToken);
+                return names.Id;
             case DataEventType.PresenceActivitySegment:
                 var presenceSegment = new PresenceActivitySegment
                 {

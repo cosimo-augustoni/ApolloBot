@@ -70,6 +70,7 @@ public sealed class RawEventQueryTests(TimescaleFixture fixture) : TimescaleTest
     [InlineData(DataEventType.VoiceStateSegment)]
     [InlineData(DataEventType.PresenceActivity)]
     [InlineData(DataEventType.PresenceActivitySegment)]
+    [InlineData(DataEventType.MemberName)]
     public async Task RawEvents_WhenChannelFilterOnTableWithoutChannel_ShouldReturnNothing(DataEventType type)
     {
         var general = await Events.ChannelAsync(EventSeeder.General, "general");
@@ -132,6 +133,7 @@ public sealed class RawEventQueryTests(TimescaleFixture fixture) : TimescaleTest
     [InlineData(DataEventType.Membership)]
     [InlineData(DataEventType.PresenceActivity)]
     [InlineData(DataEventType.PresenceActivitySegment)]
+    [InlineData(DataEventType.MemberName)]
     public async Task RawEvents_ShouldFillTheDetailsOfTheirTypeOnly(DataEventType type)
     {
         var alice = await Events.UserAsync(EventSeeder.Alice, "Alice");
@@ -142,10 +144,18 @@ public sealed class RawEventQueryTests(TimescaleFixture fixture) : TimescaleTest
         var row = page.Items.ShouldHaveSingleItem();
         row.Type.ShouldBe(type);
         row.User.ShouldBe(new EventUserDto(alice, "Alice"));
-        object?[] details = [row.Message, row.VoiceSession, row.VoiceSegment, row.Reaction, row.Membership, row.PresenceActivity, row.PresenceSegment];
+        object?[] details = [row.Message, row.VoiceSession, row.VoiceSegment, row.Reaction, row.Membership, row.PresenceActivity, row.PresenceSegment, row.MemberName];
         details.Count(d => d is not null).ShouldBe(1);
         details[(int)type].ShouldNotBeNull();
         (row.Channel is not null).ShouldBe(type is DataEventType.VoiceSession or DataEventType.Reaction);
+    }
+
+    [Fact]
+    public async Task RawEvents_WhenMemberName_ShouldReturnItsThreeNames()
+    {
+        await Events.AddAsync(DataEventType.MemberName, _to.AddHours(-1));
+
+        (await SingleAsync(DataEventType.MemberName)).MemberName.ShouldBe(new MemberNameDetailsDto("Changed", "Ali", null, "alice"));
     }
 
     [Fact]

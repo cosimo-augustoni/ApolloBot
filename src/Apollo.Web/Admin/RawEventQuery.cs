@@ -184,6 +184,22 @@ public sealed class RawEventQuery(ApolloDbContext db, IEnumerable<IPlatformIdent
                         e.ReportedEnd),
                 },
                 cancellationToken),
+            DataEventType.MemberName => await PageAsync(
+                db.MemberNameChanges.Select(e => new Row<Data.Names.MemberNameChange>
+                {
+                    Id = e.Id,
+                    GuildId = e.GuildId,
+                    OccurredAt = e.OccurredAt,
+                    UserId = e.UserId,
+                    ChannelId = null,
+                    Event = e,
+                }),
+                search,
+                guilds,
+                _ => [],
+                _ => [],
+                (row, e, _) => row with { MemberName = new MemberNameDetailsDto(e.Kind.ToString(), e.Nickname, e.GlobalName, e.Username) },
+                cancellationToken),
             _ => throw new ArgumentOutOfRangeException(nameof(search), search.Type, "Unknown event type."),
         };
     }

@@ -28,6 +28,7 @@ internal sealed class RecordedDataEraserStep(ApolloDbContext db) : IUserDataEras
             await RangeAsync(db.MembershipEvents.Where(e => e.GuildId == guildId && e.UserId == userId).Select(e => e.OccurredAt), cancellationToken),
             await RangeAsync(db.PresenceActivitySessions.Where(e => e.GuildId == guildId && e.UserId == userId).Select(e => e.OccurredAt), cancellationToken),
             await RangeAsync(db.PresenceActivitySegments.Where(e => e.GuildId == guildId && e.UserId == userId).Select(e => e.OccurredAt), cancellationToken),
+            await RangeAsync(db.MemberNameChanges.Where(e => e.GuildId == guildId && e.UserId == userId).Select(e => e.OccurredAt), cancellationToken),
         ];
 
         return ranges.OfType<ErasedRange>().Aggregate((ErasedRange?)null, (union, range) => union?.Union(range) ?? range);
@@ -68,6 +69,9 @@ internal sealed class RecordedDataEraserStep(ApolloDbContext db) : IUserDataEras
         new(
             "presence_activity_segments",
             await db.PresenceActivitySegments.Where(e => e.GuildId == guildId && e.UserId == userId).ExecuteDeleteAsync(cancellationToken)),
+        new(
+            "member_name_changes",
+            await db.MemberNameChanges.Where(e => e.GuildId == guildId && e.UserId == userId).ExecuteDeleteAsync(cancellationToken)),
         new(
             "tracking_periods",
             await db.TrackingPeriods.Where(p => p.GuildId == guildId && p.UserId == userId).ExecuteDeleteAsync(cancellationToken)),

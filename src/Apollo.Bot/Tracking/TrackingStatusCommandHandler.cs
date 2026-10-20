@@ -71,5 +71,6 @@ internal sealed class TrackingStatusCommandHandler(
                 strings["Status_Reactions", ReplyFormat.Number(counts.Reactions)],
                 strings["Status_VoiceSessions", ReplyFormat.Number(counts.VoiceSessions)],
                 strings["Status_PresenceSessions", ReplyFormat.Number(counts.PresenceSessions)],
-                strings["Status_MembershipEvents", ReplyFormat.Number(counts.MembershipEvents)]);
+                strings["Status_MembershipEvents", ReplyFormat.Number(counts.MembershipEvents)],
+                strings["Status_Names", ReplyFormat.Number(counts.Names)]);
 }

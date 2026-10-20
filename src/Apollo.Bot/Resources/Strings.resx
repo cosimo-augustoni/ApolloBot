@@ -89,6 +89,10 @@
     <value>- Beitritte, Austritte und Banns: {0}</value>
     <comment>/apollo tracking status: rows in membership_events (join, leave, ban, unban)</comment>
   </data>
+  <data name="Status_Names" xml:space="preserve">
+    <value>- Namen: {0}</value>
+    <comment>/apollo tracking status: rows in member_name_changes (the names at every tracking start and after every change)</comment>
+  </data>
   <data name="Status_NoData" xml:space="preserve">
     <value>Es sind keine Daten von dir gespeichert.</value>
     <comment>/apollo tracking status: no rows in any event table</comment>

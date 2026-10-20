@@ -24,6 +24,7 @@ public static class DataEventText
             DataEventType.Reaction => localizer["Data_Type_Reaction"],
             DataEventType.Membership => localizer["Data_Type_Membership"],
             DataEventType.PresenceActivitySegment => localizer["Data_Type_PresenceActivitySegment"],
+            DataEventType.MemberName => localizer["Data_Type_MemberName"],
             _ => localizer["Data_Type_PresenceActivity"],
         };
     }
@@ -40,6 +41,7 @@ public static class DataEventText
             DataEventType.Reaction => localizer["Data_Table_Reaction"],
             DataEventType.Membership => localizer["Data_Table_Membership"],
             DataEventType.PresenceActivitySegment => localizer["Data_Table_PresenceActivitySegment"],
+            DataEventType.MemberName => localizer["Data_Table_MemberName"],
             _ => localizer["Data_Table_PresenceActivity"],
         };
     }
@@ -53,6 +55,7 @@ public static class DataEventText
         DataEventType.Reaction => "reaction_events",
         DataEventType.Membership => "membership_events",
         DataEventType.PresenceActivitySegment => "presence_activity_segments",
+        DataEventType.MemberName => "member_name_changes",
         _ => "presence_activity_sessions",
     };
 
@@ -72,6 +75,7 @@ public static class DataEventText
             { Membership: { } membership } => localizer["Data_Type_Membership"] + Separator + Kind(localizer, membership.Kind),
             { PresenceActivity: { } activity } => localizer["Data_Type_PresenceActivity"] + Separator + Activity(localizer, activity.ActivityType),
             { PresenceSegment: { } segment } => localizer["Data_Type_PresenceActivitySegment"] + Separator + Activity(localizer, segment.ActivityType),
+            { MemberName: { } names } => localizer["Data_Type_MemberName"] + Separator + Kind(localizer, names.Kind),
             { VoiceSegment: not null } => localizer["Data_Type_VoiceStateSegment"],
             _ => localizer["Data_Type_VoiceSession"],
         };
@@ -104,6 +108,12 @@ public static class DataEventText
             ],
             { PresenceActivity: { } activity } => [activity.ActivityName, Until(localizer, activity.EndedAt, row.OccurredAt)],
             { PresenceSegment: { } segment } => PresenceSegmentDetails(localizer, segment, row.OccurredAt),
+            { MemberName: { } names } =>
+            [
+                localizer["Data_Nickname", names.Nickname ?? UiCulture.Placeholder],
+                localizer["Data_GlobalName", names.GlobalName ?? UiCulture.Placeholder],
+                localizer["Data_Username", names.Username],
+            ],
             _ => [],
         };
 
@@ -214,6 +224,8 @@ public static class DataEventText
         "Leave" => localizer["Data_Kind_Leave"],
         "Ban" => localizer["Data_Kind_Ban"],
         "Unban" => localizer["Data_Kind_Unban"],
+        "Baseline" => localizer["Data_Kind_Baseline"],
+        "Changed" => localizer["Data_Kind_Changed"],
         _ => kind,
     };
 

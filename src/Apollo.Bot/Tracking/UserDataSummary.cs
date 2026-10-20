@@ -16,5 +16,6 @@ internal sealed class UserDataSummary(ApolloDbContext db) : IUserDataSummary
             await db.ReactionEvents.LongCountAsync(e => e.GuildId == guildId && e.UserId == userId, cancellationToken),
             await db.VoiceSessions.LongCountAsync(e => e.GuildId == guildId && e.UserId == userId, cancellationToken),
             await db.PresenceActivitySessions.LongCountAsync(e => e.GuildId == guildId && e.UserId == userId, cancellationToken),
-            await db.MembershipEvents.LongCountAsync(e => e.GuildId == guildId && e.UserId == userId, cancellationToken));
+            await db.MembershipEvents.LongCountAsync(e => e.GuildId == guildId && e.UserId == userId, cancellationToken),
+            await db.MemberNameChanges.LongCountAsync(e => e.GuildId == guildId && e.UserId == userId, cancellationToken));
 }
