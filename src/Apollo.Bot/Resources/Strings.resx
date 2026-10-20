@@ -30,7 +30,7 @@
     <comment>/apollo tracking on|off while no tracking role is configured (none set, or the role was deleted), scope §5.4; also the status and privacy delete replies in that state</comment>
   </data>
   <data name="Tracking_On" xml:space="preserve">
-    <value>Ab jetzt werden deine Aktivitäten erfasst: Nachrichten-Metadaten, Voice-Zeit, Reaktionen und Spiele. Nachrichteninhalte werden nie gespeichert.</value>
+    <value>Ab jetzt werden deine Aktivitäten erfasst: Nachrichten-Metadaten, Voice-Zeit, Reaktionen, Spiele und Namen. Nachrichteninhalte werden nie gespeichert.</value>
     <comment>/apollo tracking on: the tracking role was added</comment>
   </data>
   <data name="Tracking_AlreadyOn" xml:space="preserve">

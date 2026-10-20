@@ -20,7 +20,7 @@ public sealed class TrackingOnCommandHandlerTests(TimescaleFixture fixture) : Ti
 
         host.Platform.RoleChanges.ShouldBe([new FakeRoleChange(Carol, Statistik, FakeRoleChangeKind.Added)]);
         reply.Body().ShouldBe(
-            "Ab jetzt werden deine Aktivitäten erfasst: Nachrichten-Metadaten, Voice-Zeit, Reaktionen und Spiele. "
+            "Ab jetzt werden deine Aktivitäten erfasst: Nachrichten-Metadaten, Voice-Zeit, Reaktionen, Spiele und Namen. "
             + "Nachrichteninhalte werden nie gespeichert.");
         reply.Text.ShouldEndWith($"{PublicWebUrl}/datenschutz");
     }
