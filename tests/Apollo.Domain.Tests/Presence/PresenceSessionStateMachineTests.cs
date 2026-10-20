@@ -372,6 +372,61 @@ public sealed class PresenceSessionStateMachineTests
         _machine.StopAll(_later).ShouldHaveSingleItem().ShouldBeOfType<PresenceSessionClosed>().Segments.ShouldHaveSingleItem();
     }
 
+    [Fact]
+    public void Update_WhenOnlyTheApplicationChanges_ShouldNotStartASegment()
+    {
+        var game = new PresenceActivityDetails(State: "In Match", ApplicationId: "1");
+        _machine.Update(_alice, [new(_factorio, game)], _startedAt);
+
+        _machine.Update(_alice, [new(_factorio, game with { ApplicationId = "2" })], _startedAt.AddMinutes(1));
+
+        _machine.StopAll(_later).ShouldBe([new PresenceSessionClosed(_alice, _factorio, _startedAt, _later, [new PresenceSegment(_startedAt, _later, game)])]);
+    }
+
+    [Fact]
+    public void Update_WhenAnOlderEventChangesTheDetails_ShouldReplaceTheOpenSegmentsDetailsAtItsStart()
+    {
+        // A presence update stamped before the session opened (it waited for the lock) brings older details.
+        var opened = new PresenceActivityDetails(State: "In Match");
+        var older = new PresenceActivityDetails(State: "In Queue");
+        _machine.Update(_alice, [new(_factorio, opened)], _startedAt);
+
+        _machine.Update(_alice, [new(_factorio, older)], _startedAt.AddSeconds(-20));
+
+        _machine.StopAll(_later).ShouldBe([new PresenceSessionClosed(_alice, _factorio, _startedAt, _later, [new PresenceSegment(_startedAt, _later, older)])]);
+    }
+
+    [Fact]
+    public void Update_WhenAnOlderEventArrivesAfterASegmentChange_ShouldNeverStartASegmentBeforeTheOpenOne()
+    {
+        var first = new PresenceActivityDetails(State: "In Queue");
+        var second = new PresenceActivityDetails(State: "In Match");
+        var third = new PresenceActivityDetails(State: "Victory");
+        var changedAt = _startedAt.AddMinutes(2);
+        _machine.Update(_alice, [new(_factorio, first)], _startedAt);
+        _machine.Update(_alice, [new(_factorio, second)], changedAt);
+
+        _machine.Update(_alice, [new(_factorio, third)], _startedAt.AddMinutes(1));
+
+        _machine.StopAll(_later).ShouldBe([
+            new PresenceSessionClosed(_alice, _factorio, _startedAt, _later, [
+                new PresenceSegment(_startedAt, changedAt, first),
+                new PresenceSegment(changedAt, _later, third),
+            ]),
+        ]);
+    }
+
+    [Fact]
+    public void Update_WhenTheDetailsChangeAtTheSegmentsStart_ShouldReplaceThemWithoutAZeroLengthSegment()
+    {
+        var first = new PresenceActivityDetails(State: "In Queue");
+        var second = new PresenceActivityDetails(State: "In Match");
+        _machine.Update(_alice, [new(_factorio, first)], _startedAt);
+
+        _machine.Update(_alice, [new(_factorio, second)], _startedAt);
+
+        _machine.StopAll(_later).ShouldBe([new PresenceSessionClosed(_alice, _factorio, _startedAt, _later, [new PresenceSegment(_startedAt, _later, second)])]);
+    }
 
     private static ObservedActivity[] Seen(params PresenceActivity[] activities) =>
         [.. activities.Select(activity => new ObservedActivity(activity, PresenceActivityDetails.None))];

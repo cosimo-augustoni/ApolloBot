@@ -50,7 +50,7 @@ public sealed class PresenceActivitiesTests
             State = "Artist A",
             LargeText = "Album X",
             SmallText = "Small",
-            PartyId = "spotify:1",
+            PartyId = "party-1",
             PartySize = 1,
             PartyMax = 2,
             ApplicationId = "99",
@@ -59,7 +59,7 @@ public sealed class PresenceActivitiesTests
         PresenceActivities.From(new PlatformPresenceBuilder().WithActivity(activity).Build()).ShouldBe([
             new ObservedActivity(
                 new PresenceActivity(PresenceActivityType.Listening, "Spotify"),
-                new PresenceActivityDetails("Song 1", "Artist A", "Album X", "Small", "spotify:1", 1, 2, "99", start, start.AddMinutes(3))),
+                new PresenceActivityDetails("Song 1", "Artist A", "Album X", "Small", "party-1", 1, 2, "99", start, start.AddMinutes(3))),
         ]);
     }
 

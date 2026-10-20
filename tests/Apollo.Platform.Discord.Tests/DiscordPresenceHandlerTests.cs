@@ -54,7 +54,7 @@ public sealed class DiscordPresenceHandlerTests
                 ApplicationId = 1234,
                 Timestamps = new() { StartTime = start, EndTime = end },
                 Assets = new() { LargeText = "Album X", SmallText = "Small" },
-                Party = new() { Id = "spotify:42", Size = [2, 5] },
+                Party = new() { Id = "party-1", Size = [2, 5] },
             }));
 
         var activity = _harness.Dispatcher.Events.ShouldHaveSingleItem().ShouldBeOfType<PlatformPresenceUpdated>().Presence.Activities.ShouldHaveSingleItem();
@@ -65,11 +65,27 @@ public sealed class DiscordPresenceHandlerTests
             State = "Artist A; Artist B",
             LargeText = "Album X",
             SmallText = "Small",
-            PartyId = "spotify:42",
+            PartyId = "party-1",
             PartySize = 2,
             PartyMax = 5,
             ApplicationId = "1234",
         });
+    }
+
+    [Fact]
+    public async Task PresenceUpdate_WhenTheSpotifyPartyIdHoldsTheHostsUserId_ShouldDropItAndKeepTheSize()
+    {
+        await HandleAsync(NetCordPayloads.Presence(DiscordHost.GuildId, AliceId, UserStatusType.Online,
+            new JsonUserActivity
+            {
+                Type = UserActivityType.Listening,
+                Name = "Spotify",
+                Party = new() { Id = "spotify:333333333333333333", Size = [2, 5] },
+            }));
+
+        var activity = _harness.Dispatcher.Events.ShouldHaveSingleItem().ShouldBeOfType<PlatformPresenceUpdated>().Presence.Activities.ShouldHaveSingleItem();
+        activity.PartyId.ShouldBeNull();
+        (activity.PartySize, activity.PartyMax).ShouldBe((2L, 5L));
     }
 
     [Fact]

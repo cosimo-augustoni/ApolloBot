@@ -135,7 +135,7 @@ public sealed class DataEventTextTests : ApolloTestContext
             State: "Artist A; Artist B",
             LargeText: "Album X",
             SmallText: "Small",
-            PartyId: "spotify:1",
+            PartyId: "party-1",
             PartySize: 2,
             PartyMax: 5,
             ApplicationId: "1234",

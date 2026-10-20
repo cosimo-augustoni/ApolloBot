@@ -142,10 +142,23 @@ public sealed class PresenceSessionStateMachine
     {
         public static OpenSession Start(PresenceActivityDetails details, DateTimeOffset at) => new(at, [], at, details);
 
-        public OpenSession Observe(PresenceActivityDetails details, DateTimeOffset at) =>
-            Details.IsSameSegmentAs(details)
-                ? this
+        /// <summary>
+        /// The session after <paramref name="details"/> were seen at <paramref name="at"/>. An update stamped before the
+        /// open segment started (it waited for the lock while a sync or tracking start opened the segment) counts from
+        /// that start, so no segment ever starts before the previous one; a change at the segment's start replaces its
+        /// details instead of leaving a segment of zero length.
+        /// </summary>
+        public OpenSession Observe(PresenceActivityDetails details, DateTimeOffset at)
+        {
+            if (Details.IsSameSegmentAs(details))
+            {
+                return this;
+            }
+
+            return at <= SegmentStartedAt
+                ? this with { Details = details }
                 : new(StartedAt, Finished.Add(new PresenceSegment(SegmentStartedAt, at, Details)), at, details);
+        }
 
         /// <summary>
         /// The closed session with every segment that started before <paramref name="at"/> (a reconciliation can close a

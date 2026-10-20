@@ -87,11 +87,18 @@ internal static class DiscordSnapshots
         State = activity.State,
         LargeText = activity.Assets?.LargeText,
         SmallText = activity.Assets?.SmallText,
-        PartyId = activity.Party?.Id,
+        PartyId = PartyId(activity.Party?.Id),
         PartySize = activity.Party?.Size?.CurrentSize,
         PartyMax = activity.Party?.Size?.MaxSize,
         ApplicationId = activity.ApplicationId?.ToString(CultureInfo.InvariantCulture),
     };
+
+    /// <summary>
+    /// The party ID, except Spotify's: it is <c>spotify:</c> plus the host's Discord user ID, a raw reference to a
+    /// member who may be untracked (listening along), so it is dropped (#115).
+    /// </summary>
+    private static string? PartyId(string? id) =>
+        id is not null && id.StartsWith("spotify:", StringComparison.Ordinal) ? null : id;
 
     // In NetCord threads, announcement, voice and stage channels all derive from TextGuildChannel: most specific first.
     private static PlatformChannelType ChannelType(IGuildChannel channel) => channel switch

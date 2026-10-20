@@ -134,7 +134,7 @@ internal sealed class EventSeeder(TimescaleFixture fixture, CancellationToken ca
                     Details = "Song 1",
                     State = "Artist A; Artist B",
                     LargeText = "Album X",
-                    PartyExtId = "spotify:1",
+                    PartyExtId = "party-1",
                     PartySize = 1,
                     PartyMax = 2,
                     ApplicationExtId = "1234",
