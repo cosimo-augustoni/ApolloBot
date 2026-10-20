@@ -122,6 +122,28 @@ internal sealed class EventSeeder(TimescaleFixture fixture, CancellationToken ca
                 db.PresenceActivitySessions.Add(presence);
                 await db.SaveChangesAsync(cancellationToken);
                 return presence.Id;
+            case DataEventType.PresenceActivitySegment:
+                var presenceSegment = new PresenceActivitySegment
+                {
+                    GuildId = guildId,
+                    UserId = user,
+                    OccurredAt = at,
+                    EndedAt = at.AddMinutes(3),
+                    ActivityType = PresenceActivityType.Listening,
+                    ActivityName = "Spotify",
+                    Details = "Song 1",
+                    State = "Artist A; Artist B",
+                    LargeText = "Album X",
+                    PartyExtId = "spotify:1",
+                    PartySize = 1,
+                    PartyMax = 2,
+                    ApplicationExtId = "1234",
+                    ReportedStart = at,
+                    ReportedEnd = at.AddMinutes(3),
+                };
+                db.PresenceActivitySegments.Add(presenceSegment);
+                await db.SaveChangesAsync(cancellationToken);
+                return presenceSegment.Id;
             default:
                 throw new ArgumentOutOfRangeException(nameof(type), type, null);
         }

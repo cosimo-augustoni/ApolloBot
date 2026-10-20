@@ -63,6 +63,18 @@ public sealed class PrivacyPageTests : ApolloTestContext
     }
 
     [Fact]
+    public void Render_ShouldListTheAdditionalDetailsOfAnActivity()
+    {
+        var page = Render<Privacy>();
+
+        var activities = page.FindAll(".apollo-privacy-recorded li")[4].TextContent;
+
+        activities.ShouldContain("die Zusatzangaben, die die App dazu mitschickt");
+        activities.ShouldContain("Titel, Interpret und Album");
+        activities.ShouldContain("Modus, Karte oder Gruppengrösse");
+    }
+
+    [Fact]
     public void Render_ShouldSayThatOnlyHoldersOfTheTrackingRoleAreRecorded()
     {
         var page = Render<Privacy>();

@@ -1,8 +1,9 @@
 namespace Apollo.Bot.Tracking;
 
 /// <summary>
-/// A user's rows per event table (scope §5.1). The detail tables <c>message_mentions</c> and
-/// <c>voice_state_segments</c> are not counted: their rows belong to a message or a voice session counted here.
+/// A user's rows per event table (scope §5.1). The detail tables <c>message_mentions</c>,
+/// <c>voice_state_segments</c> and <c>presence_activity_segments</c> are not counted: their rows belong to a message,
+/// a voice session or a presence session counted here.
 /// </summary>
 /// <param name="Messages"><c>message_events</c>: sent, edited and deleted messages.</param>
 /// <param name="Reactions"><c>reaction_events</c>: added and removed reactions.</param>

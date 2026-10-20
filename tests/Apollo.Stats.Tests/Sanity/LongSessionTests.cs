@@ -29,13 +29,13 @@ public sealed class LongSessionTests(TimescaleFixture fixture) : TimescaleTest(f
     {
         await using var db = Fixture.CreateDbContext();
         var seed = await SanitySeed.CreateAsync(db, Ct);
-        var longOne = seed.Presence(seed.Alice, "2026-01-11T10:00:00Z", "2026-01-12T11:00:00Z").Build();
-        await RawStatsSeed.AddAsync(db, Ct, longOne, seed.Presence(seed.Bob, "2026-01-11T10:00:00Z", "2026-01-11T12:00:00Z").Build());
+        var longOne = seed.Presence(seed.Alice, "2026-01-11T10:00:00Z", "2026-01-12T11:00:00Z").BuildRows();
+        await RawStatsSeed.AddAsync(db, Ct, [.. longOne.All, .. seed.Presence(seed.Bob, "2026-01-11T10:00:00Z", "2026-01-11T12:00:00Z").BuildRows().All]);
 
         var report = await SanitySeed.Service(db).GetAsync(seed.Query(), Ct);
 
         report.LongSessions.Examples.ShouldBe(
-            [new SanitySession("presence_activity_sessions", longOne.Id, seed.Alice, longOne.OccurredAt, longOne.EndedAt)]);
+            [new SanitySession("presence_activity_sessions", longOne.Session.Id, seed.Alice, longOne.Session.OccurredAt, longOne.Session.EndedAt)]);
     }
 
     [Fact]
@@ -45,19 +45,20 @@ public sealed class LongSessionTests(TimescaleFixture fixture) : TimescaleTest(f
         var seed = await SanitySeed.CreateAsync(db, Ct);
         var voice = seed.Voice(seed.Alice, "2026-01-10T10:00:00Z", "2026-01-11T11:00:00Z")
             .Until(SanitySeed.Utc("2026-01-11T11:00:00Z"), VoiceSessionEndReason.Unobserved).Build();
-        var presence = seed.Presence(seed.Bob, "2026-01-12T10:00:00Z", "2026-01-13T11:00:00Z").Build();
+        var presence = seed.Presence(seed.Bob, "2026-01-12T10:00:00Z", "2026-01-13T11:00:00Z").BuildRows();
         await RawStatsSeed.AddAsync(
             db,
             Ct,
             voice,
-            presence,
+            presence.Session,
+            presence.Segments[0],
             seed.Voice(seed.Alice, "2026-01-08T10:00:00Z", "2026-01-09T11:00:00Z").Build(), // before the range
             seed.Voice(seed.Alice, "2026-01-15T10:00:00Z", "2026-01-16T11:00:00Z").Build()); // after it
 
         var report = await SanitySeed.Service(db).GetAsync(seed.Query(), Ct);
 
         report.LongSessions.Count.ShouldBe(2);
-        report.LongSessions.Examples.Select(s => s.Id).ShouldBe([presence.Id, voice.Id]);
+        report.LongSessions.Examples.Select(s => s.Id).ShouldBe([presence.Session.Id, voice.Id]);
     }
 
     [Fact]

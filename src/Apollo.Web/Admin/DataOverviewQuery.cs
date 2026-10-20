@@ -31,6 +31,7 @@ public sealed class DataOverviewQuery(
         ["reaction"] = DataEventType.Reaction,
         ["membership"] = DataEventType.Membership,
         ["presence"] = DataEventType.PresenceActivity,
+        ["presence_segment"] = DataEventType.PresenceActivitySegment,
     };
 
     /// <summary>
@@ -50,8 +51,8 @@ public sealed class DataOverviewQuery(
         var end = ZurichTime.StartOf(to.AddDays(1));
         var guilds = await ConfiguredGuilds.IdsAsync(db, providers, cancellationToken);
 
-        // Raw SQL: EF has no translation for time_bucket with a time zone, nor for one count over six hypertables.
-        // Session tables count by their start (occurred_at, #16, #19).
+        // Raw SQL: EF has no translation for time_bucket with a time zone, nor for one count over seven hypertables.
+        // Session and segment tables count by their start (occurred_at, #16, #19, #115).
         var rows = await db.Database.SqlQuery<DayCount>($"""
             SELECT e.table_key AS "TableKey", time_bucket('1 day', e.occurred_at, 'Europe/Zurich') AS "DayStart", count(*)::int AS "Count"
             FROM (
@@ -66,6 +67,8 @@ public sealed class DataOverviewQuery(
                 SELECT 'membership', occurred_at FROM membership_events WHERE guild_id = ANY({guilds}) AND occurred_at >= {start} AND occurred_at < {end}
                 UNION ALL
                 SELECT 'presence', occurred_at FROM presence_activity_sessions WHERE guild_id = ANY({guilds}) AND occurred_at >= {start} AND occurred_at < {end}
+                UNION ALL
+                SELECT 'presence_segment', occurred_at FROM presence_activity_segments WHERE guild_id = ANY({guilds}) AND occurred_at >= {start} AND occurred_at < {end}
             ) e
             GROUP BY 1, 2
             """).ToListAsync(cancellationToken);

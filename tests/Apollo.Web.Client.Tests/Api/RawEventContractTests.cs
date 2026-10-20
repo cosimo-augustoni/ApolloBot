@@ -11,6 +11,9 @@ public sealed class RawEventContractTests
 {
     private static readonly string[] _forbidden = ["content", "text", "body"];
 
+    // The hover texts an app sends with its rich presence (#115): presence data the privacy page lists, not message content.
+    private static readonly string[] _allowed = ["PresenceSegmentDetailsDto.LargeText", "PresenceSegmentDetailsDto.SmallText"];
+
     [Fact]
     public void EventDtos_ShouldContainNoContentField()
     {
@@ -20,7 +23,7 @@ public sealed class RawEventContractTests
             .ToList();
 
         properties.ShouldContain("MessageEventDetailsDto.Length");
-        properties.Where(p => _forbidden.Any(f => p[(p.IndexOf('.', StringComparison.Ordinal) + 1)..].Contains(f, StringComparison.OrdinalIgnoreCase)))
+        properties.Except(_allowed).Where(p => _forbidden.Any(f => p[(p.IndexOf('.', StringComparison.Ordinal) + 1)..].Contains(f, StringComparison.OrdinalIgnoreCase)))
             .ShouldBeEmpty();
     }
 

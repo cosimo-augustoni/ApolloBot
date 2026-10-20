@@ -88,7 +88,7 @@ public sealed class DataEndpointsTests(TimescaleFixture fixture) : TimescaleTest
 
         counts.From.ShouldBe(new DateOnly(2025, 12, 17));
         counts.To.ShouldBe(new DateOnly(2026, 1, 15));
-        counts.Tables.Count.ShouldBe(6);
+        counts.Tables.Count.ShouldBe(7);
         counts.Tables[0].Days.Count.ShouldBe(30);
         counts.Tables[0].Total.ShouldBe(1);
     }

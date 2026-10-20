@@ -23,6 +23,7 @@ public static class DataEventText
             DataEventType.VoiceStateSegment => localizer["Data_Type_VoiceStateSegment"],
             DataEventType.Reaction => localizer["Data_Type_Reaction"],
             DataEventType.Membership => localizer["Data_Type_Membership"],
+            DataEventType.PresenceActivitySegment => localizer["Data_Type_PresenceActivitySegment"],
             _ => localizer["Data_Type_PresenceActivity"],
         };
     }
@@ -38,6 +39,7 @@ public static class DataEventText
             DataEventType.VoiceStateSegment => localizer["Data_Table_VoiceStateSegment"],
             DataEventType.Reaction => localizer["Data_Table_Reaction"],
             DataEventType.Membership => localizer["Data_Table_Membership"],
+            DataEventType.PresenceActivitySegment => localizer["Data_Table_PresenceActivitySegment"],
             _ => localizer["Data_Table_PresenceActivity"],
         };
     }
@@ -50,6 +52,7 @@ public static class DataEventText
         DataEventType.VoiceStateSegment => "voice_state_segments",
         DataEventType.Reaction => "reaction_events",
         DataEventType.Membership => "membership_events",
+        DataEventType.PresenceActivitySegment => "presence_activity_segments",
         _ => "presence_activity_sessions",
     };
 
@@ -68,6 +71,7 @@ public static class DataEventText
             { Reaction: { } reaction } => localizer["Data_Type_Reaction"] + Separator + Kind(localizer, reaction.Kind),
             { Membership: { } membership } => localizer["Data_Type_Membership"] + Separator + Kind(localizer, membership.Kind),
             { PresenceActivity: { } activity } => localizer["Data_Type_PresenceActivity"] + Separator + Activity(localizer, activity.ActivityType),
+            { PresenceSegment: { } segment } => localizer["Data_Type_PresenceActivitySegment"] + Separator + Activity(localizer, segment.ActivityType),
             { VoiceSegment: not null } => localizer["Data_Type_VoiceStateSegment"],
             _ => localizer["Data_Type_VoiceSession"],
         };
@@ -99,6 +103,7 @@ public static class DataEventText
                 segment.EndedAt is { } ended ? Until(localizer, ended, row.OccurredAt) : localizer["Data_Open"],
             ],
             { PresenceActivity: { } activity } => [activity.ActivityName, Until(localizer, activity.EndedAt, row.OccurredAt)],
+            { PresenceSegment: { } segment } => PresenceSegmentDetails(localizer, segment, row.OccurredAt),
             _ => [],
         };
 
@@ -163,6 +168,24 @@ public static class DataEventText
             parts.Add(localizer["Data_Bot"]);
         }
 
+        return parts;
+    }
+
+    /// <summary>The rich presence as the app sent it (#115); the IDs are left out, they mean nothing to a reader.</summary>
+    private static List<string> PresenceSegmentDetails(IStringLocalizer localizer, PresenceSegmentDetailsDto segment, DateTimeOffset start)
+    {
+        List<string> parts = [segment.ActivityName, segment.Details ?? string.Empty, segment.State ?? string.Empty, segment.LargeText ?? string.Empty, segment.SmallText ?? string.Empty];
+        if (segment.PartySize is { } size)
+        {
+            parts.Add(segment.PartyMax is { } max ? localizer["Data_PartyOf", size, max] : localizer["Data_Party", size]);
+        }
+
+        if (segment.ReportedStart is { } reportedStart && segment.ReportedEnd is { } reportedEnd)
+        {
+            parts.Add(localizer["Data_Reported", UiTime.FormatSince(reportedStart, start), UiTime.FormatSince(reportedEnd, reportedStart)]);
+        }
+
+        parts.Add(Until(localizer, segment.EndedAt, start));
         return parts;
     }
 

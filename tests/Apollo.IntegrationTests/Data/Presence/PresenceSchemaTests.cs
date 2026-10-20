@@ -5,8 +5,11 @@ namespace Apollo.IntegrationTests.Data.Presence;
 
 public sealed class PresenceSchemaTests(TimescaleFixture fixture) : TimescaleTest(fixture)
 {
-    [Fact]
-    public async Task PresenceActivitySessions_WhenMigrated_ShouldBeAHypertablePartitionedByOccurredAt()
+    public static TheoryData<string> PresenceTables => ["presence_activity_sessions", "presence_activity_segments"];
+
+    [Theory]
+    [MemberData(nameof(PresenceTables))]
+    public async Task PresenceTable_WhenMigrated_ShouldBeAHypertablePartitionedByOccurredAt(string table)
     {
         await using var db = Fixture.CreateDbContext();
 
@@ -16,15 +19,16 @@ public sealed class PresenceSchemaTests(TimescaleFixture fixture) : TimescaleTes
                 FROM timescaledb_information.hypertables h
                 JOIN timescaledb_information.dimensions d
                   ON d.hypertable_schema = h.hypertable_schema AND d.hypertable_name = h.hypertable_name
-                WHERE h.hypertable_schema = 'public' AND h.hypertable_name = 'presence_activity_sessions'
+                WHERE h.hypertable_schema = 'public' AND h.hypertable_name = {table}
                 """)
             .ToListAsync(TestContext.Current.CancellationToken);
 
         partitionColumns.ShouldBe(["occurred_at"]);
     }
 
-    [Fact]
-    public async Task PresenceActivitySessions_WhenMigrated_ShouldHaveAPrimaryKeyOnIdAndOccurredAt()
+    [Theory]
+    [MemberData(nameof(PresenceTables))]
+    public async Task PresenceTable_WhenMigrated_ShouldHaveAPrimaryKeyOnIdAndOccurredAt(string table)
     {
         await using var db = Fixture.CreateDbContext();
 
@@ -36,7 +40,7 @@ public sealed class PresenceSchemaTests(TimescaleFixture fixture) : TimescaleTes
                 JOIN pg_namespace n ON n.oid = t.relnamespace
                 CROSS JOIN LATERAL unnest(i.indkey) WITH ORDINALITY AS k(attnum, ord)
                 JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = k.attnum
-                WHERE n.nspname = 'public' AND t.relname = 'presence_activity_sessions' AND i.indisprimary
+                WHERE n.nspname = 'public' AND t.relname = {table} AND i.indisprimary
                 GROUP BY i.indexrelid
                 """)
             .ToListAsync(TestContext.Current.CancellationToken);

@@ -171,8 +171,8 @@ public sealed class MemberEndpointsTests(TimescaleFixture fixture) : TimescaleTe
             new ReactionEventBuilder().In(guildId, general).By(anna).WithEmoji("👍").At("2026-01-12T11:00:00Z").Build(),
             new ReactionEventBuilder().In(guildId, general).By(anna).WithCustomEmoji("900000000000000001", "apollo").At("2026-01-12T11:01:00Z").Build(),
             new VoiceSessionBuilder().In(guildId, lounge).By(anna).From("2026-01-13T18:00:00Z").Until("2026-01-13T20:00:00Z").Build(),
-            new VoiceSessionBuilder().In(guildId, lounge).By(ben).From("2026-01-13T19:00:00Z").Until("2026-01-13T21:00:00Z").Build(),
-            new PresenceActivitySessionBuilder().In(guildId).By(anna).Playing("Factorio").From("2026-01-14T18:00:00Z").Until("2026-01-14T19:30:00Z").Build());
+            new VoiceSessionBuilder().In(guildId, lounge).By(ben).From("2026-01-13T19:00:00Z").Until("2026-01-13T21:00:00Z").Build());
+        await AddAsync(new PresenceActivitySessionBuilder().In(guildId).By(anna).Playing("Factorio").From("2026-01-14T18:00:00Z").Until("2026-01-14T19:30:00Z").BuildRows().All);
         await Fixture.RefreshContinuousAggregatesAsync(Ct);
         await using var factory = CreateFactory();
         using var http = factory.CreateHttpsClient();

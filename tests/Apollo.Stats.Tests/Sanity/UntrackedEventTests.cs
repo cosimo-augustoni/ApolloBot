@@ -53,12 +53,13 @@ public sealed class UntrackedEventTests(TimescaleFixture fixture) : TimescaleTes
 
         var report = await SanitySeed.Service(db).GetAsync(seed.Query(), Ct);
 
-        report.UntrackedEvents.Count.ShouldBe(7);
+        report.UntrackedEvents.Count.ShouldBe(8);
         report.UntrackedEvents.Examples.Select(r => $"{r.Table}.{r.Column}").Order().ShouldBe(
         [
             "membership_events.user_id",
             "message_events.user_id",
             "message_mentions.user_id",
+            "presence_activity_segments.user_id",
             "presence_activity_sessions.user_id",
             "reaction_events.user_id",
             "voice_sessions.user_id",
@@ -158,6 +159,9 @@ public sealed class UntrackedEventTests(TimescaleFixture fixture) : TimescaleTes
         yield return seed.Voice(userId, atUtc, anHourLater).Build();
         yield return seed.Segment(userId, atUtc);
         yield return seed.Membership(userId, MembershipEventKind.Join, atUtc);
-        yield return seed.Presence(userId, atUtc, anHourLater).Build();
+        foreach (var row in seed.Presence(userId, atUtc, anHourLater).BuildRows().All)
+        {
+            yield return row;
+        }
     }
 }

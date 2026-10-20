@@ -69,6 +69,7 @@ public sealed class RawEventQueryTests(TimescaleFixture fixture) : TimescaleTest
     [InlineData(DataEventType.Membership)]
     [InlineData(DataEventType.VoiceStateSegment)]
     [InlineData(DataEventType.PresenceActivity)]
+    [InlineData(DataEventType.PresenceActivitySegment)]
     public async Task RawEvents_WhenChannelFilterOnTableWithoutChannel_ShouldReturnNothing(DataEventType type)
     {
         var general = await Events.ChannelAsync(EventSeeder.General, "general");
@@ -130,6 +131,7 @@ public sealed class RawEventQueryTests(TimescaleFixture fixture) : TimescaleTest
     [InlineData(DataEventType.Reaction)]
     [InlineData(DataEventType.Membership)]
     [InlineData(DataEventType.PresenceActivity)]
+    [InlineData(DataEventType.PresenceActivitySegment)]
     public async Task RawEvents_ShouldFillTheDetailsOfTheirTypeOnly(DataEventType type)
     {
         var alice = await Events.UserAsync(EventSeeder.Alice, "Alice");
@@ -140,7 +142,7 @@ public sealed class RawEventQueryTests(TimescaleFixture fixture) : TimescaleTest
         var row = page.Items.ShouldHaveSingleItem();
         row.Type.ShouldBe(type);
         row.User.ShouldBe(new EventUserDto(alice, "Alice"));
-        object?[] details = [row.Message, row.VoiceSession, row.VoiceSegment, row.Reaction, row.Membership, row.PresenceActivity];
+        object?[] details = [row.Message, row.VoiceSession, row.VoiceSegment, row.Reaction, row.Membership, row.PresenceActivity, row.PresenceSegment];
         details.Count(d => d is not null).ShouldBe(1);
         details[(int)type].ShouldNotBeNull();
         (row.Channel is not null).ShouldBe(type is DataEventType.VoiceSession or DataEventType.Reaction);
@@ -160,6 +162,27 @@ public sealed class RawEventQueryTests(TimescaleFixture fixture) : TimescaleTest
         (await SingleAsync(DataEventType.Reaction)).Reaction.ShouldBe(new ReactionEventDetailsDto("Add", "👍", IsCustomEmoji: false, MessageAuthor: null));
         (await SingleAsync(DataEventType.Membership)).Membership.ShouldBe(new MembershipEventDetailsDto("Join"));
         (await SingleAsync(DataEventType.PresenceActivity)).PresenceActivity.ShouldBe(new PresenceActivityDetailsDto("Playing", "Factorio", _to.AddMinutes(-55)));
+    }
+
+    [Fact]
+    public async Task RawEvents_WhenPresenceSegment_ShouldReturnItsRichFields()
+    {
+        var at = _to.AddHours(-1);
+        await Events.AddAsync(DataEventType.PresenceActivitySegment, at);
+
+        (await SingleAsync(DataEventType.PresenceActivitySegment)).PresenceSegment.ShouldBe(new PresenceSegmentDetailsDto(
+            "Listening",
+            "Spotify",
+            at.AddMinutes(3),
+            Details: "Song 1",
+            State: "Artist A; Artist B",
+            LargeText: "Album X",
+            PartyId: "spotify:1",
+            PartySize: 1,
+            PartyMax: 2,
+            ApplicationId: "1234",
+            ReportedStart: at,
+            ReportedEnd: at.AddMinutes(3)));
     }
 
     [Fact]

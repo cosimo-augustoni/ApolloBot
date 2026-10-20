@@ -6,7 +6,8 @@ namespace Apollo.Testing.Data;
 
 /// <summary>
 /// Builds a <see cref="PresenceActivitySession"/> row: by default one hour of <see cref="PresenceActivityType.Playing"/>
-/// "Factorio" from <see cref="TestTime.Now"/>. Guild and user are internal IDs; seed them first.
+/// "Factorio" from <see cref="TestTime.Now"/>, with its covering segment from <see cref="BuildRows"/>. Guild and user are
+/// internal IDs; seed them first.
 /// </summary>
 public sealed class PresenceActivitySessionBuilder : TestDataBuilder<PresenceActivitySessionBuilder, PresenceActivitySession>
 {
@@ -26,6 +27,33 @@ public sealed class PresenceActivitySessionBuilder : TestDataBuilder<PresenceAct
     public PresenceActivitySessionBuilder Until(DateTimeOffset endedAt) => With(s => Copy(s, endedAt: endedAt));
 
     public PresenceActivitySessionBuilder Until(string endedAtUtc) => Until(Parse(endedAtUtc));
+
+    /// <summary>
+    /// The session with its segments, as production stores it (#115): one segment covering it without rich fields.
+    /// Seed sessions with this rather than <see cref="TestDataBuilder{TBuilder,T}.Build"/>.
+    /// </summary>
+    public PresenceSessionRows BuildRows()
+    {
+        var session = Build();
+        return new PresenceSessionRows(session, [CoveringSegment(session)]);
+    }
+
+    /// <summary>
+    /// The segment without rich fields that covers <paramref name="session"/>, as for sessions without rich presence.
+    /// </summary>
+    public static PresenceActivitySegment CoveringSegment(PresenceActivitySession session)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        return new PresenceActivitySegment
+        {
+            GuildId = session.GuildId,
+            OccurredAt = session.OccurredAt,
+            UserId = session.UserId,
+            ActivityType = session.ActivityType,
+            ActivityName = session.ActivityName,
+            EndedAt = session.EndedAt,
+        };
+    }
 
     protected override PresenceActivitySession CreateDefault() => new()
     {
